@@ -1,0 +1,57 @@
+# ── Datos descargados ─────────────────────────────────────────────────────────
+# Se regeneran ejecutando: python src/pipeline.py
+datos/raw/*
+datos/procesados/*
+datos/features/*
+datos/modelos/*
+graficas/*
+
+# Preservar estructura de carpetas sin subir los datos
+!datos/raw/.gitkeep
+!datos/procesados/.gitkeep
+!datos/features/.gitkeep
+!datos/modelos/.gitkeep
+!graficas/.gitkeep
+
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+
+# ── Variables de entorno ──────────────────────────────────────────────────────
+.env
+*.env
+# .env.example SI se sube (es el template sin valores reales)
+
+# ── Jupyter ───────────────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+
+# ── Modelos entrenados ────────────────────────────────────────────────────────
+# Solo el modelo final de produccion va al repo
+*.pkl
+*.joblib
+*.h5
+
+# ── Claude Code — solo settings locales ──────────────────────────────────────
+# .claude/commands/ y .claude/skills/ SI se suben (slash commands del equipo)
+.claude/settings.local.json
+
+# ── Archivos no pertenecientes al proyecto ────────────────────────────────────
+guia_bogota_profunda.html
+skills-lock.json
+
+# ── IDEs ─────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db

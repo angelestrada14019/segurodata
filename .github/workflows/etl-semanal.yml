@@ -1,0 +1,75 @@
+# ETL semanal automatico — SeguroData Bogota
+#
+# ESTADO: DESACTIVADO
+# Para activar: descomentar el bloque "schedule" de abajo y hacer commit.
+#
+# Que hace:
+#   - Corre src/pipeline.py con las fuentes que se actualizan frecuentemente
+#   - F3 clima     → diario  (Open-Meteo, segundos)
+#   - F5 NUSE 123  → mensual (CKAN Datastore, ~5 min)
+#   - F6 Hurto PN  → mensual (Socrata, ~3 min)
+#   - F1/F2/F4/F7/F8 se omiten: son semestrales o estaticos
+#   - Commitea los Parquet actualizados de vuelta al repo
+
+on:
+  # schedule:
+  #   - cron: '0 6 * * 1'   # cada lunes a las 6am UTC (1am Bogota)
+
+  # Permite lanzar manualmente desde GitHub Actions > Run workflow
+  workflow_dispatch:
+    inputs:
+      sources:
+        description: 'Fuentes a actualizar (ej: f3 f5 f6). Dejar vacio para las 3 por defecto.'
+        required: false
+        default: 'f3 f5 f6'
+      force:
+        description: 'Forzar re-descarga aunque no haya cambios'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  etl:
+    name: Extraccion incremental de datos
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configurar Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Correr pipeline ETL
+        env:
+          SOCRATA_APP_TOKEN: ${{ secrets.SOCRATA_APP_TOKEN }}
+        run: |
+          SOURCES="${{ github.event.inputs.sources || 'f3 f5 f6' }}"
+          FORCE_FLAG=""
+          if [ "${{ github.event.inputs.force }}" = "true" ]; then
+            FORCE_FLAG="--force"
+          fi
+          python src/pipeline.py --source $SOURCES $FORCE_FLAG --verbose
+
+      - name: Verificar archivos generados
+        run: |
+          echo "--- Archivos en datos/raw/ ---"
+          ls -lh datos/raw/ || echo "(vacio)"
+          echo ""
+          echo "--- Estado del pipeline ---"
+          python src/pipeline.py --status
+
+      - name: Commitear datos actualizados
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "data: ETL automatico ${{ github.run_id }} — fuentes ${{ github.event.inputs.sources || 'f3 f5 f6' }}"
+          file_pattern: "datos/raw/*.parquet datos/raw/.pipeline_state.json"
+          commit_author: "github-actions[bot] <github-actions[bot]@users.noreply.github.com>"

@@ -1,0 +1,32 @@
+# ── Ingesta y ETL ─────────────────────────────────────────────────────────────
+polars>=0.20.0          # DataFrames rapidos (10-30x vs pandas)
+requests>=2.31.0        # CKAN API + Open-Meteo + ArcGIS REST
+python-dotenv>=1.0.0    # .env para tokens y API keys
+pyarrow>=14.0.0         # Backend Parquet para Polars
+
+# ── Datos espaciales ──────────────────────────────────────────────────────────
+geopandas>=0.14.0       # Spatial joins, lectura GeoJSON/SHP
+shapely>=2.0.0          # Geometrias para GeoPandas
+
+# ── Modelado ─────────────────────────────────────────────────────────────────
+scikit-learn>=1.4.0     # Preprocesamiento, metricas, GridSearch
+xgboost>=2.0.0          # Modelo principal de prediccion
+shap>=0.44.0            # Interpretabilidad del modelo
+
+# ── IA Generativa ─────────────────────────────────────────────────────────────
+anthropic>=0.25.0       # Claude API — Modulos 3 (Recomendacion) y 4 (Chatbot)
+
+# ── Dashboard ────────────────────────────────────────────────────────────────
+streamlit>=1.33.0       # Dashboard principal (4 modulos)
+folium>=0.16.0          # Mapas interactivos
+streamlit-folium>=0.20.0
+plotly>=5.20.0          # Graficas interactivas
+
+# ── Utilidades ────────────────────────────────────────────────────────────────
+pandas>=2.0.0           # Compatibilidad con geopandas y otras librerias
+tqdm>=4.66.0            # Barras de progreso en descargas pesadas
+openpyxl>=3.1.0         # Lectura/escritura Excel (fuentes_validadas.xlsx)
+joblib>=1.3.0           # Serializacion del modelo XGBoost
+matplotlib>=3.8.0       # Graficas EDA en notebooks
+seaborn>=0.13.0         # Graficas estadisticas EDA
+jupyter>=1.0.0          # Notebooks CRISP-ML
