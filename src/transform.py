@@ -53,8 +53,11 @@ PROC_DIR.mkdir(parents=True, exist_ok=True)
 
 # ─── Columnas esperadas en Bronze ─────────────────────────────────────────────
 # Nombres posibles para cada campo (el raw puede variar entre versiones del dataset)
-UPZ_COL_CANDIDATES  = ["upz", "UPZ", "cod_upz", "COD_UPZ", "codigo_upz", "CODIGO_UPZ"]
-TIPO_COL_CANDIDATES = ["tipologia_delito", "TIPOLOGIA_DELITO", "tipo_delito", "TIPO_DELITO"]
+# F2 UPZ shapefile (Catastro Bogota ArcGIS) usa "CODIGO_UPZ"
+UPZ_COL_CANDIDATES  = ["CODIGO_UPZ", "codigo_upz", "upz", "UPZ", "cod_upz", "COD_UPZ",
+                        "codigo", "CODIGO"]
+TIPO_COL_CANDIDATES = ["tipologia_delito", "TIPOLOGIA_DELITO", "tipo_delito", "TIPO_DELITO",
+                        "TIPO_DETALLE", "tipo_detalle"]
 FECHA_COL_CANDIDATES = ["fecha", "FECHA", "fecha_hecho", "FECHA_HECHO"]
 HORA_COL_CANDIDATES  = ["hora", "HORA", "hora_hecho", "HORA_HECHO"]
 LAT_COL_CANDIDATES   = ["latitud", "LATITUD", "lat", "LAT", "latitude"]
@@ -70,6 +73,44 @@ FRANJAS = {
     "manana":    (6, 11),
     "tarde":     (12, 17),
     "noche":     (18, 23),
+}
+
+# Tipos NUSE que representan delitos de alto impacto
+CRIME_TYPES_NUSE = {
+    "HURTO EFECTUADO",
+    "HURTO EN PROCESO",
+    "LESIONES PERSONALES",
+    "NARCÓTICOS",           # NARCÓTICOS
+    "RIÑA",                  # RIÑA
+    "MALTRATO",
+    "VIOLENCIA SEXUAL",
+    "SECUESTRO",
+    "DISPAROS",
+    "PORTE DE ARMAS",
+    "PANDILLAS",
+    "RAPTO",
+    "INTENTO O VIOLACIÓN DE DOMICILIO",  # INTENTO O VIOLACIÓN DE DOMICILIO
+    "ACCIÓN SUBVERSIVA",     # ACCIÓN SUBVERSIVA
+    "DELINCUENTE CAPTURADO POR CIVIL",
+    "EXHIBICIONES O ACTOS OBSCENOS",
+    "HALLAZGO DE EXPLOSIVOS",
+    "EXPLOSIÓN",             # EXPLOSIÓN
+    "FUGA DE PRESOS",
+}
+
+# Prefijos de columna en F1 (DAI Delito Alto Impacto) -> tipo de delito
+F1_TIPO_MAP = {
+    "CMH":   "Homicidio",
+    "CMLP":  "Lesiones Personales",
+    "CMHP":  "Hurto Personas",
+    "CMHR":  "Hurto Residencias",
+    "CMHA":  "Hurto Autos",
+    "CMHB":  "Hurto Bicicletas",
+    "CMHC":  "Hurto Comercio",
+    "CMHCE": "Hurto Celulares",
+    "CMHM":  "Hurto Motos",
+    "CMDS":  "Delitos Sexuales",
+    "CMVI":  "Violencia Intrafamiliar",
 }
 
 
@@ -155,7 +196,15 @@ def _hora_a_franja(hora_int: int) -> str:
     return "noche"
 
 
-# ─── Paso 1 — F1 Delitos → delitos_upz_mes.parquet ───────────────────────────
+# ─── Paso 1 — F1 Delitos → delitos_localidad_anio.parquet ───────────────────
+#
+# NOTA: F1 (Delito de Alto Impacto) es un dataset AGREGADO a nivel localidad
+# con totales anuales en formato ANCHO (una fila por localidad, columnas por anio+tipo).
+# NO contiene registros individuales con lat/lon/UPZ.
+# La variable Y para el modelo viene de F5 NUSE (ver transform_f5_nuse).
+#
+# Este paso produce una tabla de referencia para el EDA:
+# delitos_localidad_anio.parquet (localidad x anio x tipo_delito → n_delitos)
 
 def transform_f1_delitos(
     state: TransformState,
@@ -164,21 +213,25 @@ def transform_f1_delitos(
     verbose: bool = False,
 ) -> TransformResult:
     """
-    Transforma el GeoJSON de Delito de Alto Impacto en una tabla
-    agregada por UPZ x mes con lag features.
+    Transforma el dataset de Delito de Alto Impacto (F1) de formato ancho
+    a formato largo para el EDA a nivel localidad x anio x tipo.
+
+    F1 es un dataset AGREGADO (21 localidades, totales anuales 2018-2026).
+    NO tiene datos individuales con UPZ. La variable objetivo del modelo
+    viene de F5 NUSE — ver transform_f5_nuse().
 
     Entrada:  datos/raw/f1_delito_alto_impacto.parquet
-    Salida:   datos/procesados/delitos_upz_mes.parquet
+    Salida:   datos/procesados/delitos_localidad_anio.parquet
 
     Columnas producidas:
-        upz_cod, anio, mes, n_delitos, tipo_delito_dominante,
-        n_delitos_upz_4sem (lag ~1 mes), n_delitos_upz_8sem (lag acum ~2 meses)
+        cod_localidad, nom_localidad, anio, tipo_delito, n_delitos
     """
+    import re
     import polars as pl
 
-    step     = "f1_delitos"
+    step     = "f1"
     in_path  = RAW_DIR / "f1_delito_alto_impacto.parquet"
-    out_path = PROC_DIR / "delitos_upz_mes.parquet"
+    out_path = PROC_DIR / "delitos_localidad_anio.parquet"
     saved    = state.get(step)
 
     if not in_path.exists():
@@ -191,129 +244,81 @@ def transform_f1_delitos(
 
     if dry_run:
         return TransformResult(step, "updated", -1, str(out_path),
-                               "[DRY-RUN] transformaria F1 delitos -> UPZ x mes")
+                               "[DRY-RUN] transformaria F1 (wide localidad) -> long localidad x anio x tipo")
 
     try:
         if verbose:
-            print("    Leyendo parquet Bronze F1...")
+            print("    Leyendo parquet Bronze F1 (formato ancho: 21 localidades x 127 cols)...")
         df = pl.read_parquet(in_path)
-        n_raw = len(df)
-        if verbose:
-            print(f"    {n_raw:,} registros crudos")
 
-        # 1. Filtrar coordenadas fuera de Bogota (si existen las columnas)
-        lat_col = _find_col(df.columns, LAT_COL_CANDIDATES)
-        lon_col = _find_col(df.columns, LON_COL_CANDIDATES)
-        if lat_col and lon_col:
-            df = df.with_columns([
-                pl.col(lat_col).cast(pl.Float64, strict=False),
-                pl.col(lon_col).cast(pl.Float64, strict=False),
-            ]).filter(
-                pl.col(lat_col).is_between(BOG_LAT_MIN, BOG_LAT_MAX) &
-                pl.col(lon_col).is_between(BOG_LON_MIN, BOG_LON_MAX)
-            )
-            if verbose:
-                print(f"    {len(df):,} registros dentro de Bogota ({n_raw - len(df):,} filtrados)")
+        # Columnas identificadoras de la localidad
+        loc_code_col = _find_col(df.columns, ["CMIULOCAL", "cmiulocal", "COD_LOCAL", "cod_local"])
+        loc_name_col = _find_col(df.columns, ["CMNOMLOCAL", "cmnomlocal", "NOM_LOCAL", "nom_local"])
 
-        # 2. Parsear fecha -> anio, mes
-        fecha_col = _find_col(df.columns, FECHA_COL_CANDIDATES)
-        if not fecha_col:
-            return TransformResult(step, "error", 0, str(out_path),
-                                   "No se encontro columna de fecha en F1")
+        if not loc_code_col:
+            loc_code_col = df.columns[0]
+        if not loc_name_col and len(df.columns) > 1:
+            loc_name_col = df.columns[1]
 
-        # Intentar varios formatos de fecha comunes en los datos de Bogota
-        date_formats = ["%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S",
-                        "%Y-%m-%d", "%d/%m/%Y", "%d/%m/%Y %H:%M:%S"]
-        parsed = False
-        for fmt in date_formats:
-            try:
-                df = df.with_columns(
-                    pl.col(fecha_col).str.strptime(pl.Datetime, fmt, strict=False).alias("_fecha_dt")
-                )
-                if df["_fecha_dt"].drop_nulls().len() > 0:
-                    parsed = True
-                    break
-            except Exception:
-                continue
-
-        if not parsed:
-            return TransformResult(step, "error", 0, str(out_path),
-                                   f"No se pudo parsear fecha desde columna '{fecha_col}'")
-
-        df = df.with_columns([
-            pl.col("_fecha_dt").dt.year().cast(pl.Int32).alias("anio"),
-            pl.col("_fecha_dt").dt.month().cast(pl.Int32).alias("mes"),
-        ])
-
-        # 3. Franja horaria dominante del mes (opcional, enriquece el contexto)
-        hora_col = _find_col(df.columns, HORA_COL_CANDIDATES)
-        if hora_col:
-            df = df.with_columns(
-                pl.col(hora_col).str.extract(r"(\d+):", 1)
-                .cast(pl.Int32, strict=False)
-                .alias("_hora_int")
-            ).with_columns(
-                pl.when(pl.col("_hora_int").is_between(0, 5)).then(pl.lit("madrugada"))
-                .when(pl.col("_hora_int").is_between(6, 11)).then(pl.lit("manana"))
-                .when(pl.col("_hora_int").is_between(12, 17)).then(pl.lit("tarde"))
-                .otherwise(pl.lit("noche"))
-                .alias("franja_horaria")
-            )
-
-        # 4. Identificar columnas UPZ y tipo de delito
-        upz_col  = _find_col(df.columns, UPZ_COL_CANDIDATES)
-        tipo_col = _find_col(df.columns, TIPO_COL_CANDIDATES)
-
-        if not upz_col:
-            return TransformResult(step, "error", 0, str(out_path),
-                                   "No se encontro columna UPZ en F1 — verificar Bronze")
-
-        # 5. Agregar por UPZ x mes
-        group_cols = [upz_col, "anio", "mes"]
-        agg_exprs  = [pl.len().alias("n_delitos")]
-
-        if tipo_col:
-            # tipo_delito_dominante = el tipo mas frecuente en esa UPZ ese mes
-            agg_exprs.append(
-                pl.col(tipo_col).drop_nulls().mode().first().alias("tipo_delito_dominante")
-            )
-
-        if hora_col:
-            # franja dominante del mes
-            agg_exprs.append(
-                pl.col("franja_horaria").drop_nulls().mode().first().alias("franja_dominante_mes")
-            )
-
-        monthly = (
-            df.group_by(group_cols)
-            .agg(agg_exprs)
-            .rename({upz_col: "upz_cod"})
-            .with_columns(pl.col("upz_cod").cast(pl.Utf8).str.strip_chars())
-            .sort(["upz_cod", "anio", "mes"])
+        # Patron de columnas de crimen: CM<TIPO><YY>CONT o CM<TIPO><YY>CON
+        # Prefijos ordenados de mas largo a mas corto para evitar match greedy incorrecto
+        prefixes_sorted = sorted(F1_TIPO_MAP.keys(), key=len, reverse=True)
+        crime_pat = re.compile(
+            r"^(" + "|".join(re.escape(p) for p in prefixes_sorted) + r")(\d{2})(CONT|CON)$",
+            re.IGNORECASE,
         )
 
+        rows_long = []
+        for row in df.iter_rows(named=True):
+            cod = str(row.get(loc_code_col, "")).strip()
+            nom = str(row.get(loc_name_col, "")).strip()
+            for col, val in row.items():
+                m = crime_pat.match(col)
+                if not m:
+                    continue
+                prefix  = m.group(1).upper()
+                year_yy = int(m.group(2))
+                anio    = 2000 + year_yy
+                tipo    = F1_TIPO_MAP.get(prefix, prefix)
+                try:
+                    n = int(float(val)) if val not in (None, "") else 0
+                except (ValueError, TypeError):
+                    n = 0
+                rows_long.append({
+                    "cod_localidad": cod,
+                    "nom_localidad": nom,
+                    "anio":          anio,
+                    "tipo_delito":   tipo,
+                    "n_delitos":     n,
+                })
+
+        if not rows_long:
+            return TransformResult(step, "error", 0, str(out_path),
+                                   "No se encontraron columnas de crimen con patron CM<TIPO><YY>CONT")
+
+        result = (
+            pl.DataFrame(rows_long)
+            .with_columns([
+                pl.col("cod_localidad").cast(pl.Utf8),
+                pl.col("nom_localidad").cast(pl.Utf8),
+                pl.col("anio").cast(pl.Int32),
+                pl.col("tipo_delito").cast(pl.Utf8),
+                pl.col("n_delitos").cast(pl.Int64),
+            ])
+            .sort(["cod_localidad", "anio", "tipo_delito"])
+        )
+
+        result.write_parquet(out_path)
+        rows = len(result)
+        anios = sorted(result["anio"].unique().to_list())
         if verbose:
-            print(f"    {len(monthly):,} filas UPZ x mes ({monthly['upz_cod'].n_unique()} UPZs, "
-                  f"{monthly['anio'].min()}-{monthly['anio'].max()})")
-
-        # 6. Lag features por UPZ
-        # n_delitos_upz_4sem  ≈ delitos del mes anterior      (shift 1)
-        # n_delitos_upz_8sem  ≈ delitos 2 meses anteriores acumulado (shift 1 + shift 2)
-        monthly = monthly.with_columns([
-            pl.col("n_delitos").shift(1).over("upz_cod").alias("n_delitos_upz_4sem"),
-            (
-                pl.col("n_delitos").shift(1).over("upz_cod") +
-                pl.col("n_delitos").shift(2).over("upz_cod").fill_null(0)
-            ).alias("n_delitos_upz_8sem"),
-        ])
-
-        monthly.write_parquet(out_path)
-        rows = len(monthly)
+            print(f"    {rows:,} filas | {result['cod_localidad'].n_unique()} localidades "
+                  f"| anios {anios[0]}-{anios[-1]} | {result['tipo_delito'].n_unique()} tipos")
         state.update(step, src_mtime=str(in_path.stat().st_mtime), rows_out=rows,
                      file_path=str(out_path))
         return TransformResult(step, "updated", rows, str(out_path),
-                               f"{rows:,} filas | {monthly['upz_cod'].n_unique()} UPZs | "
-                               f"{monthly['anio'].min()}-{monthly['anio'].max()}")
+                               f"{rows:,} filas | {result['cod_localidad'].n_unique()} localidades "
+                               f"| anios {anios[0]}-{anios[-1]}")
 
     except Exception as exc:
         return TransformResult(step, "error", 0, str(out_path), str(exc))
@@ -339,7 +344,7 @@ def transform_f3_clima(
     """
     import polars as pl
 
-    step     = "f3_clima"
+    step     = "f3"
     in_path  = RAW_DIR / "f3_clima_bogota.parquet"
     out_path = PROC_DIR / "clima_diario.parquet"
     saved    = state.get(step)
@@ -422,7 +427,7 @@ def transform_f7_estrato(
     Columnas producidas:
         upz_cod, estrato_promedio_upz, n_manzanas_upz
     """
-    step     = "f7_estrato"
+    step     = "f7"
     in_f7    = RAW_DIR / "f7_estratificacion.parquet"
     in_f2    = RAW_DIR / "f2_upz.geojson"
     out_path = PROC_DIR / "estrato_por_upz.csv"
@@ -464,13 +469,30 @@ def transform_f7_estrato(
 
         if verbose:
             print("    Reconstruyendo geometrias WKT -> shapely...")
+        # F7 usa CRS PCS_CarMAGBOG = Sistema de Referencia Local de Bogota (Catastro)
+        # Parametros verificados: lat_0=4.598°N, lon_0=74.081°W, FE=92334.879, FN=109319.672
+        # Con estos parametros, coordenadas ~(98000,109000) mapean a Bogota correctamente.
+        # NO usar EPSG:3116 — ese codigo usa otra configuracion y da resultados incorrectos.
+        import pyproj
+        bogota_local_crs = pyproj.CRS.from_dict({
+            "proj": "tmerc",
+            "lat_0": 4.598055556,
+            "lon_0": -74.081361111,
+            "k": 1.0,
+            "x_0": 92334.879,
+            "y_0": 109319.672,
+            "ellps": "GRS80",
+            "units": "m",
+        })
         gdf_manzanas = gpd.GeoDataFrame(
             df_estrato.to_pandas(),
             geometry=df_estrato["geometry_wkt"].to_pandas().apply(wkt.loads),
-            crs="EPSG:4326",
+            crs=bogota_local_crs,
         )
-        # Usar centroide de la manzana para el join (mas rapido que interseccion de poligonos)
+        # Calcular centroide en coordenadas proyectadas (mas preciso antes de reproyectar)
         gdf_manzanas["geometry"] = gdf_manzanas.geometry.centroid
+        # Reproyectar a EPSG:4326 para que coincida con F2 UPZ shapefile
+        gdf_manzanas = gdf_manzanas.to_crs("EPSG:4326")
         gdf_manzanas[estrato_col] = (
             gdf_manzanas[estrato_col]
             .astype(str).str.strip()
@@ -483,12 +505,11 @@ def transform_f7_estrato(
             print("    Cargando UPZ shapefile...")
         gdf_upz = gpd.read_file(in_f2)
 
-        # Detectar columna codigo UPZ en el shapefile
-        upz_id_col = _find_col(list(gdf_upz.columns),
-                               ["UPZ", "upz", "COD_UPZ", "cod_upz", "CODIGO", "codigo"])
+        # Detectar columna codigo UPZ en el shapefile (F2 usa "CODIGO_UPZ")
+        upz_id_col = _find_col(list(gdf_upz.columns), UPZ_COL_CANDIDATES)
         if not upz_id_col:
             return TransformResult(step, "error", 0, str(out_path),
-                                   "No se encontro columna de codigo UPZ en F2")
+                                   f"No se encontro columna UPZ en F2. Cols: {list(gdf_upz.columns)}")
 
         if verbose:
             print("    Ejecutando spatial join centroide manzana -> UPZ...")
@@ -545,7 +566,7 @@ def transform_f4_cuadrantes(
     Columnas producidas:
         upz_cod, n_cuadrantes, area_upz_km2, cuadrantes_por_km2
     """
-    step     = "f4_cuadrantes"
+    step     = "f4"
     in_f4    = RAW_DIR / "f4_cuadrantes.geojson"
     in_f2    = RAW_DIR / "f2_upz.geojson"
     out_path = PROC_DIR / "features_cuadrantes_upz.csv"
@@ -576,11 +597,10 @@ def transform_f4_cuadrantes(
         if gdf_cuad.crs != gdf_upz.crs:
             gdf_cuad = gdf_cuad.to_crs(gdf_upz.crs)
 
-        upz_id_col = _find_col(list(gdf_upz.columns),
-                               ["UPZ", "upz", "COD_UPZ", "cod_upz", "CODIGO", "codigo"])
+        upz_id_col = _find_col(list(gdf_upz.columns), UPZ_COL_CANDIDATES)
         if not upz_id_col:
             return TransformResult(step, "error", 0, str(out_path),
-                                   "No se encontro columna de codigo UPZ en F2")
+                                   f"No se encontro columna UPZ en F2. Columnas disponibles: {list(gdf_upz.columns)}")
 
         # Usar centroide del cuadrante para el join
         gdf_cuad_pts = gdf_cuad.copy()
@@ -642,7 +662,7 @@ def transform_f8_transmilenio(
     Columnas producidas:
         upz_cod, n_estaciones_tm, dist_tm_metros
     """
-    step     = "f8_transmilenio"
+    step     = "f8"
     in_f8    = RAW_DIR / "f8_transmilenio.geojson"
     in_f2    = RAW_DIR / "f2_upz.geojson"
     out_path = PROC_DIR / "features_tm_upz.csv"
@@ -673,11 +693,10 @@ def transform_f8_transmilenio(
         if gdf_tm.crs != gdf_upz.crs:
             gdf_tm = gdf_tm.to_crs(gdf_upz.crs)
 
-        upz_id_col = _find_col(list(gdf_upz.columns),
-                               ["UPZ", "upz", "COD_UPZ", "cod_upz", "CODIGO", "codigo"])
+        upz_id_col = _find_col(list(gdf_upz.columns), UPZ_COL_CANDIDATES)
         if not upz_id_col:
             return TransformResult(step, "error", 0, str(out_path),
-                                   "No se encontro columna de codigo UPZ en F2")
+                                   f"No se encontro columna UPZ en F2. Cols: {list(gdf_upz.columns)}")
 
         # n_estaciones_tm por UPZ
         joined = gpd.sjoin(
@@ -728,7 +747,15 @@ def transform_f8_transmilenio(
         return TransformResult(step, "error", 0, str(out_path), str(exc))
 
 
-# ─── Paso 6 — F5 NUSE → nuse_upz_mes.parquet ─────────────────────────────────
+# ─── Paso 6 — F5 NUSE → nuse_upz_mes.parquet + delitos_upz_mes.parquet ───────
+#
+# F5 (NUSE 123) contiene TODOS los incidentes reportados al 123 (2025-2026).
+# Este paso produce DOS archivos:
+#   1. nuse_upz_mes.parquet    — TODOS los tipos de incidente por UPZ x mes
+#   2. delitos_upz_mes.parquet — Solo tipos criminales + lag features
+#
+# delitos_upz_mes.parquet se usa como BASE de la tabla Silver y como
+# variable proxy del crimen por UPZ para el modelo XGBoost.
 
 def transform_f5_nuse(
     state: TransformState,
@@ -737,34 +764,38 @@ def transform_f5_nuse(
     verbose: bool = False,
 ) -> TransformResult:
     """
-    Agrega incidentes NUSE 123 por UPZ x mes.
-    El ratio NUSE/delitos se calcula en build_silver_table() cuando
-    ya existe la tabla de delitos.
+    Agrega incidentes NUSE 123 por UPZ x mes. Produce dos archivos:
+      - nuse_upz_mes.parquet    : todos los tipos, para calcular ratio
+      - delitos_upz_mes.parquet : solo tipos criminales + lag features
+                                  (este es la BASE de la tabla Silver)
 
     Entrada:  datos/raw/f5_nuse_123.parquet
-    Salida:   datos/procesados/nuse_upz_mes.parquet
+    Salidas:  datos/procesados/nuse_upz_mes.parquet
+              datos/procesados/delitos_upz_mes.parquet
 
-    Columnas producidas:
-        upz_cod, anio, mes, n_incidentes_nuse
+    Columnas de delitos_upz_mes:
+        upz_cod, anio, mes, n_delitos, tipo_delito_dominante,
+        n_delitos_upz_4sem (lag), n_delitos_upz_8sem (lag acum)
     """
     import polars as pl
 
-    step     = "f5_nuse"
-    in_path  = RAW_DIR / "f5_nuse_123.parquet"
-    out_path = PROC_DIR / "nuse_upz_mes.parquet"
-    saved    = state.get(step)
+    step        = "f5"
+    in_path     = RAW_DIR / "f5_nuse_123.parquet"
+    out_nuse    = PROC_DIR / "nuse_upz_mes.parquet"
+    out_delitos = PROC_DIR / "delitos_upz_mes.parquet"
+    saved       = state.get(step)
 
     if not in_path.exists():
-        return TransformResult(step, "error", 0, str(out_path),
+        return TransformResult(step, "error", 0, str(out_nuse),
                                "Bronze no disponible — correr: python src/pipeline.py --source f5")
 
-    if not force and out_path.exists() and not _source_changed(in_path, saved):
-        return TransformResult(step, "skipped", saved.get("rows_out", 0), str(out_path),
+    if not force and out_nuse.exists() and out_delitos.exists() and not _source_changed(in_path, saved):
+        return TransformResult(step, "skipped", saved.get("rows_out", 0), str(out_nuse),
                                "NUSE sin cambios")
 
     if dry_run:
-        return TransformResult(step, "updated", -1, str(out_path),
-                               "[DRY-RUN] agregaria NUSE por UPZ x mes")
+        return TransformResult(step, "updated", -1, str(out_nuse),
+                               "[DRY-RUN] agregaria NUSE por UPZ x mes (2 archivos)")
 
     try:
         df = pl.read_parquet(in_path)
@@ -775,54 +806,110 @@ def transform_f5_nuse(
         mes_col   = _find_col(df.columns, ["MES", "mes", "month"])
         cant_col  = _find_col(df.columns, ["CANT_INCIDENTES", "cant_incidentes",
                                            "cantidad", "CANTIDAD", "count"])
+        tipo_col  = _find_col(df.columns, ["TIPO_DETALLE", "tipo_detalle",
+                                           "TIPO_INCIDENTE", "tipo_incidente"])
 
         missing = [name for name, col in
                    [("UPZ", upz_col), ("ANIO", anio_col), ("MES", mes_col)]
                    if col is None]
         if missing:
-            return TransformResult(step, "error", 0, str(out_path),
+            return TransformResult(step, "error", 0, str(out_nuse),
                                    f"Columnas no encontradas en F5: {missing}")
 
-        # Normalizar codigo UPZ al formato "UPZnn" → solo numero
+        # Normalizar codigo UPZ: "UPZ67" → "67", "UPR3" → ignorar (rurales)
         df = df.with_columns(
             pl.col(upz_col).cast(pl.Utf8)
             .str.replace_all(r"[Uu][Pp][Zz]", "")
+            .str.replace_all(r"[Uu][Pp][Rr]", "RURAL_")
             .str.strip_chars()
             .alias("upz_cod")
+        ).filter(
+            ~pl.col("upz_cod").str.starts_with("RURAL_")
         )
 
-        group_cols = ["upz_cod", anio_col, mes_col]
+        # Columna de cantidad
         if cant_col:
-            agg = pl.col(cant_col).cast(pl.Int64, strict=False).sum().alias("n_incidentes_nuse")
+            df = df.with_columns(
+                pl.col(cant_col).cast(pl.Int64, strict=False).alias("_cant")
+            )
         else:
-            agg = pl.len().alias("n_incidentes_nuse")
+            df = df.with_columns(pl.lit(1).cast(pl.Int64).alias("_cant"))
 
-        result = (
-            df.group_by(group_cols)
-            .agg([agg])
-            .rename({anio_col: "anio", mes_col: "mes"})
-            .with_columns([
-                pl.col("anio").cast(pl.Int32, strict=False),
-                pl.col("mes").cast(pl.Int32, strict=False),
-            ])
+        # Normalizar anio y mes a entero
+        df = df.with_columns([
+            pl.col(anio_col).cast(pl.Int32, strict=False).alias("anio"),
+            pl.col(mes_col).cast(pl.Int32, strict=False).alias("mes"),
+        ])
+
+        # ── ARCHIVO 1: todos los tipos de NUSE ──────────────────────────────
+        nuse_all = (
+            df.group_by(["upz_cod", "anio", "mes"])
+            .agg(pl.col("_cant").sum().alias("n_incidentes_nuse"))
+            .sort(["upz_cod", "anio", "mes"])
+        )
+        nuse_all.write_parquet(out_nuse)
+        if verbose:
+            print(f"    nuse_upz_mes: {len(nuse_all):,} filas | "
+                  f"{nuse_all['n_incidentes_nuse'].sum():,} incidentes totales")
+
+        # ── ARCHIVO 2: solo tipos criminales → delitos proxy ────────────────
+        # Normalizar caracteres especiales para match con CRIME_TYPES_NUSE
+        if tipo_col:
+            df_crimes = df.filter(pl.col(tipo_col).is_in(list(CRIME_TYPES_NUSE)))
+        else:
+            # Sin columna de tipo, usar todos los incidentes como proxy
+            df_crimes = df
+
+        if verbose:
+            total_crimes = df_crimes["_cant"].sum()
+            print(f"    Incidentes criminales: {total_crimes:,} de {df['_cant'].sum():,} totales")
+
+        # Agregar por UPZ x mes
+        group_cols = ["upz_cod", "anio", "mes"]
+        agg_exprs  = [pl.col("_cant").sum().alias("n_delitos")]
+
+        if tipo_col:
+            # tipo dominante del mes para esa UPZ
+            agg_exprs.append(
+                pl.col(tipo_col).drop_nulls().mode().first().alias("tipo_delito_dominante")
+            )
+
+        monthly = (
+            df_crimes.group_by(group_cols)
+            .agg(agg_exprs)
             .sort(["upz_cod", "anio", "mes"])
         )
 
-        result.write_parquet(out_path)
-        rows = len(result)
+        # Lag features
+        monthly = monthly.sort(["upz_cod", "anio", "mes"]).with_columns([
+            pl.col("n_delitos").shift(1).over("upz_cod").alias("n_delitos_upz_4sem"),
+            (
+                pl.col("n_delitos").shift(1).over("upz_cod") +
+                pl.col("n_delitos").shift(2).over("upz_cod").fill_null(0)
+            ).alias("n_delitos_upz_8sem"),
+        ])
+
+        monthly.write_parquet(out_delitos)
+        rows = len(monthly)
         if verbose:
-            print(f"    {rows:,} filas | total incidentes: {result['n_incidentes_nuse'].sum():,}")
-        state.update(step, src_mtime=str(in_path.stat().st_mtime), rows_out=rows,
-                     file_path=str(out_path))
-        return TransformResult(step, "updated", rows, str(out_path),
-                               f"{rows:,} filas UPZ x mes | "
-                               f"{result['n_incidentes_nuse'].sum():,} incidentes totales")
+            print(f"    delitos_upz_mes: {rows:,} filas | {monthly['upz_cod'].n_unique()} UPZs | "
+                  f"n_delitos total {monthly['n_delitos'].sum():,}")
+
+        state.update(step,
+                     src_mtime=str(in_path.stat().st_mtime),
+                     rows_out=rows,
+                     rows_nuse=len(nuse_all),
+                     file_path=str(out_nuse))
+        return TransformResult(step, "updated", rows, str(out_nuse),
+                               f"nuse={len(nuse_all):,} filas | "
+                               f"delitos={rows:,} filas | "
+                               f"{monthly['upz_cod'].n_unique()} UPZs")
 
     except Exception as exc:
-        return TransformResult(step, "error", 0, str(out_path), str(exc))
+        return TransformResult(step, "error", 0, str(out_nuse), str(exc))
 
 
-# ─── Paso 7 — Tabla Silver final → delitos_por_upz_mes.parquet ───────────────
+# ─── Paso 7 — Tabla Silver final → silver_upz_mes.parquet ───────────────────
 
 def build_silver_table(
     state: TransformState,
@@ -836,9 +923,15 @@ def build_silver_table(
 
     Este paso DEPENDE de que los anteriores ya hayan corrido.
 
-    Entrada:  datos/procesados/delitos_upz_mes.parquet
+    Notas importantes:
+    - delitos_upz_mes.parquet viene de F5 NUSE (filtrado a tipos criminales)
+      porque F1 solo tiene datos a nivel LOCALIDAD (no UPZ)
+    - Los datos cubren 2025-2026 (rango de F5 disponible)
+    - ratio_nuse_delitos_upz = incidentes_totales / incidentes_criminales por UPZ
+
+    Entrada:  datos/procesados/delitos_upz_mes.parquet  <- de F5
               datos/procesados/clima_diario.parquet
-              datos/procesados/nuse_upz_mes.parquet
+              datos/procesados/nuse_upz_mes.parquet     <- de F5 (todos los tipos)
               datos/procesados/estrato_por_upz.csv
               datos/procesados/features_cuadrantes_upz.csv
               datos/procesados/features_tm_upz.csv
@@ -849,7 +942,7 @@ def build_silver_table(
     """
     import polars as pl
 
-    step     = "silver_table"
+    step     = "silver"
     out_path = PROC_DIR / "silver_upz_mes.parquet"
 
     required = {
@@ -879,7 +972,7 @@ def build_silver_table(
         clima    = pl.read_parquet(required["clima"])
         nuse     = pl.read_parquet(required["nuse"])
         estrato  = pl.read_csv(required["estrato"])
-        cuad     = pl.read_csv(required["features_cuadrantes_upz"])
+        cuad     = pl.read_csv(required["cuadrantes"])   # key corregido: "cuadrantes"
         tm       = pl.read_csv(required["tm"])
 
         # Estandarizar tipos de upz_cod en todas las tablas
@@ -960,10 +1053,10 @@ STEPS = {
 }
 
 STEP_LABELS = {
-    "f1":    "F1 Delitos -> UPZ x mes",
+    "f1":    "F1 DAI -> localidad x anio (EDA ref)",
     "f3":    "F3 Clima -> diario",
     "f4":    "F4 Cuadrantes -> features UPZ",
-    "f5":    "F5 NUSE -> UPZ x mes",
+    "f5":    "F5 NUSE -> UPZ x mes (base modelo)",
     "f7":    "F7 Estrato -> promedio UPZ  [pesado]",
     "f8":    "F8 TransMilenio -> features UPZ",
     "silver":"Tabla Silver final (join de todo)",

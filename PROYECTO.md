@@ -87,7 +87,7 @@ graficas/         ← Outputs EDA (PNG, HTML)
 |------|------|--------|
 | `main` | Integración — siempre estable | ✅ Activa |
 | `bronze` | Extracción Bronze | ✅ Completo |
-| `silver` | Transformación Silver | 🔄 En curso |
+| `silver` | Transformación Silver | ✅ Completo |
 | `gold` | Feature engineering | ⏳ Pendiente |
 | `model` | XGBoost + SHAP | ⏳ Pendiente |
 | `dashboard` | Streamlit + Claude API | ⏳ Pendiente |
@@ -100,8 +100,8 @@ graficas/         ← Outputs EDA (PNG, HTML)
 |------|--------|-----------|--------|
 | Fase 0 | hasta 25 may | Notebook 01 — Plan + catálogo | ✅ Completo |
 | Fase 1A | 26 may – 27 may | Bronze layer — src/pipeline.py | ✅ Completo |
-| Fase 1B | 27 may – 6 jun | Silver layer — src/transform.py | 🔄 En curso |
-| Fase 1C | hasta 6 jun | Notebook 02 — EDA de 8 fuentes | ⏳ Pendiente |
+| Fase 1B | 27 may – 6 jun | Silver layer — src/transform.py | ✅ Completo |
+| Fase 1C | hasta 6 jun | Notebook 02 — EDA de 8 fuentes | ✅ Completo |
 | Fase 2 | 7 – 20 jun | Notebooks 03+04 — XGBoost + SHAP | ⏳ Pendiente |
 | Fase 3 | 21 jun – 10 jul | Notebook 05 — Dashboard + Claude API | ⏳ Pendiente |
 | Fase 4 | 11 – 13 jul | Notebook 06 — Docs + video + registro | ⏳ Pendiente |

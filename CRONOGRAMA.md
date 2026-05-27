@@ -10,7 +10,7 @@
 
 ```
 MAYO                        JUNIO                          JULIO
-Fase 0 ✅ | Fase 1A ✅ | Fase 1B 🔄 | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
+Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 25 May    | 26–27 May  | 27M–6Jun   |  7–20 Jun | 21J–10Jul | 11–13 Jul
 [Plan]    | [Bronze]   | [Silver+EDA]| [Modelo]  | [Dashboard+IA] | [Docs]
 ```
@@ -51,11 +51,11 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B 🔄 | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 
 ---
 
-## Fase 1B 🔄 — Silver layer + EDA (27 mayo – 6 junio 2026)
+## Fase 1B ✅ — Silver layer + EDA (27 mayo – 6 junio 2026)
 
 **Entregables:**
-- `src/transform.py` — pipeline Silver (rama `silver`) 🔄
-- `SeguroData_02_EDA.ipynb` — análisis exploratorio completo ⏳
+- `src/transform.py` — pipeline Silver (rama `silver`) ✅
+- `SeguroData_02_EDA.ipynb` — análisis exploratorio completo ✅
 
 ### Semana 1 (26 mayo – 1 junio) — Descarga y limpieza
 
@@ -63,63 +63,66 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B 🔄 | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 
 **FUENTE 1 — Delito de Alto Impacto (ZIP GeoJSON):**
 - [x] `python src/pipeline.py --source f1` → `datos/raw/f1_delito_alto_impacto.parquet`
-- [ ] Verificar columnas en EDA (`tipologia_delito`, `lat`, `lon`, `fecha`, `hora`, `UPZ`)
-- [ ] `python src/transform.py --step f1` → `datos/procesados/delitos_upz_mes.parquet`
+- [x] Verificar columnas en EDA — F1 es agregado por localidad×año (21 localidades, 2018–2026), no UPZ
+- [x] `python src/transform.py --step f1` → `datos/procesados/delitos_localidad_anio.parquet` (2,079 filas, referencia EDA)
 
 **FUENTE 2 — UPZ Shapefile:**
 - [x] `python src/pipeline.py --source f2` → `datos/raw/f2_upz.geojson`
-- [ ] Verificar N=112 polígonos, CRS EPSG:4326
-- [ ] Explorar columnas disponibles (código UPZ, nombre, localidad, área)
+- [x] Verificado N=112 polígonos, CRS EPSG:4326, columna `CODIGO_UPZ`
+- [x] Explorar columnas: `CODIGO_UPZ`, `NOMBRE`, `AREA_HECTAREAS` — base espacial para spatial joins
 - _Nota: F2 no tiene paso transform propio — es referencia espacial usada en los spatial joins de F4, F7 y F8._
 
 **FUENTE 3 — Open-Meteo:**
 - [x] `python src/pipeline.py --source f3` → `datos/raw/f3_clima_bogota.parquet` (descarga incremental desde `max(fecha)`)
-- [ ] `python src/transform.py --step f3` → `datos/procesados/clima_diario.parquet`
-- [ ] Verificar columnas: `temperatura_promedio_c`, `precipitacion_mm` agregadas a granularidad diaria
+- [x] `python src/transform.py --step f3` → `datos/procesados/clima_diario.parquet` (2,338 días)
+- [x] Verificado columnas: `temperatura_c`, `precipitacion_mm` a granularidad diaria
 
 **FUENTE 4 — Cuadrantes de Policía:**
 - [x] `python src/pipeline.py --source f4` → `datos/raw/f4_cuadrantes.geojson`
-- [ ] `python src/transform.py --step f4` → `datos/procesados/features_cuadrantes_upz.csv`
-- [ ] Verificar columnas: confirmar si tiene `nombre_cai` con info de contacto
-- [ ] Si NO tiene `nombre_cai` → crear `datos/raw/cai_bogota.csv` manual (~80 CAIs: nombre, dirección, cuadrante)
+- [x] `python src/transform.py --step f4` → `datos/procesados/features_cuadrantes_upz.csv` (111 UPZs)
+- [x] Verificado: SÍ tiene `PCUNOMCAI` con nombre del CAI — NO se necesita cai_bogota.csv manual
 
 ### Semana 2 (2 junio – 6 junio) — EDA y construcción del dataset
 
 **FUENTE 5 — NUSE 123:**
-- [x] `python src/pipeline.py --source f5` → `datos/raw/f5_nuse_123.parquet` (descarga por año + dedup)
-- [ ] `python src/transform.py --step f5` → `datos/procesados/nuse_upz_mes.parquet`
-- [ ] `ratio_nuse_delitos_upz` se calcula automáticamente en el paso `silver` (NUSE / delitos por UPZ·mes)
+- [x] `python src/pipeline.py --source f5` → `datos/raw/f5_nuse_123.parquet` (128,314 filas, 2025–2026)
+- [x] `python src/transform.py --step f5` → `datos/procesados/nuse_upz_mes.parquet` (1,920 filas) + `delitos_upz_mes.parquet` (1,918 filas, base del modelo con lags)
+- [x] F5 NUSE es la **base del modelo** (F1 DAI es solo referencia EDA — no tiene desglose UPZ)
+- [x] `ratio_nuse_delitos_upz` calculado automáticamente en el paso `silver`
+- _Nota: Dataset NUSE solo disponible 2025–2026. Split temporal del modelo: TRAIN=Jan-Oct 2025, TEST=Nov 2025–2026._
 
 **FUENTE 7 — Estratificación:**
-- [x] `python src/pipeline.py --source f7` → `datos/raw/f7_estratificacion.parquet`
-- [ ] `python src/transform.py --step f7 --force` → `datos/procesados/estrato_por_upz.csv` ⚠️ pesado (~115K polígonos, spatial join por centroides)
-- [ ] Si la RAM se agota en Colab gratuito: ver `docs/TRANSFORMACION.md` (alternativas con Colab Pro o Drive)
+- [x] `python src/pipeline.py --source f7` → `datos/raw/f7_estratificacion.parquet` (44,260 filas, CRS PCS_CarMAGBOG)
+- [x] `python src/transform.py --step f7` → `datos/procesados/estrato_por_upz.csv` (43 UPZs cubiertas)
+- [x] CRS PCS_CarMAGBOG resuelto con parámetros custom: lat_0=4.598055556, lon_0=-74.081361111
 
 **FUENTE 8 — TransMilenio:**
-- [x] `python src/pipeline.py --source f8` → `datos/raw/f8_transmilenio.geojson`
-- [ ] `python src/transform.py --step f8` → `datos/procesados/features_tm_upz.csv`
-- [ ] Verificar `n_estaciones_tm` y `dist_tm_metros` por UPZ
+- [x] `python src/pipeline.py --source f8` → `datos/raw/f8_transmilenio.geojson` (153 estaciones)
+- [x] `python src/transform.py --step f8` → `datos/procesados/features_tm_upz.csv` (112 UPZs)
+- [x] Verificado: `n_estaciones_tm` y `dist_tm_metros` presentes para todas las UPZs
 
 **TABLA SILVER — unir todas las fuentes:**
-- [ ] `python src/transform.py --step silver` → `datos/procesados/silver_upz_mes.parquet` (18 columnas, ~5–8K filas)
-- [ ] O correr todo de un tirón: `python src/transform.py` → ejecuta f1 · f3 · f4 · f5 · f7 · f8 · silver en orden
+- [x] `python src/transform.py --step silver` → `datos/procesados/silver_upz_mes.parquet` ✅
+- [x] Tabla final: **1,918 filas × 17 columnas**, 120 UPZs, años 2025–2026
 
 **Visualizaciones obligatorias del EDA:**
-- [ ] Mapa de calor de hurtos por UPZ (Folium choropleta)
-- [ ] Heatmap día de semana × hora del día
-- [ ] Top 10 UPZs con más delitos por año 2020–2024
-- [ ] Tendencia anual 2020–2024 (total ciudad + las 5 UPZs más críticas)
-- [ ] Correlación lluvia vs. número de hurtos (scatter plot)
-- [ ] Distribución de estrato promedio por UPZ (boxplot)
+- [x] V1 — Mapa de calor de delitos NUSE por UPZ (Folium choropleta) → `graficas/v1_mapa_calor_upz.html`
+- [x] V2 — Heatmap tipo de delito × mes (2025) → `graficas/v2_heatmap_tipo_mes.png`
+- [x] V3 — Top 10 UPZs con más delitos → `graficas/v3_top10_upz_delitos.png`
+- [x] V4 — Tendencia histórica 2018–2026 (DAI localidades + PN hurtos) → `graficas/v4_tendencia_anual.png`
+- [x] V5 — Correlación lluvia vs. hurtos (scatter) → `graficas/v5_lluvia_vs_delitos.png`
+- [x] V6 — Distribución de delitos por estrato promedio UPZ (boxplot) → `graficas/v6_estrato_vs_delitos.png`
+- [x] V7 — Distribución n_delitos + cobertura policial (supplementary) → `graficas/v7_distribucion_cobertura.png`
 
 **Entregables al cerrar Fase 1B:**
-- `datos/procesados/delitos_upz_mes.parquet` — delitos por UPZ × mes + lags 4sem / 8sem + tipo dominante
-- `datos/procesados/clima_diario.parquet` — temperatura y precipitación diarios (2020–hoy)
-- `datos/procesados/features_cuadrantes_upz.csv` — densidad de cuadrantes por km² por UPZ
-- `datos/procesados/nuse_upz_mes.parquet` — incidentes NUSE 123 por UPZ × mes
-- `datos/procesados/estrato_por_upz.csv` — estrato promedio ponderado por UPZ (pre-calculado, ⚠️ no recalcular)
-- `datos/procesados/features_tm_upz.csv` — n_estaciones_tm y dist_tm_metros por UPZ
-- `datos/procesados/silver_upz_mes.parquet` — **tabla unida final** (18 columnas, input para Gold)
+- [x] `datos/procesados/delitos_upz_mes.parquet` — NUSE filtrado por crimen × UPZ × mes + lags (1,918 filas)
+- [x] `datos/procesados/clima_diario.parquet` — temperatura y precipitación diarios (2,338 días)
+- [x] `datos/procesados/features_cuadrantes_upz.csv` — cuadrantes/km² + nombre CAI por UPZ (111 UPZs)
+- [x] `datos/procesados/nuse_upz_mes.parquet` — todos los incidentes NUSE por UPZ × mes (1,920 filas)
+- [x] `datos/procesados/estrato_por_upz.csv` — estrato promedio ponderado por UPZ (43 UPZs cubiertas)
+- [x] `datos/procesados/features_tm_upz.csv` — n_estaciones_tm y dist_tm_metros por UPZ (112 UPZs)
+- [x] `datos/procesados/silver_upz_mes.parquet` — **tabla unida final** (17 columnas, input para Gold)
+- [x] `SeguroData_02_EDA.ipynb` — 6 visualizaciones requeridas + 1 complementaria, ejecutable de inicio a fin
 
 ---
 

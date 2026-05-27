@@ -18,7 +18,7 @@ El proyecto está organizado por capas, cada una en su propia rama:
 |------|------|-------------|--------|
 | `main` | Integración | Todos (via PR) | ✅ Activa |
 | `bronze` | Extracción de datos | Equipo A | ✅ Completo |
-| `silver` | Transformación y limpieza | Equipo B | 🔄 En curso |
+| `silver` | Transformación y limpieza | Equipo B | ✅ Completo |
 | `gold` | Feature engineering | — | ⏳ Pendiente |
 | `model` | XGBoost + SHAP | — | ⏳ Pendiente |
 | `dashboard` | Streamlit + Claude API | — | ⏳ Pendiente |
@@ -31,7 +31,7 @@ El proyecto está organizado por capas, cada una en su propia rama:
 
 ```
 Bronze  datos/raw/          src/pipeline.py   ← extraccion incremental 8 fuentes  ✅
-Silver  datos/procesados/   src/transform.py  ← limpieza, joins, agrega por UPZ   🔄
+Silver  datos/procesados/   src/transform.py  ← limpieza, joins, agrega por UPZ   ✅
 Gold    datos/features/     Notebook 03       ← 14 variables + tabla maestra       ⏳
 Model   datos/modelos/      Notebook 04       ← XGBoost entrenado + SHAP values    ⏳
 ```
@@ -143,13 +143,13 @@ silver = pl.read_parquet("datos/procesados/silver_upz_mes.parquet")
 
 | Paso | Entrada | Salida | Descripción |
 |------|---------|--------|-------------|
-| f1 | `f1_delito_alto_impacto.parquet` | `delitos_upz_mes.parquet` | Agrega crimen por UPZ × mes + lags |
+| f1 | `f1_delito_alto_impacto.parquet` | `delitos_localidad_anio.parquet` | DAI por localidad × año (referencia EDA) |
 | f3 | `f3_clima_bogota.parquet` | `clima_diario.parquet` | Horario → diario |
 | f4 | `f4_cuadrantes.geojson` | `features_cuadrantes_upz.csv` | Spatial join → cuadrantes/km² |
-| f5 | `f5_nuse_123.parquet` | `nuse_upz_mes.parquet` | Agrega NUSE por UPZ × mes |
-| f7 | `f7_estratificacion.parquet` | `estrato_por_upz.csv` | Spatial join ~115K manzanas ⚠️ pesado |
+| f5 | `f5_nuse_123.parquet` | `delitos_upz_mes.parquet` + `nuse_upz_mes.parquet` | NUSE por UPZ × mes + lags (base del modelo) |
+| f7 | `f7_estratificacion.parquet` | `estrato_por_upz.csv` | Spatial join manzanas → estrato promedio UPZ ⚠️ pesado |
 | f8 | `f8_transmilenio.geojson` | `features_tm_upz.csv` | Distancia y conteo TM por UPZ |
-| silver | todos los anteriores | `silver_upz_mes.parquet` | Tabla final unida (18 columnas) |
+| silver | todos los anteriores | `silver_upz_mes.parquet` | Tabla final unida (17 columnas, 1,918 filas) |
 
 > ⚠️ El paso `f7` (estratificación) carga ~115K polígonos. En Colab gratuito puede agotar RAM — ver `docs/TRANSFORMACION.md` para alternativas.
 
@@ -222,7 +222,7 @@ Dashboard        streamlit · plotly · folium
 | Notebook | Fase | Contenido | Estado |
 |----------|------|-----------|--------|
 | `SeguroData_01_Plan_y_Fuentes.ipynb` | 0 | Plan + catálogo de 8 fuentes | ✅ |
-| `SeguroData_02_EDA.ipynb` | 1 | Análisis exploratorio | ⏳ |
+| `SeguroData_02_EDA.ipynb` | 1 | Análisis exploratorio (6 visualizaciones requeridas) | ✅ |
 | `SeguroData_03_Features.ipynb` | 2 | 14 variables + correlación | ⏳ |
 | `SeguroData_04_Modelo.ipynb` | 2 | XGBoost + SHAP + sesgo | ⏳ |
 | `SeguroData_05_Dashboard.ipynb` | 3 | Streamlit + Claude API | ⏳ |

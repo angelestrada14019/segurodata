@@ -44,17 +44,25 @@ STATE_FILE   = RAW_DIR / ".pipeline_state.json"
 RAW_DIR.mkdir(parents=True, exist_ok=True)
 
 # ─── URLs y resource IDs ──────────────────────────────────────────────────────
+# F1: DAI Delito de Alto Impacto — dataset agregado por LOCALIDAD (21 filas, conteos por año)
+# NOTA: no hay datos individuales de delitos por evento en datos abiertos Bogotá.
+# El ZIP descarga DAILoc.geojson (localidades con conteos por tipo y año 2018-2026).
 URL_F1_ZIP = (
     "https://datosabiertos.bogota.gov.co/dataset/"
     "7b270013-42ca-436b-9c1e-3bcb7d280c6b/resource/"
     "aba0e25d-d407-45f4-9a98-327493b538bd/download/dai_geojson.zip"
 )
-URL_F2_GEOJSON = (
-    "https://datosabiertos.bogota.gov.co/dataset/"
-    "808582fc-ffc8-4649-8428-7e1fd8d3820c/resource/"
-    "a5c8c591-0708-420f-8eb7-9f3147e21c40/download/unidadplaneamientolocal.json"
+# F2: UPZ shapefile — Catastro Bogota ArcGIS REST (112 poligonos, CODIGO_UPZ)
+URL_F2_ARCGIS = (
+    "https://serviciosgis.catastrobogota.gov.co/arcgis/rest/services/"
+    "ordenamientoterritorial/unidadplaneamientozonal/MapServer/0/query"
 )
-RESOURCE_ID_F4  = "f0ad2ee3-bfd0-4825-9b31-bff9041649fa"  # Cuadrantes (descarga ZIP)
+# F4: Cuadrantes Policia — GeoJSON directo (resource_show devuelve URL directa)
+URL_F4_GEOJSON = (
+    "https://datosabiertos.bogota.gov.co/dataset/"
+    "b555594d-203e-4d34-8d17-32b13f94168b/resource/"
+    "f0ad2ee3-bfd0-4825-9b31-bff9041649fa/download/cuadrantepolicia.geojson"
+)
 RESOURCE_ID_F5  = "30d65a8b-d0ed-4e95-977e-0d7cc2ea89ef"  # NUSE 123 (Datastore)
 DATASET_ID_F6   = "4rxi-8m8d"                              # Hurto Personas (Socrata)
 URL_F7_GEOJSON  = (
@@ -62,7 +70,11 @@ URL_F7_GEOJSON  = (
     "55467552-0af4-4524-a390-a2956035744e/resource/"
     "29f2d770-bd5d-4450-9e95-8737167ba12f/download/manzanaestratificacion.json"
 )
-PACKAGE_ID_F8   = "9be8b6fb-8059-492f-a866-4a1ac031c502"  # TransMilenio (CKAN package)
+# F8: TransMilenio — ArcGIS REST de Transmilenio S.A.
+URL_F8_ARCGIS = (
+    "https://gis.transmilenio.gov.co/arcgis/rest/services/"
+    "Troncal/consulta_estaciones_troncales/MapServer/0/query"
+)
 
 CKAN_BASE = "https://datosabiertos.bogota.gov.co/api/3/action"
 
@@ -73,13 +85,17 @@ CLIMA_VARS = ["temperature_2m", "precipitation", "windspeed_10m", "weathercode"]
 
 # ─── Validaciones por fuente ──────────────────────────────────────────────────
 VALIDATIONS: dict[str, dict] = {
-    "f1_delitos":         {"required_cols": ["tipologia_delito", "fecha"], "min_rows": 400_000},
+    # F1 es dataset AGREGADO por localidad (21 filas): 20 localidades + total Bogota.
+    # Contiene conteos anuales por tipo de delito, NO registros individuales.
+    # Variable objetivo real: usar F5 NUSE filtrado a tipos de crimen.
+    "f1_delitos":         {"min_rows": 10},
     "f2_upz":             {"expected_rows": 112, "tolerance": 10},
     "f3_clima":           {"required_cols": ["time", "temperature_2m", "precipitation"]},
     "f4_cuadrantes":      {"min_rows": 500},
     "f5_nuse":            {"required_cols": ["ANIO", "MES", "COD_UPZ"], "min_rows": 500_000},
     "f6_hurto":           {"required_cols": ["fecha_hecho", "municipio"], "min_rows": 1_000},
-    "f7_estratificacion": {"required_cols": ["estrato"], "min_rows": 50_000},
+    # F7: columna se llama ESTRATO (mayusculas) en el JSON de Catastro Bogota
+    "f7_estratificacion": {"required_cols": ["ESTRATO"], "min_rows": 10_000},
     "f8_transmilenio":    {"min_rows": 50},
 }
 
@@ -329,44 +345,51 @@ def extract_f2_upz(
     verbose: bool = False,
 ) -> ExtractResult:
     """
-    F2 — UPZ Shapefile IDECA (GeoJSON directo, 112 polígonos, ~estático).
-    Estrategia: HTTP Last-Modified.
+    F2 — UPZ Shapefile IDECA (112 poligonos, CODIGO_UPZ, NOMBRE, AREA_HECTAREAS).
+    Fuente: Catastro Bogota ArcGIS REST service (unidadplaneamientozonal MapServer).
+    Estrategia: estatico — solo descarga si el archivo no existe o se fuerza.
     """
-    from src.etl import get_last_modified
-
     source = "f2_upz"
     out_path = RAW_DIR / "f2_upz.geojson"
-
     saved = state.get(source)
-    server_lm = get_last_modified(URL_F2_GEOJSON)
 
-    if not force and out_path.exists():
-        if server_lm and server_lm == saved.get("last_modified_server"):
-            rows = saved.get("row_count", 112)
-            return ExtractResult(source, "skipped", 0, rows, str(out_path),
-                                 "UPZ shapefile sin cambios")
+    if not force and out_path.exists() and saved.get("row_count", 0) >= 100:
+        rows = saved.get("row_count", 112)
+        return ExtractResult(source, "skipped", 0, rows, str(out_path),
+                             "UPZ shapefile ya descargado (estatico IDECA)")
 
     if dry_run:
         return ExtractResult(source, "updated", -1, -1, str(out_path),
-                             f"[DRY-RUN] descargaría GeoJSON UPZ (Last-Modified: {server_lm})")
+                             "[DRY-RUN] descargaria 112 UPZ desde Catastro ArcGIS REST")
 
     try:
         import requests
         import geopandas as gpd
-        if verbose:
-            print(f"    Descargando UPZ desde {URL_F2_GEOJSON[:70]}...")
-        resp = requests.get(URL_F2_GEOJSON, timeout=120)
-        resp.raise_for_status()
-        out_path.write_bytes(resp.content)
+        import json
 
+        if verbose:
+            print(f"    Descargando 112 UPZs desde Catastro ArcGIS REST...")
+        resp = requests.get(URL_F2_ARCGIS, params={
+            "where": "1=1",
+            "outFields": "CODIGO_UPZ,NOMBRE,AREA_HECTAREAS",
+            "f": "geojson",
+            "resultRecordCount": 1000,
+            "resultOffset": 0,
+        }, timeout=60)
+        resp.raise_for_status()
+        geojson_data = resp.json()
+
+        out_path.write_text(json.dumps(geojson_data), encoding="utf-8")
         gdf = gpd.read_file(out_path)
+
         ok, msg = _validate(source, gdf, verbose)
         if not ok:
-            return ExtractResult(source, "error", 0, 0, "", f"Validación falló: {msg}")
+            return ExtractResult(source, "error", 0, 0, "", f"Validacion fallo: {msg}")
 
         rows = len(gdf)
-        state.update(source, last_modified_server=server_lm, row_count=rows,
-                     file_path=str(out_path), status="ok")
+        if verbose:
+            print(f"    {rows} UPZs descargados | CRS: {gdf.crs}")
+        state.update(source, row_count=rows, file_path=str(out_path), status="ok")
         return ExtractResult(source, "updated", rows, rows, str(out_path), msg)
     except Exception as exc:
         return ExtractResult(source, "error", 0, 0, "", str(exc))
@@ -448,45 +471,65 @@ def extract_f4_cuadrantes(
     verbose: bool = False,
 ) -> ExtractResult:
     """
-    F4 — Cuadrantes de Policía MEBOG (ZIP con GeoJSON).
-    Estrategia: consultar resource_show → URL → HTTP Last-Modified.
+    F4 — Cuadrantes de Policia MEBOG (GeoJSON directo, ~4800+ cuadrantes).
+    Fuente: datosabiertos.bogota.gov.co resource GeoJSON directo.
+    Estrategia: HTTP Last-Modified.
     """
     from src.etl import get_last_modified
 
     source = "f4_cuadrantes"
     out_path = RAW_DIR / "f4_cuadrantes.geojson"
-    zip_path = RAW_DIR / "f4_cuadrantes.zip"
-
     saved = state.get(source)
 
-    # Obtener URL de descarga desde CKAN
-    url = saved.get("download_url") or _get_ckan_resource_url(RESOURCE_ID_F4)
-    if not url:
-        return ExtractResult(source, "error", 0, 0, "",
-                             "No se pudo obtener URL de descarga de CKAN para F4")
-
-    server_lm = get_last_modified(url)
+    server_lm = get_last_modified(URL_F4_GEOJSON)
 
     if not force and out_path.exists():
         if server_lm and server_lm == saved.get("last_modified_server"):
             rows = saved.get("row_count", 0)
             return ExtractResult(source, "skipped", 0, rows, str(out_path),
                                  "cuadrantes sin cambios en servidor")
+        if not server_lm and out_path.exists():
+            rows = saved.get("row_count", 0)
+            return ExtractResult(source, "skipped", 0, rows, str(out_path),
+                                 "servidor no devuelve Last-Modified — sin cambios")
 
     if dry_run:
         return ExtractResult(source, "updated", -1, -1, str(out_path),
-                             f"[DRY-RUN] descargaría cuadrantes (Last-Modified: {server_lm})")
+                             f"[DRY-RUN] descargaria GeoJSON cuadrantes (Last-Modified: {server_lm})")
 
     try:
+        import requests
         import geopandas as gpd
-        gdf = _download_zip_and_geojson(url, zip_path, verbose=verbose)
+
+        if verbose:
+            print(f"    Descargando GeoJSON cuadrantes desde {URL_F4_GEOJSON[:70]}...")
+        resp = requests.get(URL_F4_GEOJSON, timeout=180, stream=True)
+        resp.raise_for_status()
+
+        # Descargar con progreso
+        total = int(resp.headers.get("Content-Length", 0))
+        chunks = []
+        downloaded = 0
+        for chunk in resp.iter_content(chunk_size=65_536):
+            chunks.append(chunk)
+            downloaded += len(chunk)
+            if verbose and total:
+                print(f"\r    {100*downloaded//total:3d}% ({downloaded/1e6:.1f} MB)", end="", flush=True)
+        if verbose:
+            print()
+
+        content = b"".join(chunks)
+        out_path.write_bytes(content)
+
+        gdf = gpd.read_file(out_path)
         ok, msg = _validate(source, gdf, verbose)
         if not ok:
             return ExtractResult(source, "error", 0, 0, "", f"Validacion fallo: {msg}")
 
-        gdf.to_file(out_path, driver="GeoJSON")
         rows = len(gdf)
-        state.update(source, download_url=url, last_modified_server=server_lm,
+        if verbose:
+            print(f"    {rows:,} cuadrantes | columnas: {gdf.columns.tolist()}")
+        state.update(source, last_modified_server=server_lm,
                      row_count=rows, file_path=str(out_path), status="ok")
         return ExtractResult(source, "updated", rows, rows, str(out_path), msg)
     except Exception as exc:
@@ -736,64 +779,42 @@ def extract_f8_transmilenio(
     verbose: bool = False,
 ) -> ExtractResult:
     """
-    F8 — Estaciones TransMilenio (CKAN, GeoJSON de puntos, ~150 estaciones).
-    Estrategia: package_show → metadata_modified → comparar contra estado.
+    F8 — Estaciones Troncales TransMilenio (puntos, ~140 estaciones).
+    Fuente: ArcGIS REST de Transmilenio S.A. (consulta_estaciones_troncales).
+    Estrategia: estatico — solo descarga si el archivo no existe o se fuerza.
     """
     import requests
+    import json
 
     source = "f8_transmilenio"
     out_path = RAW_DIR / "f8_transmilenio.geojson"
-
     saved = state.get(source)
 
-    # Consultar metadata_modified del package
-    meta_modified = _get_ckan_package_metadata_modified(PACKAGE_ID_F8)
-
-    if not force and out_path.exists():
-        if meta_modified and meta_modified == saved.get("metadata_modified"):
-            rows = saved.get("row_count", 0)
-            return ExtractResult(source, "skipped", 0, rows, str(out_path),
-                                 "TransMilenio sin cambios (metadata_modified igual)")
-
-    # Obtener URL del recurso GeoJSON dentro del package
-    url = saved.get("download_url")
-    if not url:
-        try:
-            resp = requests.get(
-                f"{CKAN_BASE}/package_show",
-                params={"id": PACKAGE_ID_F8},
-                timeout=30,
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            if data.get("success"):
-                resources = data["result"].get("resources", [])
-                # preferir recurso GeoJSON o JSON
-                for r in resources:
-                    fmt = (r.get("format") or "").lower()
-                    if "geojson" in fmt or "json" in fmt:
-                        url = r.get("url")
-                        break
-                if not url and resources:
-                    url = resources[0].get("url")
-        except Exception as exc:
-            return ExtractResult(source, "error", 0, 0, "", f"No pudo obtener URL TM: {exc}")
-
-    if not url:
-        return ExtractResult(source, "error", 0, 0, "",
-                             "No se encontró recurso descargable para F8 en CKAN")
+    if not force and out_path.exists() and saved.get("row_count", 0) >= 50:
+        rows = saved.get("row_count", 0)
+        return ExtractResult(source, "skipped", 0, rows, str(out_path),
+                             "TransMilenio ya descargado (estatico ArcGIS REST)")
 
     if dry_run:
         return ExtractResult(source, "updated", -1, -1, str(out_path),
-                             f"[DRY-RUN] descargaría TM GeoJSON (metadata_modified: {meta_modified})")
+                             "[DRY-RUN] descargaria estaciones TM desde ArcGIS REST")
 
     try:
         import geopandas as gpd
+
         if verbose:
-            print(f"    Descargando estaciones TransMilenio desde {url[:70]}...")
-        resp = requests.get(url, timeout=120)
+            print(f"    Descargando estaciones TM desde ArcGIS REST...")
+        resp = requests.get(URL_F8_ARCGIS, params={
+            "where": "1=1",
+            "outFields": "*",
+            "f": "geojson",
+            "resultRecordCount": 1000,
+            "resultOffset": 0,
+        }, timeout=60)
         resp.raise_for_status()
-        out_path.write_bytes(resp.content)
+
+        geojson_data = resp.json()
+        out_path.write_text(json.dumps(geojson_data), encoding="utf-8")
 
         gdf = gpd.read_file(out_path)
         ok, msg = _validate(source, gdf, verbose)
@@ -801,8 +822,9 @@ def extract_f8_transmilenio(
             return ExtractResult(source, "error", 0, 0, "", f"Validacion fallo: {msg}")
 
         rows = len(gdf)
-        state.update(source, download_url=url, metadata_modified=meta_modified,
-                     row_count=rows, file_path=str(out_path), status="ok")
+        if verbose:
+            print(f"    {rows} estaciones TM | columnas: {gdf.columns.tolist()}")
+        state.update(source, row_count=rows, file_path=str(out_path), status="ok")
         return ExtractResult(source, "updated", rows, rows, str(out_path), msg)
     except Exception as exc:
         return ExtractResult(source, "error", 0, 0, "", str(exc))
