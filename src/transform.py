@@ -751,11 +751,13 @@ def transform_f8_transmilenio(
 #
 # F5 (NUSE 123) contiene TODOS los incidentes reportados al 123 (2025-2026).
 # Este paso produce DOS archivos:
-#   1. nuse_upz_mes.parquet    — TODOS los tipos de incidente por UPZ x mes
-#   2. delitos_upz_mes.parquet — Solo tipos criminales + lag features
+#   1. nuse_upz_mes.parquet    — TODOS los tipos de incidente por UPZ x mes (para ratio)
+#   2. delitos_upz_mes.parquet — Tipos criminales con tipo_crimen como dimension
+#                                 UPZ x mes x tipo_crimen + lag features
+#                                 ~15-25K filas — cumple requisito 10K del concurso
 #
-# delitos_upz_mes.parquet se usa como BASE de la tabla Silver y como
-# variable proxy del crimen por UPZ para el modelo XGBoost.
+# delitos_upz_mes.parquet se usa como BASE de la tabla Silver.
+# La dimension tipo_crimen permite al modelo distinguir entre tipos de delito.
 
 def transform_f5_nuse(
     state: TransformState,
@@ -764,18 +766,23 @@ def transform_f5_nuse(
     verbose: bool = False,
 ) -> TransformResult:
     """
-    Agrega incidentes NUSE 123 por UPZ x mes. Produce dos archivos:
-      - nuse_upz_mes.parquet    : todos los tipos, para calcular ratio
-      - delitos_upz_mes.parquet : solo tipos criminales + lag features
-                                  (este es la BASE de la tabla Silver)
+    Agrega incidentes NUSE 123. Produce dos archivos:
+      - nuse_upz_mes.parquet    : todos los tipos, para calcular ratio (UPZ x mes)
+      - delitos_upz_mes.parquet : tipos criminales filtrados (UPZ x mes x tipo_crimen)
+                                  con lag features por tipo — BASE de la tabla Silver.
+                                  ~15-25K filas -> cumple requisito 10K del concurso.
+
+    NOTA: tipo_crimen se mantiene como dimension (NO se colapsa a tipo_dominante).
+    Esto permite predecir el nivel de riesgo por tipo de crimen especifico en
+    cada UPZ, ademas de cumplir el minimo de 10K filas requerido por el concurso.
 
     Entrada:  datos/raw/f5_nuse_123.parquet
     Salidas:  datos/procesados/nuse_upz_mes.parquet
               datos/procesados/delitos_upz_mes.parquet
 
     Columnas de delitos_upz_mes:
-        upz_cod, anio, mes, n_delitos, tipo_delito_dominante,
-        n_delitos_upz_4sem (lag), n_delitos_upz_8sem (lag acum)
+        upz_cod, anio, mes, tipo_crimen, n_delitos,
+        n_delitos_upz_4sem (lag por tipo), n_delitos_upz_8sem (lag acum por tipo)
     """
     import polars as pl
 
@@ -795,7 +802,7 @@ def transform_f5_nuse(
 
     if dry_run:
         return TransformResult(step, "updated", -1, str(out_nuse),
-                               "[DRY-RUN] agregaria NUSE por UPZ x mes (2 archivos)")
+                               "[DRY-RUN] agregaria NUSE por UPZ x mes x tipo_crimen (2 archivos)")
 
     try:
         df = pl.read_parquet(in_path)
@@ -841,7 +848,7 @@ def transform_f5_nuse(
             pl.col(mes_col).cast(pl.Int32, strict=False).alias("mes"),
         ])
 
-        # ── ARCHIVO 1: todos los tipos de NUSE ──────────────────────────────
+        # ── ARCHIVO 1: todos los tipos de NUSE (UPZ x mes) ──────────────────
         nuse_all = (
             df.group_by(["upz_cod", "anio", "mes"])
             .agg(pl.col("_cant").sum().alias("n_incidentes_nuse"))
@@ -852,48 +859,54 @@ def transform_f5_nuse(
             print(f"    nuse_upz_mes: {len(nuse_all):,} filas | "
                   f"{nuse_all['n_incidentes_nuse'].sum():,} incidentes totales")
 
-        # ── ARCHIVO 2: solo tipos criminales → delitos proxy ────────────────
-        # Normalizar caracteres especiales para match con CRIME_TYPES_NUSE
+        # ── ARCHIVO 2: tipos criminales × UPZ × mes × tipo_crimen ───────────
+        # tipo_crimen se mantiene como dimension para:
+        #   a) Cumplir requisito de 10K filas del concurso
+        #   b) Permitir prediccion por tipo de crimen especifico
         if tipo_col:
             df_crimes = df.filter(pl.col(tipo_col).is_in(list(CRIME_TYPES_NUSE)))
+            if verbose:
+                n_matched = df_crimes["_cant"].sum() if len(df_crimes) > 0 else 0
+                n_tipos_matched = df_crimes[tipo_col].n_unique() if len(df_crimes) > 0 else 0
+                print(f"    Incidentes criminales: {n_matched:,} de {df['_cant'].sum():,} "
+                      f"totales ({n_tipos_matched} tipos de crimen)")
+            # Agregar por UPZ x mes x tipo_crimen
+            monthly = (
+                df_crimes.group_by(["upz_cod", "anio", "mes", tipo_col])
+                .agg(pl.col("_cant").sum().alias("n_delitos"))
+                .rename({tipo_col: "tipo_crimen"})
+                .sort(["upz_cod", "anio", "mes", "tipo_crimen"])
+            )
         else:
             # Sin columna de tipo, usar todos los incidentes como proxy
             df_crimes = df
-
-        if verbose:
-            total_crimes = df_crimes["_cant"].sum()
-            print(f"    Incidentes criminales: {total_crimes:,} de {df['_cant'].sum():,} totales")
-
-        # Agregar por UPZ x mes
-        group_cols = ["upz_cod", "anio", "mes"]
-        agg_exprs  = [pl.col("_cant").sum().alias("n_delitos")]
-
-        if tipo_col:
-            # tipo dominante del mes para esa UPZ
-            agg_exprs.append(
-                pl.col(tipo_col).drop_nulls().mode().first().alias("tipo_delito_dominante")
+            monthly = (
+                df_crimes.group_by(["upz_cod", "anio", "mes"])
+                .agg(pl.col("_cant").sum().alias("n_delitos"))
+                .with_columns(pl.lit("TODOS").alias("tipo_crimen"))
+                .sort(["upz_cod", "anio", "mes"])
             )
 
-        monthly = (
-            df_crimes.group_by(group_cols)
-            .agg(agg_exprs)
-            .sort(["upz_cod", "anio", "mes"])
-        )
-
-        # Lag features
-        monthly = monthly.sort(["upz_cod", "anio", "mes"]).with_columns([
-            pl.col("n_delitos").shift(1).over("upz_cod").alias("n_delitos_upz_4sem"),
+        # Lag features calculados por UPZ x tipo_crimen
+        # (lag de HURTO en UPZ-67 mes-3 = HURTO en UPZ-67 mes-2)
+        monthly = monthly.sort(["upz_cod", "tipo_crimen", "anio", "mes"]).with_columns([
+            pl.col("n_delitos")
+            .shift(1)
+            .over(["upz_cod", "tipo_crimen"])
+            .alias("n_delitos_upz_4sem"),
             (
-                pl.col("n_delitos").shift(1).over("upz_cod") +
-                pl.col("n_delitos").shift(2).over("upz_cod").fill_null(0)
+                pl.col("n_delitos").shift(1).over(["upz_cod", "tipo_crimen"]) +
+                pl.col("n_delitos").shift(2).over(["upz_cod", "tipo_crimen"]).fill_null(0)
             ).alias("n_delitos_upz_8sem"),
-        ])
+        ]).sort(["upz_cod", "anio", "mes", "tipo_crimen"])
 
         monthly.write_parquet(out_delitos)
         rows = len(monthly)
+        n_tipos = monthly["tipo_crimen"].n_unique() if "tipo_crimen" in monthly.columns else 0
+
         if verbose:
             print(f"    delitos_upz_mes: {rows:,} filas | {monthly['upz_cod'].n_unique()} UPZs | "
-                  f"n_delitos total {monthly['n_delitos'].sum():,}")
+                  f"{n_tipos} tipos crimen | n_delitos total {monthly['n_delitos'].sum():,}")
 
         state.update(step,
                      src_mtime=str(in_path.stat().st_mtime),
@@ -902,7 +915,7 @@ def transform_f5_nuse(
                      file_path=str(out_nuse))
         return TransformResult(step, "updated", rows, str(out_nuse),
                                f"nuse={len(nuse_all):,} filas | "
-                               f"delitos={rows:,} filas | "
+                               f"delitos={rows:,} filas ({n_tipos} tipos) | "
                                f"{monthly['upz_cod'].n_unique()} UPZs")
 
     except Exception as exc:
@@ -923,13 +936,18 @@ def build_silver_table(
 
     Este paso DEPENDE de que los anteriores ya hayan corrido.
 
-    Notas importantes:
-    - delitos_upz_mes.parquet viene de F5 NUSE (filtrado a tipos criminales)
-      porque F1 solo tiene datos a nivel LOCALIDAD (no UPZ)
-    - Los datos cubren 2025-2026 (rango de F5 disponible)
-    - ratio_nuse_delitos_upz = incidentes_totales / incidentes_criminales por UPZ
+    ESTRUCTURA ACTUALIZADA: silver_upz_mes ahora tiene granularidad
+    UPZ x mes x tipo_crimen (~15-25K filas) para cumplir el requisito
+    de 10K filas del concurso y enriquecer el modelo XGBoost.
 
-    Entrada:  datos/procesados/delitos_upz_mes.parquet  <- de F5
+    Las features estaticas (estrato, cuadrantes, TM) se repiten para
+    cada tipo de crimen en el mismo UPZ x mes — son caracteristicas
+    del espacio, no del tipo de delito.
+
+    ratio_nuse_delitos_upz = NUSE_total / delitos_totales por UPZ x mes
+    (mismo valor para todos los tipos en el mismo UPZ x mes).
+
+    Entrada:  datos/procesados/delitos_upz_mes.parquet  <- de F5 (UPZ x mes x tipo)
               datos/procesados/clima_diario.parquet
               datos/procesados/nuse_upz_mes.parquet     <- de F5 (todos los tipos)
               datos/procesados/estrato_por_upz.csv
@@ -989,16 +1007,24 @@ def build_silver_table(
         ])
         silver = base.join(clima_mensual, on=["anio", "mes"], how="left")
 
-        # JOIN 2: NUSE → calcular ratio_nuse_delitos_upz
+        # JOIN 2: NUSE total → ratio_nuse_delitos_upz (por UPZ x mes, igual para todos los tipos)
+        # ratio = total incidentes NUSE / total delitos criminales (suma de todos los tipos)
         nuse = nuse.with_columns(pl.col("upz_cod").cast(pl.Utf8).str.strip_chars())
         silver = silver.join(nuse, on=["upz_cod", "anio", "mes"], how="left")
+
+        # Total delitos por UPZ x mes (suma de todos los tipos de crimen)
+        total_delitos = (
+            base.group_by(["upz_cod", "anio", "mes"])
+            .agg(pl.col("n_delitos").sum().alias("_n_delitos_total"))
+        )
+        silver = silver.join(total_delitos, on=["upz_cod", "anio", "mes"], how="left")
         silver = silver.with_columns(
-            pl.when(pl.col("n_delitos") > 0)
-            .then(pl.col("n_incidentes_nuse") / pl.col("n_delitos"))
+            pl.when(pl.col("_n_delitos_total") > 0)
+            .then(pl.col("n_incidentes_nuse") / pl.col("_n_delitos_total"))
             .otherwise(pl.lit(0.0))
             .round(4)
             .alias("ratio_nuse_delitos_upz")
-        )
+        ).drop("_n_delitos_total")
 
         # JOIN 3: estrato promedio por UPZ (estatico — no depende de mes)
         estrato = estrato.with_columns(pl.col("upz_cod").cast(pl.Utf8).str.strip_chars())
@@ -1020,21 +1046,28 @@ def build_silver_table(
             ((pl.col("mes") >= 6) & (pl.col("mes") <= 8)).alias("es_mitad_anio"),
         ])
 
-        silver = silver.sort(["upz_cod", "anio", "mes"])
+        # Ordenar por UPZ x mes x tipo_crimen
+        sort_cols = ["upz_cod", "anio", "mes"]
+        if "tipo_crimen" in silver.columns:
+            sort_cols.append("tipo_crimen")
+        silver = silver.sort(sort_cols)
         silver.write_parquet(out_path)
         rows = len(silver)
 
+        n_tipos = silver["tipo_crimen"].n_unique() if "tipo_crimen" in silver.columns else 1
+        n_upzs  = silver["upz_cod"].n_unique()
+
         if verbose:
-            print(f"    {rows:,} filas | {silver['upz_cod'].n_unique()} UPZs | "
-                  f"{silver.columns} columnas")
+            print(f"    {rows:,} filas | {n_upzs} UPZs | {n_tipos} tipos crimen | "
+                  f"{len(silver.columns)} columnas")
             nulls = {c: silver[c].null_count() for c in silver.columns if silver[c].null_count() > 0}
             if nulls:
                 print(f"    Nulls por columna: {nulls}")
 
         state.update(step, rows_out=rows, columns=silver.columns, file_path=str(out_path))
         return TransformResult(step, "updated", rows, str(out_path),
-                               f"{rows:,} filas | {len(silver.columns)} columnas | "
-                               f"{silver['upz_cod'].n_unique()} UPZs")
+                               f"{rows:,} filas | {len(silver.columns)} cols | "
+                               f"{n_upzs} UPZs | {n_tipos} tipos crimen")
 
     except Exception as exc:
         return TransformResult(step, "error", 0, str(out_path), str(exc))
@@ -1056,7 +1089,7 @@ STEP_LABELS = {
     "f1":    "F1 DAI -> localidad x anio (EDA ref)",
     "f3":    "F3 Clima -> diario",
     "f4":    "F4 Cuadrantes -> features UPZ",
-    "f5":    "F5 NUSE -> UPZ x mes (base modelo)",
+    "f5":    "F5 NUSE -> UPZ x mes x tipo_crimen",
     "f7":    "F7 Estrato -> promedio UPZ  [pesado]",
     "f8":    "F8 TransMilenio -> features UPZ",
     "silver":"Tabla Silver final (join de todo)",
