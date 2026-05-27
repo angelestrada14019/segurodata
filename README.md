@@ -40,18 +40,25 @@ Model   datos/modelos/      Notebook 04       ← XGBoost entrenado + SHAP value
 
 ## Las 8 fuentes de datos
 
-Todas públicas y gratuitas:
+Todas públicas y gratuitas — **868,140 registros Bronze en total**:
 
-| # | Fuente | Portal | Actualización |
-|---|--------|--------|--------------|
-| F1 | Delito de Alto Impacto — Sec. Seguridad | datosabiertos.bogota.gov.co | Semestral |
-| F2 | UPZ Shapefile — IDECA | datosabiertos.bogota.gov.co | Estático |
-| F3 | Clima Bogotá — Open-Meteo | open-meteo.com | Diaria |
-| F4 | Cuadrantes de Policía — MEBOG | datosabiertos.bogota.gov.co | Anual |
-| F5 | Incidentes NUSE 123 — C4 | datosabiertos.bogota.gov.co | Mensual |
-| F6 | Hurto a Personas — Policía Nacional | datos.gov.co | Mensual |
-| F7 | Estratificación por manzana — SDP | datosabiertos.bogota.gov.co | Según necesidad |
-| F8 | Estaciones TransMilenio — TM S.A. | datosabiertos.bogota.gov.co | Estático |
+| # | Fuente | Filas (Bronze) | Granularidad | Contribución a Silver | Actualización |
+|---|--------|---------------:|--------------|----------------------|--------------|
+| F1 | Delito de Alto Impacto — Sec. Seguridad | 21 | Localidad × año | EDA histórico 2018–2026 (no UPZ) | Semestral |
+| F2 | UPZ Shapefile — IDECA | 112 | UPZ (polígono) | Base espacial para spatial joins | Estático |
+| F3 | Clima Bogotá — Open-Meteo | 56,112 | Hora | +2 cols: `temperatura_c`, `precipitacion_mm_mes` | Diaria |
+| F4 | Cuadrantes de Policía — MEBOG | 599 | Cuadrante (polígono) | +2 cols: `cuadrantes_por_km2`, CAI | Anual |
+| **F5** | **Incidentes NUSE 123 — C4** | **128,314** | **UPZ × mes × tipo (86 tipos)** | **Base de filas** → 111,606 rows silver | Mensual |
+| F6 | Hurto a Personas — Policía Nacional | 638,569 | Municipio × día | Benchmarking nacional (no tiene UPZ) | Mensual |
+| F7 | Estratificación por manzana — SDP | 44,260 | Manzana (polígono) | +1 col: `estrato_promedio_upz` | Según necesidad |
+| F8 | Estaciones TransMilenio — TM S.A. | 153 | Estación (punto) | +2 cols: `dist_tm_metros`, `n_estaciones_tm` | Estático |
+| | **TOTAL BRONZE** | **868,140** | | **Silver: 111,606 × 20 cols** | |
+
+> **¿Por qué 868K Bronze → 111K Silver?**
+>
+> La tabla Silver tiene una fila por cada combinación **UPZ × mes × tipo\_de\_incidente** — esas filas vienen de F5 NUSE, el único archivo con las tres dimensiones juntas. Las otras fuentes no crean filas nuevas: **F3 agrega columnas** de clima por mes, **F4/F7/F8 agregan columnas** de características de la UPZ (cuadrantes, estrato, TM). F2 es la base geométrica para los spatial joins. F1 (granularidad localidad) y F6 (granularidad municipio) no tienen desglose por UPZ y se usan como referencia de contexto.
+>
+> La columna `es_crimen` en Silver distingue los 19 tipos de alto impacto criminal (HURTO, RIÑA, LESIONES…) del resto (RUIDO, ACCIDENTE TRÁNSITO, EMBRIAGUEZ…). Todos se conservan porque el modelo puede aprender correlaciones entre el desorden urbano y la criminalidad.
 
 ---
 
