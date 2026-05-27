@@ -1,32 +1,49 @@
-# SeguroData Bogotá — Capa de Extracción (Bronze)
+# SeguroData Bogotá
 ### Concurso Datos al Ecosistema 2026 — MinTIC · Reto #2 Seguridad Ciudadana
 
-> Pipeline de extracción incremental de 8 fuentes de datos abiertos de Bogotá D.C.
-> Arquitectura Medallion: este repositorio cubre la capa **Bronze** (datos en crudo).
+> Sistema de predicción y prescripción de crimen urbano para Bogotá D.C.
+> construido sobre datos abiertos, XGBoost y Claude API.
+
+**Repositorio:** https://github.com/angelestrada14019/segurodata  
+**Concurso:** Datos al Ecosistema 2026 — MinTIC · Reto #2 Seguridad Ciudadana · Nivel Medio  
+**Entrega:** 13 julio 2026 · GitHub público + registro en datos.gov.co
 
 ---
 
-## Contexto del proyecto
+## Estructura de ramas
 
-SeguroData Bogotá es un sistema de predicción y prescripción de crimen urbano para Bogotá D.C. construido sobre datos abiertos. El proyecto sigue una arquitectura Medallion con responsabilidades separadas por capa:
+El proyecto está organizado por capas, cada una en su propia rama:
+
+| Rama | Capa | Responsable | Estado |
+|------|------|-------------|--------|
+| `main` | Integración | Todos (via PR) | ✅ Activa |
+| `bronze` | Extracción de datos | Equipo A | ✅ Completo |
+| `silver` | Transformación y limpieza | Equipo B | 🔄 En curso |
+| `gold` | Feature engineering | — | ⏳ Pendiente |
+| `model` | XGBoost + SHAP | — | ⏳ Pendiente |
+| `dashboard` | Streamlit + Claude API | — | ⏳ Pendiente |
+
+**Flujo:** cada equipo trabaja en su rama → Pull Request a `main` cuando esté listo → `main` siempre ejecutable.
+
+---
+
+## Arquitectura Medallion
 
 ```
-Bronze  ← este repo    Extracción y descarga de las 8 fuentes originales
-Silver  ← siguiente    Limpieza, joins espaciales y agregación por UPZ
-Gold    ← siguiente    Tabla maestra con las 14 variables del modelo
-Model   ← siguiente    XGBoost entrenado + SHAP values
+Bronze  datos/raw/          src/pipeline.py   ← extraccion incremental 8 fuentes  ✅
+Silver  datos/procesados/   src/transform.py  ← limpieza, joins, agrega por UPZ   🔄
+Gold    datos/features/     Notebook 03       ← 14 variables + tabla maestra       ⏳
+Model   datos/modelos/      Notebook 04       ← XGBoost entrenado + SHAP values    ⏳
 ```
-
-**Esta capa (Bronze)** se encarga de conectar con los portales de datos abiertos, detectar actualizaciones y guardar los archivos originales en `datos/raw/` sin transformar.
 
 ---
 
 ## Las 8 fuentes de datos
 
-Todas son públicas y gratuitas:
+Todas públicas y gratuitas:
 
-| # | Fuente | Portal | Frecuencia de actualización |
-|---|--------|--------|-----------------------------|
+| # | Fuente | Portal | Actualización |
+|---|--------|--------|--------------|
 | F1 | Delito de Alto Impacto — Sec. Seguridad | datosabiertos.bogota.gov.co | Semestral |
 | F2 | UPZ Shapefile — IDECA | datosabiertos.bogota.gov.co | Estático |
 | F3 | Clima Bogotá — Open-Meteo | open-meteo.com | Diaria |
@@ -42,8 +59,8 @@ Todas son públicas y gratuitas:
 
 ```bash
 # 1. Clonar el repositorio
-git clone https://github.com/tu-usuario/segurodata-bogota.git
-cd segurodata-bogota
+git clone https://github.com/angelestrada14019/segurodata.git
+cd segurodata
 
 # 2. Crear entorno virtual
 python -m venv .venv
@@ -53,140 +70,117 @@ source .venv/bin/activate      # Linux / Mac
 # 3. Instalar dependencias
 pip install -r requirements.txt
 
-# 4. (Opcional) Token Socrata para mayor cuota en F6
+# 4. Configurar variables de entorno
 cp .env.example .env
-# Editar .env: SOCRATA_APP_TOKEN=tu_token
-# Token gratis en: https://dev.socrata.com/register
+# Editar .env con tus tokens (ver .env.example)
 ```
 
 ### En Google Colab
 
 ```python
-!git clone https://github.com/tu-usuario/segurodata-bogota.git
-%cd segurodata-bogota
+!git clone https://github.com/angelestrada14019/segurodata.git
+%cd segurodata
 !pip install -r requirements.txt -q
 ```
 
 ---
 
-## Uso del pipeline (`src/pipeline.py`)
+## Bronze — Extracción (`src/pipeline.py`)
 
-El pipeline descarga cada fuente de forma **incremental**: compara el estado local contra el servidor y solo descarga si hay datos nuevos. La segunda ejecución del mismo día es instantánea.
-
-### Comandos
+Descarga las 8 fuentes de forma **incremental**: compara el estado local contra el servidor y solo descarga si hay datos nuevos. Segunda ejecución del mismo día → instantánea.
 
 ```bash
-# Ver qué descargaría SIN ejecutar nada
-python src/pipeline.py --dry-run
-
-# Ver estado actual de todas las fuentes
-python src/pipeline.py --status
-
-# Descargar todo (solo lo nuevo)
-python src/pipeline.py
-
-# Descargar una fuente específica con detalle de progreso
-python src/pipeline.py --source f3 --verbose
-
-# Varias fuentes a la vez
-python src/pipeline.py --source f1 f2 f8
-
-# Forzar re-descarga aunque no haya cambios
-python src/pipeline.py --source f1 --force
+python src/pipeline.py --dry-run          # ver qué descargaría sin ejecutar
+python src/pipeline.py --status           # estado de todas las fuentes
+python src/pipeline.py                    # descargar todo (solo lo nuevo)
+python src/pipeline.py --source f3        # fuente específica
+python src/pipeline.py --source f1 --force  # forzar re-descarga
 ```
-
-### Ejemplo de salida
-
-```
-------------------------------------------------------------
-  SeguroData Bogota - Pipeline de extraccion (Bronze layer)
-------------------------------------------------------------
-[OK] f1_delitos          updated  new= 587,234  total= 587,234  587,234 filas — validacion OK
-[OK] f2_upz              updated  new=     112  total=     112  112 filas — validacion OK
-[OK] f3_clima            updated  new=  56,064  total=  56,064  append 2020-01-01->2026-05-24
-[--] f4_cuadrantes       skipped  new=       0  total=   4,821  Last-Modified sin cambios
-[OK] f5_nuse             updated  new= 124,000  total=1,240,000 validacion OK
-[--] f7_estratificacion  skipped  new=       0  total= 115,430  estratificacion sin cambios
-
-------------------------------------------------------------
-  Resumen: 4 actualizadas  2 sin cambios  0 errores
-------------------------------------------------------------
-```
-
-### Desde un notebook o script Python
 
 ```python
-from src.pipeline import run_pipeline, extract_f3_clima, PipelineState
-
-# Correr todas las fuentes
+# Desde notebook
+from src.pipeline import run_pipeline
 resultados = run_pipeline(verbose=True)
 
-# Correr solo una fuente
-state = PipelineState()
-result = extract_f3_clima(state, verbose=True)
-print(result.status, result.rows_new, result.message)
-
-# Leer los archivos descargados
-import polars as pl
-import geopandas as gpd
-
+import polars as pl, geopandas as gpd
 delitos = pl.read_parquet("datos/raw/f1_delito_alto_impacto.parquet")
 upz     = gpd.read_file("datos/raw/f2_upz.geojson")
 clima   = pl.read_parquet("datos/raw/f3_clima_bogota.parquet")
 ```
 
-### Lógica incremental por fuente
-
-| Fuente | Estrategia |
-|--------|-----------|
-| F1, F2, F4, F7 | HTTP `Last-Modified` — descarga solo si el servidor cambió el archivo |
-| F3 Clima | Append desde `max(fecha)` del Parquet existente hasta ayer |
-| F5 NUSE | Descarga por año (CKAN no soporta filtros `>=`) y deduplica |
+| Fuente | Estrategia incremental |
+|--------|----------------------|
+| F1, F2, F4, F7 | HTTP `Last-Modified` — solo descarga si el servidor cambió |
+| F3 Clima | Append desde `max(fecha)` hasta ayer |
+| F5 NUSE | Descarga por año y deduplica |
 | F6 Hurto PN | Socrata `$where fecha_hecho > 'max_fecha'` |
 | F8 TransMilenio | CKAN `package_show` → compara `metadata_modified` |
 
-El estado de cada fuente se guarda automáticamente en `datos/raw/.pipeline_state.json`.
-
 ---
 
-## Archivos generados en `datos/raw/`
+## Silver — Transformación (`src/transform.py`)
 
-| Archivo | Fuente | Formato | Notas |
-|---------|--------|---------|-------|
-| `f1_delito_alto_impacto.parquet` | F1 | Parquet | geometry como columna WKT |
-| `f1_delito_alto_impacto.zip` | F1 | ZIP | backup del original |
-| `f2_upz.geojson` | F2 | GeoJSON | 112 polígonos UPZ |
-| `f3_clima_bogota.parquet` | F3 | Parquet | horario 2020→hoy |
-| `f4_cuadrantes.geojson` | F4 | GeoJSON | cuadrantes policiales |
-| `f4_cuadrantes.zip` | F4 | ZIP | backup del original |
-| `f5_nuse_123.parquet` | F5 | Parquet | incidentes NUSE |
-| `f6_hurto_personas.parquet` | F6 | Parquet | hurtos Policía Nacional |
-| `f7_estratificacion.parquet` | F7 | Parquet | ~115K manzanas con WKT |
-| `f8_transmilenio.geojson` | F8 | GeoJSON | estaciones TM |
-| `.pipeline_state.json` | — | JSON | estado de cada fuente |
+Toma los archivos Bronze y produce una tabla limpia agregada por **UPZ × mes**.  
+Ver `docs/TRANSFORMACION.md` para instrucciones completas.
+
+```bash
+python src/transform.py --dry-run         # ver qué transformaría sin ejecutar
+python src/transform.py --status          # estado de cada paso
+python src/transform.py                   # correr todos los pasos
+python src/transform.py --step f1 f3      # pasos específicos
+python src/transform.py --step f7 --force # forzar re-cálculo (paso pesado)
+```
+
+```python
+# Desde notebook
+from src.transform import run_transform
+resultados = run_transform(verbose=True)
+
+silver = pl.read_parquet("datos/procesados/silver_upz_mes.parquet")
+```
+
+**Pasos del transform:**
+
+| Paso | Entrada | Salida | Descripción |
+|------|---------|--------|-------------|
+| f1 | `f1_delito_alto_impacto.parquet` | `delitos_upz_mes.parquet` | Agrega crimen por UPZ × mes + lags |
+| f3 | `f3_clima_bogota.parquet` | `clima_diario.parquet` | Horario → diario |
+| f4 | `f4_cuadrantes.geojson` | `features_cuadrantes_upz.csv` | Spatial join → cuadrantes/km² |
+| f5 | `f5_nuse_123.parquet` | `nuse_upz_mes.parquet` | Agrega NUSE por UPZ × mes |
+| f7 | `f7_estratificacion.parquet` | `estrato_por_upz.csv` | Spatial join ~115K manzanas ⚠️ pesado |
+| f8 | `f8_transmilenio.geojson` | `features_tm_upz.csv` | Distancia y conteo TM por UPZ |
+| silver | todos los anteriores | `silver_upz_mes.parquet` | Tabla final unida (18 columnas) |
+
+> ⚠️ El paso `f7` (estratificación) carga ~115K polígonos. En Colab gratuito puede agotar RAM — ver `docs/TRANSFORMACION.md` para alternativas.
 
 ---
 
 ## Estructura del repositorio
 
 ```
-segurodata-bogota/
+segurodata/
 ├── datos/
-│   ├── raw/              <- Bronze: archivos originales descargados
-│   ├── procesados/       <- Silver: (capa siguiente — transformación)
-│   ├── features/         <- Gold:   (capa siguiente — feature engineering)
-│   └── modelos/          <- Model:  (capa siguiente — XGBoost entrenado)
+│   ├── raw/              <- Bronze: archivos originales (generados por pipeline.py)
+│   ├── procesados/       <- Silver: datos limpios por UPZ (generados por transform.py)
+│   ├── features/         <- Gold:   tabla maestra 14 variables (Notebook 03)
+│   └── modelos/          <- Model:  XGBoost + SHAP (Notebook 04)
+├── graficas/             <- Outputs del EDA
 ├── src/
 │   ├── etl.py            <- Conectores de bajo nivel: CKAN, Socrata, ArcGIS, Open-Meteo
-│   └── pipeline.py       <- Orquestador incremental de las 8 fuentes
+│   ├── pipeline.py       <- Extracción incremental Bronze (8 fuentes)
+│   ├── transform.py      <- Transformación Silver (limpieza + spatial joins)
+│   └── validar_fuentes.py
 ├── .github/
 │   └── workflows/
-│       └── etl-semanal.yml  <- GitHub Action (desactivado — ver sección Automatización)
+│       └── etl-semanal.yml  <- GitHub Action (desactivado — activar descomentando schedule)
 ├── docs/
-│   ├── ESTADO_DEL_ARTE.md
+│   ├── TRANSFORMACION.md    <- Instrucciones completas para la capa Silver
+│   ├── ESTADO_DEL_ARTE.md   <- 20+ sistemas internacionales, 18 papers
 │   ├── INVESTIGACION_FUENTES.md
 │   └── fuentes_validadas.xlsx
-├── SeguroData_01_Plan_y_Fuentes.ipynb  <- Notebook de planificación
+├── SeguroData_01_Plan_y_Fuentes.ipynb
+├── .env.example          <- Template de variables de entorno
+├── .gitignore
 ├── CLAUDE.md
 ├── PROYECTO.md
 ├── CRONOGRAMA.md
@@ -195,43 +189,41 @@ segurodata-bogota/
 └── README.md
 ```
 
----
-
-## Automatización con GitHub Actions
-
-El archivo `.github/workflows/etl-semanal.yml` está creado pero **desactivado**.
-
-Cuando se quiera activar:
-1. Abrir `.github/workflows/etl-semanal.yml`
-2. Descomentar el bloque `schedule`:
-   ```yaml
-   schedule:
-     - cron: '0 6 * * 1'   # cada lunes a las 6am UTC
-   ```
-3. Hacer commit — GitHub lo activará automáticamente
-
-También se puede lanzar manualmente desde **GitHub → Actions → ETL semanal → Run workflow** sin necesidad de activar el schedule.
-
-**Qué automatiza:** descarga incremental de F3 (clima, diaria), F5 (NUSE, mensual) y F6 (Hurto PN, mensual). Las fuentes semestrales o estáticas (F1, F2, F4, F7, F8) se descargan manualmente cuando sea necesario.
-
-**Requiere:** agregar `SOCRATA_APP_TOKEN` como secreto en GitHub → Settings → Secrets (opcional pero recomendado para F6).
+> Los datos (`datos/raw/`, `datos/procesados/`, etc.) no se suben al repo — se generan localmente ejecutando `pipeline.py` y `transform.py`.
 
 ---
 
-## Dependencias principales
+## Automatización (GitHub Actions)
+
+El archivo `.github/workflows/etl-semanal.yml` está **desactivado**. Para activarlo:
+
+1. Descomentar el bloque `schedule` en el archivo
+2. Agregar `SOCRATA_APP_TOKEN` en GitHub → Settings → Secrets
+3. Hacer commit → GitHub activa el cron automáticamente
+
+También ejecutable manualmente: **GitHub → Actions → ETL semanal → Run workflow**.
+
+---
+
+## Stack tecnológico
 
 ```
-polars          # DataFrames rápidos para datos tabulares
-geopandas       # Datos espaciales (GeoJSON, shapefiles)
-requests        # Llamadas HTTP a las APIs
-python-dotenv   # Variables de entorno (.env)
+Ingesta          polars · requests · geopandas · python-dotenv
+Transformación   geopandas · shapely · polars
+Modelado         xgboost · scikit-learn · shap
+IA Generativa    anthropic (Claude API) — Módulos 3 y 4 únicamente
+Dashboard        streamlit · plotly · folium
 ```
-
-Ver `requirements.txt` para la lista completa.
 
 ---
 
-## Concurso
+## Notebooks CRISP-ML
 
-**Datos al Ecosistema 2026** — MinTIC · Reto #2 Seguridad Ciudadana y Justicia · Nivel Medio  
-Entrega: 13 julio 2026 · GitHub público + registro en datos.gov.co
+| Notebook | Fase | Contenido | Estado |
+|----------|------|-----------|--------|
+| `SeguroData_01_Plan_y_Fuentes.ipynb` | 0 | Plan + catálogo de 8 fuentes | ✅ |
+| `SeguroData_02_EDA.ipynb` | 1 | Análisis exploratorio | ⏳ |
+| `SeguroData_03_Features.ipynb` | 2 | 14 variables + correlación | ⏳ |
+| `SeguroData_04_Modelo.ipynb` | 2 | XGBoost + SHAP + sesgo | ⏳ |
+| `SeguroData_05_Dashboard.ipynb` | 3 | Streamlit + Claude API | ⏳ |
+| `SeguroData_06_Deployment.ipynb` | 4 | Deploy + docs + video | ⏳ |

@@ -9,11 +9,14 @@
 ## Vista general
 
 ```
-MAYO           JUNIO                          JULIO
-Fase 0 ✅ | Fase 1 ▶ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
-25 May    |  26M–6J  |  7–20 Jun | 21J–10Jul | 11–13 Jul
-[Plan]    | [EDA]    | [Modelo]  | [Dashboard+IA] | [Docs+Entrega]
+MAYO                        JUNIO                          JULIO
+Fase 0 ✅ | Fase 1A ✅ | Fase 1B 🔄 | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
+25 May    | 26–27 May  | 27M–6Jun   |  7–20 Jun | 21J–10Jul | 11–13 Jul
+[Plan]    | [Bronze]   | [Silver+EDA]| [Modelo]  | [Dashboard+IA] | [Docs]
 ```
+
+**Repositorio:** https://github.com/angelestrada14019/segurodata  
+**Ramas activas:** `main` · `bronze` ✅ · `silver` 🔄 · `gold` · `model` · `dashboard`
 
 ---
 
@@ -34,47 +37,72 @@ Fase 0 ✅ | Fase 1 ▶ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 
 ---
 
-## Fase 1 ▶ — EDA (26 mayo – 6 junio 2026)
+## Fase 1A ✅ — Bronze layer (26–27 mayo 2026)
 
-**Entregable:** `SeguroData_02_EDA.ipynb` — análisis exploratorio completo
+**Entregable:** `src/pipeline.py` + `src/etl.py` — extracción incremental lista
+
+- ✅ `src/etl.py` — conectores CKAN, Socrata, ArcGIS, Open-Meteo + `get_last_modified()`
+- ✅ `src/pipeline.py` — 8 extractores con lógica incremental (Last-Modified / append / dedup)
+- ✅ `PipelineState` — estado persistente en `.pipeline_state.json`
+- ✅ CLI: `--dry-run`, `--status`, `--source`, `--force`, `--verbose`
+- ✅ GitHub: rama `bronze` publicada + `main` con commit inicial
+- ✅ Probado: F3 descargó 56,064 filas · segunda ejecución → skip instantáneo
+- ✅ GitHub Action `etl-semanal.yml` creado (desactivado hasta Fase 3)
+
+---
+
+## Fase 1B 🔄 — Silver layer + EDA (27 mayo – 6 junio 2026)
+
+**Entregables:**
+- `src/transform.py` — pipeline Silver (rama `silver`) 🔄
+- `SeguroData_02_EDA.ipynb` — análisis exploratorio completo ⏳
 
 ### Semana 1 (26 mayo – 1 junio) — Descarga y limpieza
 
+> ✅ La descarga ya está automatizada — usar `python src/pipeline.py` en lugar de los pasos manuales de abajo.
+
 **FUENTE 1 — Delito de Alto Impacto (ZIP GeoJSON):**
-- [ ] Descargar `dai_geojson.zip` → `datos/raw/`
-- [ ] Cargar con GeoPandas, verificar columnas (`tipologia_delito`, `lat`, `lon`, `fecha`, `hora`, `UPZ`)
-- [ ] Filtrar solo registros con coordenadas válidas dentro de Bogotá (lat: 3.7–4.9, lon: -74.4–-73.9)
-- [ ] Agregar por UPZ + mes: tabla de conteos históricos 2020–2024
+- [x] `python src/pipeline.py --source f1` → `datos/raw/f1_delito_alto_impacto.parquet`
+- [ ] Verificar columnas en EDA (`tipologia_delito`, `lat`, `lon`, `fecha`, `hora`, `UPZ`)
+- [ ] `python src/transform.py --step f1` → `datos/procesados/delitos_upz_mes.parquet`
 
 **FUENTE 2 — UPZ Shapefile:**
-- [ ] Cargar desde URL directa con `gpd.read_file(URL_UPZ)`
+- [x] `python src/pipeline.py --source f2` → `datos/raw/f2_upz.geojson`
 - [ ] Verificar N=112 polígonos, CRS EPSG:4326
 - [ ] Explorar columnas disponibles (código UPZ, nombre, localidad, área)
+- _Nota: F2 no tiene paso transform propio — es referencia espacial usada en los spatial joins de F4, F7 y F8._
 
 **FUENTE 3 — Open-Meteo:**
-- [ ] Descargar clima horario 2020–2024 con `src/etl.open_meteo()`
-- [ ] Guardar como `datos/raw/clima_bogota_2020_2024.parquet`
-- [ ] Agregar a granularidad diaria (temperatura y precipitación promedio)
+- [x] `python src/pipeline.py --source f3` → `datos/raw/f3_clima_bogota.parquet` (descarga incremental desde `max(fecha)`)
+- [ ] `python src/transform.py --step f3` → `datos/procesados/clima_diario.parquet`
+- [ ] Verificar columnas: `temperatura_promedio_c`, `precipitacion_mm` agregadas a granularidad diaria
 
 **FUENTE 4 — Cuadrantes de Policía:**
-- [ ] Descargar GeoJSON de cuadrantes → `datos/raw/cuadrantes_policia.geojson`
+- [x] `python src/pipeline.py --source f4` → `datos/raw/f4_cuadrantes.geojson`
+- [ ] `python src/transform.py --step f4` → `datos/procesados/features_cuadrantes_upz.csv`
 - [ ] Verificar columnas: confirmar si tiene `nombre_cai` con info de contacto
-- [ ] Si NO tiene → crear `datos/raw/cai_bogota.csv` con nombre, dirección y cuadrante (~80 CAIs)
+- [ ] Si NO tiene `nombre_cai` → crear `datos/raw/cai_bogota.csv` manual (~80 CAIs: nombre, dirección, cuadrante)
 
 ### Semana 2 (2 junio – 6 junio) — EDA y construcción del dataset
 
 **FUENTE 5 — NUSE 123:**
-- [ ] Descargar via CKAN API (`src/etl.ckan_query_all`) con paginación
-- [ ] Calcular `ratio_nuse_delitos_upz` = CANT_INCIDENTES_NUSE / n_delitos_DAI por UPZ·mes
+- [x] `python src/pipeline.py --source f5` → `datos/raw/f5_nuse_123.parquet` (descarga por año + dedup)
+- [ ] `python src/transform.py --step f5` → `datos/procesados/nuse_upz_mes.parquet`
+- [ ] `ratio_nuse_delitos_upz` se calcula automáticamente en el paso `silver` (NUSE / delitos por UPZ·mes)
 
 **FUENTE 7 — Estratificación:**
-- [ ] Cargar desde URL directa (100K+ manzanas — advertencia memoria Colab)
-- [ ] Calcular `estrato_promedio_upz` por spatial join manzana centroide → UPZ
-- [ ] Guardar resultado como `datos/procesados/estrato_por_upz.csv` para no recalcular
+- [x] `python src/pipeline.py --source f7` → `datos/raw/f7_estratificacion.parquet`
+- [ ] `python src/transform.py --step f7 --force` → `datos/procesados/estrato_por_upz.csv` ⚠️ pesado (~115K polígonos, spatial join por centroides)
+- [ ] Si la RAM se agota en Colab gratuito: ver `docs/TRANSFORMACION.md` (alternativas con Colab Pro o Drive)
 
 **FUENTE 8 — TransMilenio:**
-- [ ] Descargar GeoJSON estaciones → `datos/raw/estaciones_transmilenio.geojson`
-- [ ] Calcular `n_estaciones_tm_upz` y `dist_tm_metros` por spatial join
+- [x] `python src/pipeline.py --source f8` → `datos/raw/f8_transmilenio.geojson`
+- [ ] `python src/transform.py --step f8` → `datos/procesados/features_tm_upz.csv`
+- [ ] Verificar `n_estaciones_tm` y `dist_tm_metros` por UPZ
+
+**TABLA SILVER — unir todas las fuentes:**
+- [ ] `python src/transform.py --step silver` → `datos/procesados/silver_upz_mes.parquet` (18 columnas, ~5–8K filas)
+- [ ] O correr todo de un tirón: `python src/transform.py` → ejecuta f1 · f3 · f4 · f5 · f7 · f8 · silver en orden
 
 **Visualizaciones obligatorias del EDA:**
 - [ ] Mapa de calor de hurtos por UPZ (Folium choropleta)
@@ -84,10 +112,14 @@ Fase 0 ✅ | Fase 1 ▶ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 - [ ] Correlación lluvia vs. número de hurtos (scatter plot)
 - [ ] Distribución de estrato promedio por UPZ (boxplot)
 
-**Entregable al cerrar Fase 1:**
-- `datos/procesados/delitos_por_upz_mes.parquet` — tabla maestra de delitos agregados
-- `datos/procesados/estrato_por_upz.csv` — pre-calculado, no recalcular
-- `datos/procesados/features_espaciales_upz.csv` — cuadrantes/km², estaciones TM, distancia TM
+**Entregables al cerrar Fase 1B:**
+- `datos/procesados/delitos_upz_mes.parquet` — delitos por UPZ × mes + lags 4sem / 8sem + tipo dominante
+- `datos/procesados/clima_diario.parquet` — temperatura y precipitación diarios (2020–hoy)
+- `datos/procesados/features_cuadrantes_upz.csv` — densidad de cuadrantes por km² por UPZ
+- `datos/procesados/nuse_upz_mes.parquet` — incidentes NUSE 123 por UPZ × mes
+- `datos/procesados/estrato_por_upz.csv` — estrato promedio ponderado por UPZ (pre-calculado, ⚠️ no recalcular)
+- `datos/procesados/features_tm_upz.csv` — n_estaciones_tm y dist_tm_metros por UPZ
+- `datos/procesados/silver_upz_mes.parquet` — **tabla unida final** (18 columnas, input para Gold)
 
 ---
 

@@ -9,12 +9,13 @@
 | Campo | Valor |
 |-------|-------|
 | **Nombre** | SeguroData Bogotá |
+| **Repositorio** | https://github.com/angelestrada14019/segurodata |
 | **Concurso** | Datos al Ecosistema 2026 — MinTIC |
 | **Reto** | #2 — Seguridad Ciudadana y Justicia |
 | **Nivel** | **Medio** |
 | **Ciudad piloto** | Bogotá D.C. |
 | **Unidad de análisis** | UPZ (112 zonas) |
-| **Entrega** | 13 julio 2026 (GitHub + registro datos.gov.co) |
+| **Entrega** | 13 julio 2026 (GitHub público + registro datos.gov.co) |
 | **Puntaje estimado** | 87 / 100 |
 
 ---
@@ -60,21 +61,36 @@ Un solo dashboard Streamlit, cuatro pestañas.
 | Subregistro | `ratio_nuse_delitos_upz` |
 | **Objetivo (Y)** | `nivel_riesgo` — ALTO / MEDIO / BAJO |
 
+> La selección final de variables (correlación, VIF, importancia SHAP) ocurre en la capa Gold — Notebook 03.
+
 ---
 
 ## Stack y arquitectura de datos
 
 ```
-datos/raw/        ← Bronze: archivos originales (ZIP, GeoJSON, CSV, Parquet)
-datos/procesados/ ← Silver: datos limpios, agregados por UPZ
-datos/features/   ← Gold: tabla_maestra_upz.parquet con las 14 variables
+datos/raw/        ← Bronze: archivos originales (ZIP, GeoJSON, Parquet)  — src/pipeline.py
+datos/procesados/ ← Silver: datos limpios, agregados por UPZ             — src/transform.py
+datos/features/   ← Gold: tabla_maestra_upz.parquet con las 14 variables — Notebook 03
 datos/modelos/    ← Model: xgboost_segurodata.pkl + scaler.pkl + shap_values.pkl
 graficas/         ← Outputs EDA (PNG, HTML)
 ```
 
-**Stack Python:** `pandas · geopandas · shapely · requests · xgboost · scikit-learn · shap · anthropic · streamlit · plotly · folium`
+**Stack Python:** `polars · geopandas · shapely · requests · xgboost · scikit-learn · shap · anthropic · streamlit · plotly · folium`
 
-**No hay:** FastAPI, Docker, Raspberry Pi, LangChain, Hawkes Process.
+**No hay:** FastAPI, Docker, Raspberry Pi, LangChain, OpenAI, Hawkes Process.
+
+---
+
+## Estructura de ramas (GitHub)
+
+| Rama | Capa | Estado |
+|------|------|--------|
+| `main` | Integración — siempre estable | ✅ Activa |
+| `bronze` | Extracción Bronze | ✅ Completo |
+| `silver` | Transformación Silver | 🔄 En curso |
+| `gold` | Feature engineering | ⏳ Pendiente |
+| `model` | XGBoost + SHAP | ⏳ Pendiente |
+| `dashboard` | Streamlit + Claude API | ⏳ Pendiente |
 
 ---
 
@@ -83,7 +99,9 @@ graficas/         ← Outputs EDA (PNG, HTML)
 | Fase | Fechas | Entregable | Estado |
 |------|--------|-----------|--------|
 | Fase 0 | hasta 25 may | Notebook 01 — Plan + catálogo | ✅ Completo |
-| Fase 1 | 26 may – 6 jun | Notebook 02 — EDA de 8 fuentes | ▶ En curso |
+| Fase 1A | 26 may – 27 may | Bronze layer — src/pipeline.py | ✅ Completo |
+| Fase 1B | 27 may – 6 jun | Silver layer — src/transform.py | 🔄 En curso |
+| Fase 1C | hasta 6 jun | Notebook 02 — EDA de 8 fuentes | ⏳ Pendiente |
 | Fase 2 | 7 – 20 jun | Notebooks 03+04 — XGBoost + SHAP | ⏳ Pendiente |
 | Fase 3 | 21 jun – 10 jul | Notebook 05 — Dashboard + Claude API | ⏳ Pendiente |
 | Fase 4 | 11 – 13 jul | Notebook 06 — Docs + video + registro | ⏳ Pendiente |
@@ -105,5 +123,8 @@ La conexión CAI (Módulo 3) diferencia al proyecto de cualquier análisis descr
 | Catálogo 20 fuentes (investigación) | `docs/INVESTIGACION_FUENTES.md` | Referencia fuentes descartadas y alternativas |
 | Excel de fuentes validadas (4 hojas) | `docs/fuentes_validadas.xlsx` | Metadatos, URLs, estado de cada fuente |
 | Estado del arte internacional | `docs/ESTADO_DEL_ARTE.md` | 20+ sistemas, 18 papers, lecciones aprendidas |
-| ETL scripts | `src/etl.py` | Conectores CKAN, Socrata, ArcGIS, Open-Meteo |
+| Guía capa Silver | `docs/TRANSFORMACION.md` | Instrucciones completas para el equipo de transformación |
+| Conectores ETL | `src/etl.py` | CKAN, Socrata, ArcGIS, Open-Meteo de bajo nivel |
+| Pipeline Bronze | `src/pipeline.py` | Extracción incremental de las 8 fuentes |
+| Pipeline Silver | `src/transform.py` | Limpieza, joins espaciales, tabla silver |
 | Validación de fuentes | `src/validar_fuentes.py` | Genera el Excel de 20 fuentes |
