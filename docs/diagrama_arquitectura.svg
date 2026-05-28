@@ -93,6 +93,14 @@
   <line x1="512" y1="176" x2="512" y2="204" stroke="#ea580c" stroke-width="2.5"/>
   <polygon points="506,197 518,197 512,206" fill="#ea580c"/>
 
+  <!-- Flecha Zona 4 → Benchmarking Nacional (dashed — no va a Bronze, va a benchmarking) -->
+  <line x1="725" y1="176" x2="725" y2="204" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <polygon points="719,198 731,198 725,206" fill="#dc2626"/>
+
+  <!-- Flecha Zona 5 → Plan No Estructuradas (dashed — plan futuro Fase 2) -->
+  <line x1="1017" y1="176" x2="1017" y2="204" stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <polygon points="1011,198 1023,198 1017,206" fill="#7c3aed"/>
+
   <!-- ===== CAPA BRONZE ===== -->
   <rect x="10" y="206" width="595" height="230" rx="8" fill="#fef9c3" stroke="#ca8a04" stroke-width="2"/>
   <!-- Header Bronze -->
@@ -105,7 +113,7 @@
   <rect x="20" y="236" width="278" height="30" rx="4" fill="white" stroke="#d97706" stroke-width="1"/>
   <text x="30" y="249" font-size="9" font-weight="bold" fill="#1e293b">f1_dai.geojson</text>
   <text x="210" y="249" font-size="9" fill="#ca8a04" font-weight="bold">21 filas</text>
-  <text x="30" y="261" font-size="8" fill="#64748b">[Localidad × año]  Delito Alto Impacto</text>
+  <text x="30" y="261" font-size="8" fill="#64748b">[Localidad × año]  Delito Alto Impacto — solo EDA histórico</text>
 
   <!-- f2 -->
   <rect x="20" y="272" width="278" height="30" rx="4" fill="white" stroke="#d97706" stroke-width="1"/>
@@ -139,7 +147,7 @@
   <rect x="308" y="289" width="287" height="30" rx="4" fill="white" stroke="#d97706" stroke-width="1"/>
   <text x="318" y="302" font-size="9" font-weight="bold" fill="#1e293b">f6_hurto_pn.parquet</text>
   <text x="475" y="302" font-size="9" fill="#ca8a04" font-weight="bold">638,569 filas</text>
-  <text x="318" y="314" font-size="8" fill="#64748b">[Benchmarking nacional]  Socrata</text>
+  <text x="318" y="314" font-size="8" fill="#64748b">[Benchmarking nacional]  Socrata — no entra a Silver JOIN</text>
 
   <!-- f7 -->
   <rect x="308" y="325" width="287" height="28" rx="4" fill="white" stroke="#d97706" stroke-width="1"/>
@@ -241,6 +249,15 @@
   <line x1="26" y1="652" x2="589" y2="652" stroke="#16a34a" stroke-width="0.8" stroke-dasharray="4,2"/>
   <text x="307" y="668" text-anchor="middle" font-size="9" fill="#15803d">Llave:  upz_cod × anio × mes × tipo_crimen</text>
   <text x="307" y="682" text-anchor="middle" font-size="8.5" fill="#166534" font-style="italic">Commit: a05b93e  |  Fase 1A completada</text>
+
+  <!-- ===== FLECHAS HORIZONTALES Silver → Gold → Model ===== -->
+  <!-- Silver → Gold -->
+  <line x1="606" y1="580" x2="612" y2="580" stroke="#0369a1" stroke-width="2.5"/>
+  <polygon points="609,575 609,585 617,580" fill="#0369a1"/>
+
+  <!-- Gold → Model -->
+  <line x1="836" y1="580" x2="842" y2="580" stroke="#a16207" stroke-width="2.5"/>
+  <polygon points="839,575 839,585 847,580" fill="#a16207"/>
 
   <!-- ===== CUADROS LATERALES SILVER (alineados) ===== -->
   <!-- Flecha hacia Gold (derecha de Silver) -->
