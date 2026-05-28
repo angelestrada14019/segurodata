@@ -32,7 +32,7 @@ El proyecto está organizado por capas, cada una en su propia rama:
 ## Arquitectura Medallion
 
 ```
-Bronze  datos/raw/          src/pipeline.py   ← extraccion incremental 8 fuentes  ✅
+Bronze  datos/raw/          src/pipeline.py   ← extraccion incremental — 10 fuentes (F1-F8 estructuradas + F9-F10 corpus LLM)  ✅
 Silver  datos/procesados/   src/transform.py  ← limpieza, joins, agrega por UPZ   ✅
 Gold    datos/features/     Notebook 03       ← 14 variables + tabla maestra       ⏳
 Model   datos/modelos/      Notebook 04       ← XGBoost entrenado + SHAP values    ⏳
@@ -100,7 +100,7 @@ cp .env.example .env
 
 ## Bronze — Extracción (`src/pipeline.py`)
 
-Descarga las 8 fuentes de forma **incremental**: compara el estado local contra el servidor y solo descarga si hay datos nuevos. Segunda ejecución del mismo día → instantánea.
+Descarga las 10 fuentes de forma **incremental**: compara el estado local contra el servidor y solo descarga si hay datos nuevos. Segunda ejecución del mismo día → instantánea.
 
 ```bash
 python src/pipeline.py --dry-run          # ver qué descargaría sin ejecutar
@@ -162,7 +162,7 @@ silver = pl.read_parquet("datos/procesados/silver_upz_mes.parquet")
 | f5 | `f5_nuse_123.parquet` | `delitos_upz_mes.parquet` + `nuse_upz_mes.parquet` | NUSE por UPZ × mes + lags (base del modelo) |
 | f7 | `f7_estratificacion.parquet` | `estrato_por_upz.csv` | Spatial join manzanas → estrato promedio UPZ ⚠️ pesado |
 | f8 | `f8_transmilenio.geojson` | `features_tm_upz.csv` | Distancia y conteo TM por UPZ |
-| silver | todos los anteriores | `silver_upz_mes.parquet` | Tabla final unida (17 columnas, 1,918 filas) |
+| silver | todos los anteriores | `silver_upz_mes.parquet` | Tabla final unida (20 columnas, 111,606 filas) |
 
 > ⚠️ El paso `f7` (estratificación) carga ~115K polígonos. En Colab gratuito puede agotar RAM — ver `docs/TRANSFORMACION.md` para alternativas.
 
@@ -180,7 +180,7 @@ segurodata/
 ├── graficas/             <- Outputs del EDA
 ├── src/
 │   ├── etl.py            <- Conectores de bajo nivel: CKAN, Socrata, ArcGIS, Open-Meteo
-│   ├── pipeline.py       <- Extracción incremental Bronze (8 fuentes)
+│   ├── pipeline.py       <- Extracción incremental Bronze (10 fuentes)
 │   ├── transform.py      <- Transformación Silver (limpieza + spatial joins)
 │   └── validar_fuentes.py
 ├── .github/
@@ -234,9 +234,25 @@ Dashboard        streamlit · plotly · folium
 
 | Notebook | Fase | Contenido | Estado |
 |----------|------|-----------|--------|
-| `SeguroData_01_Plan_y_Fuentes.ipynb` | 0 | Plan + catálogo de 8 fuentes | ✅ |
+| `SeguroData_01_Plan_y_Fuentes.ipynb` | 0 | Plan + catálogo de 12 fuentes (F1-F10 activas + F11-F12 planificadas) | ✅ |
 | `SeguroData_02_EDA.ipynb` | 1 | Análisis exploratorio (6 visualizaciones requeridas) | ✅ |
 | `SeguroData_03_Features.ipynb` | 2 | 14 variables + correlación | ⏳ |
 | `SeguroData_04_Modelo.ipynb` | 2 | XGBoost + SHAP + sesgo | ⏳ |
 | `SeguroData_05_Dashboard.ipynb` | 3 | Streamlit + Claude API | ⏳ |
 | `SeguroData_06_Deployment.ipynb` | 4 | Deploy + docs + video | ⏳ |
+
+---
+
+## Documentación de referencia
+
+| Documento | Ubicación | Para qué |
+|-----------|----------|---------|
+| Catálogo 20 fuentes (investigación) | `docs/INVESTIGACION_FUENTES.md` | Referencia fuentes descartadas y alternativas |
+| Excel de fuentes validadas (4 hojas) | `docs/fuentes_validadas.xlsx` | Metadatos, URLs, estado de cada fuente |
+| Estado del arte internacional | `docs/ESTADO_DEL_ARTE.md` | 20+ sistemas, 18 papers, lecciones aprendidas |
+| Guía capa Silver | `docs/TRANSFORMACION.md` | Instrucciones completas para el equipo de transformación |
+| Provenance de fuentes (URLs, licencias, causalidad) | `docs/FUENTES_PROVENANCE.md` | Trazabilidad de datos para el jurado |
+| Conectores ETL | `src/etl.py` | CKAN, Socrata, ArcGIS, Open-Meteo de bajo nivel |
+| Pipeline Bronze | `src/pipeline.py` | Extracción incremental de las 10 fuentes |
+| Pipeline Silver | `src/transform.py` | Limpieza, joins espaciales, tabla silver |
+| Validación de fuentes | `src/validar_fuentes.py` | Genera el Excel de 20 fuentes |

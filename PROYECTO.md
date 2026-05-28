@@ -33,7 +33,7 @@ Un solo dashboard Streamlit, cuatro pestañas.
 
 ---
 
-## Las 8 fuentes activas
+## Las 10 fuentes activas (+ F11/F12 planificadas)
 
 | # | Nombre | Plataforma | Resource ID / URL clave | Rol |
 |---|--------|-----------|------------------------|-----|
@@ -45,6 +45,10 @@ Un solo dashboard Streamlit, cuatro pestañas.
 | F6 | Hurto Personas — PN | Socrata | `4rxi-8m8d` | Benchmarking nacional |
 | F7 | Estratificación SDP | CKAN — URL directa | `29f2d770-bd5d-4450-9e95-8737167ba12f` | Socioeconómica + equidad |
 | F8 | Estaciones TransMilenio | CKAN | `9be8b6fb-8059-492f-a866-4a1ac031c502` | Movilidad / afluencia |
+| F9 | Boletines SCJ — Sec. Distrital Seguridad | scj.gov.co | N/A (texto) | Corpus LLM — GraphRAG |
+| F10 | Noticias RSS — El Tiempo / Espectador | RSS público | N/A (texto) | Corpus LLM — GraphRAG |
+
+> F9 y F10 no entran en XGBoost — son corpus de texto para el GraphRAG y Claude API (Módulos 3 y 4). F11 (IDU obras) y F12 (Plan Desarrollo) se planifican para Fase 2 y Fase 3 respectivamente.
 
 **Fuente adicional opcional:** Medicina Legal Lesiones (Socrata `79dd-d24f`) — refuerza análisis de subregistro en la sustentación oral.
 
@@ -101,7 +105,7 @@ graficas/         ← Outputs EDA (PNG, HTML)
 | Fase 0 | hasta 25 may | Notebook 01 — Plan + catálogo | ✅ Completo |
 | Fase 1A | 26 may – 27 may | Bronze layer — src/pipeline.py | ✅ Completo |
 | Fase 1B | 27 may – 6 jun | Silver layer — src/transform.py | ✅ Completo |
-| Fase 1C | hasta 6 jun | Notebook 02 — EDA de 8 fuentes | ✅ Completo |
+| Fase 1C | hasta 6 jun | Notebook 02 — EDA de 10 fuentes | ✅ Completo |
 | Fase 2 | 7 – 20 jun | Notebooks 03+04 — XGBoost + SHAP | ⏳ Pendiente |
 | Fase 3 | 21 jun – 10 jul | Notebook 05 — Dashboard + Claude API | ⏳ Pendiente |
 | Fase 4 | 11 – 13 jul | Notebook 06 — Docs + video + registro | ⏳ Pendiente |
@@ -125,6 +129,7 @@ La conexión CAI (Módulo 3) diferencia al proyecto de cualquier análisis descr
 | Estado del arte internacional | `docs/ESTADO_DEL_ARTE.md` | 20+ sistemas, 18 papers, lecciones aprendidas |
 | Guía capa Silver | `docs/TRANSFORMACION.md` | Instrucciones completas para el equipo de transformación |
 | Conectores ETL | `src/etl.py` | CKAN, Socrata, ArcGIS, Open-Meteo de bajo nivel |
-| Pipeline Bronze | `src/pipeline.py` | Extracción incremental de las 8 fuentes |
+| Pipeline Bronze | `src/pipeline.py` | Extracción incremental de las 10 fuentes |
 | Pipeline Silver | `src/transform.py` | Limpieza, joins espaciales, tabla silver |
 | Validación de fuentes | `src/validar_fuentes.py` | Genera el Excel de 20 fuentes |
+| Provenance fuentes | `docs/FUENTES_PROVENANCE.md` | URLs, licencias, causalidad — para el jurado |
