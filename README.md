@@ -8,6 +8,8 @@
 **Concurso:** Datos al Ecosistema 2026 — MinTIC · Reto #2 Seguridad Ciudadana · Nivel Medio  
 **Entrega:** 13 julio 2026 · GitHub público + registro en datos.gov.co
 
+📊 **[Diagrama de arquitectura de fuentes](docs/diagrama_arquitectura.svg)**
+
 ---
 
 ## Estructura de ramas
@@ -38,7 +40,7 @@ Model   datos/modelos/      Notebook 04       ← XGBoost entrenado + SHAP value
 
 ---
 
-## Las 8 fuentes de datos
+## Las 10 fuentes de datos
 
 Todas públicas y gratuitas — **868,140 registros Bronze en total**:
 
@@ -52,6 +54,8 @@ Todas públicas y gratuitas — **868,140 registros Bronze en total**:
 | F6 | Hurto a Personas — Policía Nacional | 638,569 | Municipio × día | Benchmarking nacional (no tiene UPZ) | Mensual |
 | F7 | Estratificación por manzana — SDP | 44,260 | Manzana (polígono) | +1 col: `estrato_promedio_upz` | Según necesidad |
 | F8 | Estaciones TransMilenio — TM S.A. | 153 | Estación (punto) | +2 cols: `dist_tm_metros`, `n_estaciones_tm` | Estático |
+| F9 | Boletines SCJ — Sec. Distrital Seguridad | N/A (texto) | Documento / Artículo | Corpus LLM — NO entra en XGBoost | Mensual |
+| F10 | Noticias RSS — El Tiempo / Espectador | N/A (texto) | Documento / Artículo | Corpus LLM — NO entra en XGBoost | Diaria |
 | | **TOTAL BRONZE** | **868,140** | | **Silver: 111,606 × 20 cols** | |
 
 > **¿Por qué 868K Bronze → 111K Silver?**
@@ -59,6 +63,8 @@ Todas públicas y gratuitas — **868,140 registros Bronze en total**:
 > La tabla Silver tiene una fila por cada combinación **UPZ × mes × tipo\_de\_incidente** — esas filas vienen de F5 NUSE, el único archivo con las tres dimensiones juntas. Las otras fuentes no crean filas nuevas: **F3 agrega columnas** de clima por mes, **F4/F7/F8 agregan columnas** de características de la UPZ (cuadrantes, estrato, TM). F2 es la base geométrica para los spatial joins. F1 (granularidad localidad) y F6 (granularidad municipio) no tienen desglose por UPZ y se usan como referencia de contexto.
 >
 > La columna `es_crimen` en Silver distingue los 19 tipos de alto impacto criminal (HURTO, RIÑA, LESIONES…) del resto (RUIDO, ACCIDENTE TRÁNSITO, EMBRIAGUEZ…). Todos se conservan porque el modelo puede aprender correlaciones entre el desorden urbano y la criminalidad.
+>
+> **F9 y F10 (Boletines PDF + RSS noticias)** no entran en XGBoost — son corpus de texto para el contexto de Claude API en los Módulos 3 (Recomendación) y 4 (Chatbot).
 
 ---
 

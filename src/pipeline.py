@@ -76,6 +76,20 @@ URL_F8_ARCGIS = (
     "Troncal/consulta_estaciones_troncales/MapServer/0/query"
 )
 
+# F9: Secretaría Distrital de Seguridad — Boletines PDF mensuales
+URL_F9_SCJ_BASE = "https://scj.gov.co/cifras/estadisticas-mapas"
+# F10: RSS feeds de noticias Bogotá (seguridad ciudadana)
+RSS_FEEDS_F10 = {
+    "el_tiempo": "https://www.eltiempo.com/rss/bogota.xml",
+    "el_espectador": "https://feeds.elespectador.com/elespectador/justicia",
+}
+KEYWORDS_SEGURIDAD = [
+    "hurto", "robo", "homicidio", "crimen", "delito", "seguridad",
+    "policia", "captura", "detenido", "violencia", "extorsion",
+    "secuestro", "lesiones", "atraco", "inseguridad", "cuadrante",
+]
+RAW_BOLETINES = RAW_DIR / "boletines_scj"
+
 CKAN_BASE = "https://datosabiertos.bogota.gov.co/api/3/action"
 
 # Open-Meteo — coordenadas Bogotá
@@ -830,6 +844,165 @@ def extract_f8_transmilenio(
         return ExtractResult(source, "error", 0, 0, "", str(exc))
 
 
+def extract_f9_scj_boletines(
+    state: PipelineState,
+    force: bool = False,
+    dry_run: bool = False,
+    verbose: bool = False,
+) -> ExtractResult:
+    """
+    F9 — PDFs de boletines mensuales SCJ (Secretaria Distrital de Seguridad y Convivencia).
+    Fuente: https://scj.gov.co/cifras/estadisticas-mapas
+    Estrategia: scrape lista de PDFs de la pagina → descarga solo los nuevos.
+    Salida: datos/raw/boletines_scj/*.pdf (un PDF por boletin)
+    """
+    import requests
+    from bs4 import BeautifulSoup
+
+    source = "f9_scj_boletines"
+    RAW_BOLETINES.mkdir(parents=True, exist_ok=True)
+    saved = state.get(source)
+
+    if dry_run:
+        return ExtractResult(source, "updated", -1, -1, str(RAW_BOLETINES),
+                             "[DRY-RUN] descargaria PDFs de boletines SCJ")
+
+    try:
+        if verbose:
+            print(f"    Accediendo a {URL_F9_SCJ_BASE}...")
+        resp = requests.get(URL_F9_SCJ_BASE, timeout=30,
+                            headers={"User-Agent": "Mozilla/5.0"})
+        resp.raise_for_status()
+
+        soup = BeautifulSoup(resp.text, "html.parser")
+        # Buscar todos los enlaces a PDFs con "boletin" o "informe" en el nombre
+        pdf_links = []
+        for a in soup.find_all("a", href=True):
+            href = a["href"]
+            if ".pdf" in href.lower() and any(
+                kw in href.lower() for kw in ["boletin", "informe", "estadis"]
+            ):
+                if not href.startswith("http"):
+                    href = "https://scj.gov.co" + href
+                pdf_links.append(href)
+
+        # Eliminar duplicados preservando orden
+        seen = set()
+        pdf_links = [x for x in pdf_links if not (x in seen or seen.add(x))]
+
+        if verbose:
+            print(f"    Encontrados {len(pdf_links)} PDFs en la pagina SCJ")
+
+        new_count = 0
+        for url in pdf_links:
+            fname = url.split("/")[-1].split("?")[0]
+            if not fname.endswith(".pdf"):
+                fname = fname + ".pdf"
+            out = RAW_BOLETINES / fname
+            if not out.exists() or force:
+                try:
+                    r = requests.get(url, timeout=60,
+                                     headers={"User-Agent": "Mozilla/5.0"})
+                    r.raise_for_status()
+                    out.write_bytes(r.content)
+                    new_count += 1
+                    if verbose:
+                        print(f"    Descargado: {fname}")
+                except Exception as e:
+                    if verbose:
+                        print(f"    Error descargando {fname}: {e}")
+
+        total_pdfs = len(list(RAW_BOLETINES.glob("*.pdf")))
+        state.update(source, last_downloaded=str(date.today()),
+                     row_count=total_pdfs, file_path=str(RAW_BOLETINES), status="ok")
+        return ExtractResult(source, "updated", new_count, total_pdfs,
+                             str(RAW_BOLETINES),
+                             f"{new_count} PDFs nuevos | {total_pdfs} total en {RAW_BOLETINES.name}/")
+    except Exception as exc:
+        return ExtractResult(source, "error", 0, 0, "", str(exc))
+
+
+def extract_f10_noticias_rss(
+    state: PipelineState,
+    force: bool = False,
+    dry_run: bool = False,
+    verbose: bool = False,
+) -> ExtractResult:
+    """
+    F10 — RSS feeds de noticias de Bogota filtrados por keywords de seguridad.
+    Fuentes: El Tiempo Bogota + El Espectador Justicia
+    Estrategia: append incremental — solo articulos nuevos desde ultima descarga.
+    Salida: datos/raw/noticias_rss.jsonl (1 articulo JSON por linea)
+    """
+    import feedparser
+    import json
+    from datetime import datetime
+
+    source = "f10_noticias_rss"
+    out_path = RAW_DIR / "noticias_rss.jsonl"
+    saved = state.get(source)
+    last_downloaded = saved.get("last_downloaded", "2024-01-01")
+
+    if dry_run:
+        return ExtractResult(source, "updated", -1, -1, str(out_path),
+                             f"[DRY-RUN] descargaria RSS feeds de El Tiempo y Espectador")
+
+    try:
+        # Leer articulos existentes para deduplicar
+        existing_links = set()
+        if out_path.exists() and not force:
+            with open(out_path, encoding="utf-8") as f:
+                for line in f:
+                    try:
+                        art = json.loads(line)
+                        existing_links.add(art.get("link", ""))
+                    except Exception:
+                        pass
+
+        nuevos = []
+        for feed_name, feed_url in RSS_FEEDS_F10.items():
+            try:
+                if verbose:
+                    print(f"    Leyendo RSS: {feed_name}...")
+                feed = feedparser.parse(feed_url)
+                for entry in feed.entries:
+                    link = getattr(entry, "link", "")
+                    if link in existing_links:
+                        continue
+                    titulo = getattr(entry, "title", "")
+                    resumen = getattr(entry, "summary", "")
+                    texto = f"{titulo} {resumen}".lower()
+                    # Filtrar solo noticias de seguridad
+                    if not any(kw in texto for kw in KEYWORDS_SEGURIDAD):
+                        continue
+                    art = {
+                        "fuente": feed_name,
+                        "titulo": titulo,
+                        "link": link,
+                        "resumen": resumen,
+                        "published": getattr(entry, "published", ""),
+                        "descargado": str(date.today()),
+                    }
+                    nuevos.append(art)
+                    existing_links.add(link)
+            except Exception as e:
+                if verbose:
+                    print(f"    Error en feed {feed_name}: {e}")
+
+        if nuevos:
+            with open(out_path, "a", encoding="utf-8") as f:
+                for art in nuevos:
+                    f.write(json.dumps(art, ensure_ascii=False) + "\n")
+
+        total = len(existing_links)
+        state.update(source, last_downloaded=str(date.today()),
+                     row_count=total, file_path=str(out_path), status="ok")
+        return ExtractResult(source, "updated", len(nuevos), total, str(out_path),
+                             f"{len(nuevos)} articulos nuevos | {total} total en noticias_rss.jsonl")
+    except Exception as exc:
+        return ExtractResult(source, "error", 0, 0, "", str(exc))
+
+
 # ─── Mapa de extractores ──────────────────────────────────────────────────────
 
 EXTRACTORS = {
@@ -841,6 +1014,8 @@ EXTRACTORS = {
     "f6": extract_f6_hurto,
     "f7": extract_f7_estratificacion,
     "f8": extract_f8_transmilenio,
+    "f9": extract_f9_scj_boletines,
+    "f10": extract_f10_noticias_rss,
 }
 
 SOURCE_LABELS = {
@@ -852,6 +1027,8 @@ SOURCE_LABELS = {
     "f6": "Hurto Personas (PN)",
     "f7": "Estratificación SDP",
     "f8": "Estaciones TM",
+    "f9": "Boletines SCJ (PDF)",
+    "f10": "Noticias RSS Bogota",
 }
 
 
@@ -881,8 +1058,17 @@ def run_pipeline(
     """
     state = PipelineState()
     keys = sources if sources else list(EXTRACTORS.keys())
-    # normalizar: "f1_delitos" → "f1"
-    keys = [k[:2] if len(k) > 2 else k for k in keys]
+    # normalizar: "f1_delitos" → "f1", "f10_noticias" → "f10"
+    # Buscar la clave mas larga de EXTRACTORS que sea prefijo del token dado
+    def _normalize_key(k: str) -> str:
+        if k in EXTRACTORS:
+            return k
+        # intentar match por prefijo (ej. "f10_noticias" -> "f10")
+        for ek in sorted(EXTRACTORS.keys(), key=len, reverse=True):
+            if k.startswith(ek):
+                return ek
+        return k
+    keys = [_normalize_key(k) for k in keys]
     # filtrar claves válidas
     keys = [k for k in keys if k in EXTRACTORS]
 
@@ -932,7 +1118,7 @@ def main() -> None:
         nargs="+",
         choices=list(EXTRACTORS.keys()),
         metavar="FX",
-        help="fuentes a procesar (f1..f8). Sin este flag -> todas",
+        help="fuentes a procesar (f1..f10). Sin este flag -> todas",
     )
     parser.add_argument(
         "--force", "-f",

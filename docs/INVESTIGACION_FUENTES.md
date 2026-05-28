@@ -347,6 +347,9 @@ clima = get_clima_bogota("2019-01-01", "2024-12-31")
 
 ### 19. Secretaría Distrital de Seguridad (SCJ) — Estadísticas y Boletines
 
+- **Estado:** ACTIVO — implementado como F9 en `src/pipeline.py` (extract_f9_scj_boletines)
+- **Output Bronze:** `datos/raw/boletines_scj/*.pdf`
+- **Output Silver/Text:** `datos/procesados/boletines_corpus.json`
 - **URL estadísticas:** `https://scj.gov.co/cifras/estadisticas-mapas`
 - **URL datos abiertos:** `https://scj.gov.co/en/transparencia/datos-abiertos/seccion-datos-abiertos`
 - **Contenido:**

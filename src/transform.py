@@ -1105,6 +1105,60 @@ def build_silver_table(
         return TransformResult(step, "error", 0, str(out_path), str(exc))
 
 
+def transform_f9_boletines() -> int:
+    """
+    F9 — Extrae texto de los PDFs de boletines SCJ y genera corpus JSON para Claude API.
+
+    Salida:
+      datos/procesados/boletines_corpus.json  — lista de {filename, texto, n_paginas, n_chars}
+      datos/procesados/boletines_stats.parquet — estadisticas parseadas (si hay tablas)
+
+    El corpus JSON es el insumo para los prompts de Claude API en Modulos 3 y 4.
+    """
+    import json
+
+    try:
+        import pdfplumber
+    except ImportError:
+        print("  [F9] pdfplumber no instalado. Ejecuta: pip install pdfplumber")
+        return 0
+
+    boletines_dir = RAW_DIR / "boletines_scj"
+    if not boletines_dir.exists():
+        print(f"  [F9] Directorio {boletines_dir} no existe. Ejecuta primero extract_f9_scj_boletines()")
+        return 0
+
+    pdfs = sorted(boletines_dir.glob("*.pdf"))
+    if not pdfs:
+        print(f"  [F9] No hay PDFs en {boletines_dir}")
+        return 0
+
+    corpus = []
+    for pdf_path in pdfs:
+        try:
+            with pdfplumber.open(pdf_path) as pdf:
+                texto = "\n".join(p.extract_text() or "" for p in pdf.pages)
+                n_pags = len(pdf.pages)
+            corpus.append({
+                "filename": pdf_path.name,
+                "texto": texto.strip(),
+                "n_paginas": n_pags,
+                "n_chars": len(texto),
+            })
+            print(f"    {pdf_path.name}: {n_pags} pags, {len(texto):,} chars")
+        except Exception as e:
+            print(f"    Error procesando {pdf_path.name}: {e}")
+
+    out_path = PROC_DIR / "boletines_corpus.json"
+    out_path.write_text(
+        json.dumps(corpus, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    total_chars = sum(d["n_chars"] for d in corpus)
+    print(f"  [F9] Corpus: {len(corpus)} boletines | {total_chars:,} chars totales → {out_path.name}")
+    return len(corpus)
+
+
 # ─── Mapa de pasos ────────────────────────────────────────────────────────────
 
 STEPS = {
