@@ -39,20 +39,25 @@ El sistema responde tres preguntas concretas:
 
 ---
 
-## Las 8 fuentes de datos activas
+## Las 10 fuentes de datos activas (+ F11/F12 planificadas)
 
 | # | Fuente | Plataforma | Rol en el modelo |
 |---|--------|-----------|-----------------|
-| 1 | Delito de Alto Impacto — Sec. Seguridad | CKAN — descarga ZIP | **Variable objetivo (Y)** |
-| 2 | UPZ Shapefile — IDECA | CKAN — URL directa | Base espacial — spatial joins |
-| 3 | Open-Meteo — Clima Bogotá | REST API (sin clave) | Features climáticas en tiempo real |
-| 4 | Cuadrantes de Policía — MEBOG | CKAN — descarga ZIP | Feature cobertura policial + conexión CAI |
-| 5 | Incidentes NUSE 123 — C4 | CKAN Datastore API | Feature subregistro (ratio NUSE/delitos) |
-| 6 | Hurto Personas — Policía Nacional | Socrata `4rxi-8m8d` | Benchmarking nacional — contexto oral |
-| 7 | Estratificación por manzana — SDP | CKAN — URL directa | Feature socioeconómica + análisis sesgo |
-| 8 | Estaciones TransMilenio — TM S.A. | CKAN — descarga | Features movilidad/afluencia |
+| F1 | Delito de Alto Impacto — Sec. Seguridad | CKAN — descarga ZIP | EDA histórico 2018–2026 (granularidad localidad, no UPZ) |
+| F2 | UPZ Shapefile — IDECA | ArcGIS REST | Base espacial — spatial joins |
+| F3 | Open-Meteo — Clima Bogotá | REST API (sin clave) | Features climáticas en tiempo real |
+| F4 | Cuadrantes de Policía — MEBOG | CKAN — descarga ZIP | Feature cobertura policial + conexión CAI |
+| F5 | Incidentes NUSE 123 — C4 | CKAN Datastore API | **BASE Silver**: genera 111,606 filas × 20 cols |
+| F6 | Hurto Personas — Policía Nacional | Socrata `4rxi-8m8d` | Benchmarking nacional — contexto oral |
+| F7 | Estratificación por manzana — SDP | CKAN — URL directa | Feature socioeconómica + análisis sesgo |
+| F8 | Estaciones TransMilenio — TM S.A. | ArcGIS REST | Features movilidad/afluencia |
+| F9 | Boletines SCJ — Sec. Distrital Seguridad | scj.gov.co (PDFs) | Corpus LLM → GraphRAG (NO entra en XGBoost) |
+| F10 | Noticias RSS — El Tiempo / Espectador | RSS público | Corpus LLM → GraphRAG (NO entra en XGBoost) |
 
-**Investigación completa de 20 fuentes** (incluyendo descartadas y alternativas) en `docs/INVESTIGACION_FUENTES.md` y `docs/fuentes_validadas.xlsx`.
+> **F11 (IDU obras)** y **F12 (Plan Desarrollo Bogotá 2024-2027)** se planifican para Fase 2 y Fase 3.  
+> **Silver**: 111,606 filas × 20 cols — generadas por F5 NUSE. F1/F6 no tienen desglose UPZ.
+
+**Investigación completa de 20 fuentes** (incluyendo descartadas y alternativas) en `docs/INVESTIGACION_FUENTES.md`, `docs/fuentes_validadas.xlsx` y `docs/FUENTES_PROVENANCE.md`.
 
 ---
 
@@ -94,18 +99,30 @@ VARIABLE OBJETIVO (Y):
 ```
 proyecto/
 ├── datos/
-│   ├── raw/              ← Bronze: archivos como se descargan
-│   ├── procesados/       ← Silver: datos limpios y unificados
-│   ├── features/         ← Gold: tabla maestra UPZ con las 14 variables
-│   └── modelos/          ← Model: XGBoost entrenado + SHAP values
-├── graficas/             ← Outputs visuales del EDA
+│   ├── raw/              ← Bronze: archivos como se descargan (generados por pipeline.py)
+│   │   └── boletines_scj/← F9: PDFs descargados de SCJ
+│   ├── procesados/       ← Silver: datos limpios y unificados (generados por transform.py)
+│   ├── features/         ← Gold: tabla maestra UPZ con las 14 variables (Notebook 03)
+│   ├── grafo/            ← GraphRAG: índice nano-graphrag persistido (Fase 3)
+│   └── modelos/          ← Model: XGBoost entrenado + SHAP values (Notebook 04)
+├── graficas/             ← Outputs visuales del EDA (7 gráficas V1-V7)
 ├── src/
-│   ├── etl.py            ← 4 conectores: CKAN, Socrata, ArcGIS, Open-Meteo
+│   ├── etl.py            ← 4 conectores de bajo nivel: CKAN, Socrata, ArcGIS, Open-Meteo
+│   ├── pipeline.py       ← Extracción incremental Bronze (10 fuentes F1-F10)
+│   ├── transform.py      ← Transformación Silver (limpieza + spatial joins)
 │   └── validar_fuentes.py← genera fuentes_validadas.xlsx con 20 fuentes
 ├── docs/
 │   ├── ESTADO_DEL_ARTE.md         ← 20+ sistemas internacionales, 18 papers
 │   ├── INVESTIGACION_FUENTES.md   ← catálogo completo de 20 fuentes
+│   ├── TRANSFORMACION.md          ← guía capa Silver para el equipo
+│   ├── FUENTES_PROVENANCE.md      ← URLs, licencias, causalidad — para el jurado
+│   ├── diagrama_arquitectura.svg  ← diagrama visual de la arquitectura
 │   └── fuentes_validadas.xlsx     ← Excel validado (4 hojas)
+├── wiki_pages/           ← Páginas del GitHub Wiki (Home, Fuentes, Arquitectura, etc.)
+│   └── PUSH_WIKI.bat     ← helper: clonar wiki y hacer push (requiere init en GitHub web)
+├── .github/
+│   └── workflows/
+│       └── etl-semanal.yml ← GitHub Action ETL semanal (desactivado)
 ├── .claude/commands/     ← slash commands del proyecto
 ├── CLAUDE.md             ← este archivo
 ├── PROYECTO.md           ← documento activo de gobernanza
@@ -113,7 +130,8 @@ proyecto/
 ├── REGLAS.md             ← restricciones del concurso
 ├── requirements.txt
 ├── README.md
-└── SeguroData_01_Plan_y_Fuentes.ipynb  ← Notebook 01 (maestro del proyecto)
+├── SeguroData_01_Plan_y_Fuentes.ipynb  ← Notebook 01 ✅
+└── SeguroData_02_EDA.ipynb             ← Notebook 02 ✅
 ```
 
 Los notebooks del proyecto siguen el esquema `SeguroData_0X_Nombre.ipynb`:
@@ -138,9 +156,9 @@ El Módulo 3 usa SHAP para identificar la causa dominante del riesgo y conecta d
 
 ## Cómo ayudar en este proyecto
 
-**Cuando el usuario traiga código:** revisar con énfasis en correctitud, reproducibilidad en Colab, y eficiencia con datasets grandes (500K+ filas del GeoJSON de delitos).
+**Cuando el usuario traiga código:** revisar con énfasis en correctitud, reproducibilidad en Colab, y eficiencia con datasets grandes. Los dos datasets más pesados: F6 Hurto PN (638K filas, solo benchmarking) y F7 Estratificación (44K polígonos de manzanas — el spatial join agota RAM en Colab gratuito).
 
-**Cuando pida análisis:** usar el contexto de Bogotá — 112 UPZs, localidades, las 8 fuentes activas. No generalizar.
+**Cuando pida análisis:** usar el contexto de Bogotá — 112 UPZs, localidades, las 10 fuentes activas (F1-F10). No generalizar.
 
 **Cuando pida texto para el chatbot o recomendaciones:** el Módulo 3 y 4 usan Claude API. Los mensajes son operacionales (lenguaje del comandante de CAI, no jerga de ML). Distinguir del registro técnico de los notebooks.
 
@@ -158,8 +176,8 @@ El Módulo 3 usa SHAP para identificar la causa dominante del riesgo y conecta d
 
 | Fecha | Hito |
 |-------|------|
-| ✅ 23 mayo | Notebook 01 completado — plan + catálogo de 8 fuentes |
-| ▶ 26 mayo – 6 junio | **Fase 1:** EDA de las 8 fuentes → Notebook 02 |
+| ✅ 23 mayo | Notebook 01 completado — plan + catálogo de 12 fuentes (F1-F10 activas + F11-F12 planificadas) |
+| ✅ 26 mayo – 6 junio | **Fase 1:** EDA de las 10 fuentes → Notebook 02 ✅ |
 | ⏳ 7 – 20 junio | **Fase 2:** XGBoost + SHAP → Notebooks 03+04 |
 | ⏳ 21 junio – 10 julio | **Fase 3:** Dashboard Streamlit + Claude API → Notebook 05 |
 | ⏳ 11 – 13 julio | **Fase 4:** Docs + video + registro → Notebook 06 |

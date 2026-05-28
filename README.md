@@ -174,13 +174,15 @@ silver = pl.read_parquet("datos/procesados/silver_upz_mes.parquet")
 segurodata/
 ├── datos/
 │   ├── raw/              <- Bronze: archivos originales (generados por pipeline.py)
+│   │   └── boletines_scj/<- F9: PDFs boletines mensuales SCJ
 │   ├── procesados/       <- Silver: datos limpios por UPZ (generados por transform.py)
 │   ├── features/         <- Gold:   tabla maestra 14 variables (Notebook 03)
+│   ├── grafo/            <- GraphRAG: índice nano-graphrag persistido (Fase 3)
 │   └── modelos/          <- Model:  XGBoost + SHAP (Notebook 04)
-├── graficas/             <- Outputs del EDA
+├── graficas/             <- Outputs del EDA (7 visualizaciones V1-V7)
 ├── src/
 │   ├── etl.py            <- Conectores de bajo nivel: CKAN, Socrata, ArcGIS, Open-Meteo
-│   ├── pipeline.py       <- Extracción incremental Bronze (10 fuentes)
+│   ├── pipeline.py       <- Extracción incremental Bronze (10 fuentes F1-F10)
 │   ├── transform.py      <- Transformación Silver (limpieza + spatial joins)
 │   └── validar_fuentes.py
 ├── .github/
@@ -190,8 +192,13 @@ segurodata/
 │   ├── TRANSFORMACION.md    <- Instrucciones completas para la capa Silver
 │   ├── ESTADO_DEL_ARTE.md   <- 20+ sistemas internacionales, 18 papers
 │   ├── INVESTIGACION_FUENTES.md
+│   ├── FUENTES_PROVENANCE.md  <- URLs, licencias, causalidad — para el jurado
+│   ├── diagrama_arquitectura.svg <- Diagrama visual de la arquitectura (abre en browser)
 │   └── fuentes_validadas.xlsx
+├── wiki_pages/           <- Páginas del GitHub Wiki (7 páginas)
+│   └── PUSH_WIKI.bat     <- helper para publicar el wiki
 ├── SeguroData_01_Plan_y_Fuentes.ipynb
+├── SeguroData_02_EDA.ipynb
 ├── .env.example          <- Template de variables de entorno
 ├── .gitignore
 ├── CLAUDE.md

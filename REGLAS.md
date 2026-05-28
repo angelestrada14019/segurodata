@@ -8,7 +8,7 @@
 
 > **⚠️ ALERTA DE FECHA:** La investigación de mayo 2026 encontró que el evento final del concurso es **GovCamps 2026 (primera semana de agosto 2026)**, no el 13 de julio como se estimaba originalmente. Verificar en datos.gov.co antes de planificar hitos finales. Si se confirma agosto, hay ~3 semanas extra.
 >
-> **Competidor directo identificado:** "Atlas del Crimen" ganó Datos al Ecosistema 2025 con análisis espaciotemporal de criminalidad. Nuestra diferenciación: predicción (no solo descripción), SHAP causal, capa prescriptiva con entidades responsables, y FastAPI operacional.
+> **Competidor directo identificado:** "Atlas del Crimen" ganó Datos al Ecosistema 2025 con análisis espaciotemporal de criminalidad. Nuestra diferenciación: predicción (no solo descripción), SHAP causal, capa prescriptiva con entidades responsables, y GraphRAG causal para explicar el *por qué* del crimen.
 >
 > **Competencia:** 349 equipos / 1096 participantes registrados al 19 mayo 2026.
 
@@ -19,7 +19,7 @@
 - [ ] **Registro en datos.gov.co** — el enlace al proyecto debe registrarse en el portal oficial antes de la fecha límite (**verificar fecha exacta: posiblemente agosto 2026, confirmar en datos.gov.co**).
 - [ ] **Priorizar datos de datos.gov.co** — el concurso evalúa explícitamente el uso del portal nacional de datos abiertos + Mapas de Ruta Sectoriales de Datos Estratégicos.
 - [ ] **Notebooks CRISP-ML documentados** — 6 notebooks numerados `SeguroData_01` a `SeguroData_06`, uno por fase.
-- [ ] **Mínimo 10.000 filas** en el dataset principal. Con el Delito de Alto Impacto (500K+ registros) esto está garantizado desde el inicio.
+- [ ] **Mínimo 10.000 filas** en el dataset principal. La tabla Silver tiene **111,606 filas × 20 columnas** (base: F5 NUSE 128K registros). ✅ Garantizado.
 - [ ] **README.md** completo en el repositorio con descripción, instrucciones de instalación y referencia a los datos.
 
 ### Criterios que evalúa el jurado técnico
@@ -49,7 +49,7 @@
 - **No** hacer fine-tuning de LLM sin al menos 200–500 pares de entrenamiento etiquetados — produce un modelo peor que el base
 
 ### Evaluación
-- **No** usar validación aleatoria (train/test split aleatorio) para series temporales — se debe usar **validación temporal** (e.g., entrenar en 2019–2023, testear en 2024)
+- **No** usar validación aleatoria (train/test split aleatorio) para series temporales — se debe usar **validación temporal**. En este proyecto: TRAIN = ene–oct 2025, TEST = nov 2025–abr 2026 (F5 NUSE solo disponible 2025–2026)
 - **No** reportar accuracy en un dataset de crimen sin reportar también precision, recall y F1 — el accuracy es engañoso con clases desbalanceadas
 
 ### Alcance
@@ -64,7 +64,7 @@
 | Solo Bogotá | Calidad de datos superior + volumen garantizado + no penalización por enfoque único |
 | Granularidad UPZ (no localidad, no barrio) | Balance entre resolución y estabilidad estadística |
 | Stack Python + scikit-learn + XGBoost | Reproducible, bien documentado, compatible con CRISP-ML |
-| Hawkes Process como capa adicional | Fundamentado en literatura colombiana (Riascos et al.) |
+| ~~Hawkes Process~~ → **GraphRAG causal** | Hawkes descartado por complejidad/tiempo. GraphRAG (nano-graphrag + Claude API) diferencia mejor: explica el *por qué* del crimen usando boletines SCJ + noticias + Plan Desarrollo |
 | SHAP para interpretabilidad | Requerido para la capa prescriptiva y valorado por el jurado técnico |
 | Streamlit para dashboard | Fácil de desplegar en Streamlit Cloud, no requiere backend separado |
 
@@ -73,7 +73,7 @@
 ## Preguntas difíciles del jurado — respuestas preparadas
 
 **"¿Su modelo discrimina por estrato?"**
-→ Sí lo analizamos. El Notebook 05 incluye análisis de sesgo por estrato socioeconómico. El modelo usa estrato como variable pero los SHAP values permiten identificar si produce predicciones sistemáticamente sesgadas. [Completar con resultados reales del análisis.]
+→ Sí lo analizamos. El Notebook 04 incluye análisis de sesgo por estrato socioeconómico. El modelo usa estrato como variable pero los SHAP values permiten identificar si produce predicciones sistemáticamente sesgadas. [Completar con resultados reales del análisis.]
 
 **"¿Qué pasa si el SIEDCO tiene subregistro?"**
 → El subregistro es un problema real en criminología colombiana. Lo mitigamos de dos formas: (1) usamos el crimen reportado como proxy, explicitando la limitación, y (2) cruzamos con otras fuentes (llamadas a emergencias, datos de movilidad anómala) para detectar patrones no capturados por SIEDCO.

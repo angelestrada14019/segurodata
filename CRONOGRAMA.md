@@ -27,7 +27,7 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 - ✅ Descripción del problema y propuesta
 - ✅ 3 perfiles de usuario definidos (Comandante CAI, Sec. Seguridad, Ciudadano)
 - ✅ 4 módulos del sistema definidos (Diagnóstico, Predicción, Recomendación, Chatbot)
-- ✅ Catálogo de 8 fuentes con URLs verificadas, variables y código de carga
+- ✅ Catálogo de 12 fuentes (F1-F10 activas + F11/F12 planificadas) con URLs verificadas, variables y código de carga
 - ✅ Arquitectura Medallón definida (Bronze/Silver/Gold/Model)
 - ✅ 14 variables del modelo XGBoost documentadas
 - ✅ Cronograma de fases con fechas
@@ -42,7 +42,7 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 **Entregable:** `src/pipeline.py` + `src/etl.py` — extracción incremental lista
 
 - ✅ `src/etl.py` — conectores CKAN, Socrata, ArcGIS, Open-Meteo + `get_last_modified()`
-- ✅ `src/pipeline.py` — 8 extractores con lógica incremental (Last-Modified / append / dedup)
+- ✅ `src/pipeline.py` — 10 extractores con lógica incremental (F1-F8 estructurados + F9/F10 corpus LLM)
 - ✅ `PipelineState` — estado persistente en `.pipeline_state.json`
 - ✅ CLI: `--dry-run`, `--status`, `--source`, `--force`, `--verbose`
 - ✅ GitHub: rama `bronze` publicada + `main` con commit inicial
@@ -86,7 +86,7 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 
 **FUENTE 5 — NUSE 123:**
 - [x] `python src/pipeline.py --source f5` → `datos/raw/f5_nuse_123.parquet` (128,314 filas, 2025–2026)
-- [x] `python src/transform.py --step f5` → `datos/procesados/nuse_upz_mes.parquet` (1,920 filas) + `delitos_upz_mes.parquet` (1,918 filas, base del modelo con lags)
+- [x] `python src/transform.py --step f5` → `datos/procesados/nuse_upz_mes.parquet` + `delitos_upz_mes.parquet` (**111,606 filas**, todos los 86 tipos NUSE × UPZ × mes, con flag `es_crimen`)
 - [x] F5 NUSE es la **base del modelo** (F1 DAI es solo referencia EDA — no tiene desglose UPZ)
 - [x] `ratio_nuse_delitos_upz` calculado automáticamente en el paso `silver`
 - _Nota: Dataset NUSE solo disponible 2025–2026. Split temporal del modelo: TRAIN=Jan-Oct 2025, TEST=Nov 2025–2026._
@@ -103,7 +103,7 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 
 **TABLA SILVER — unir todas las fuentes:**
 - [x] `python src/transform.py --step silver` → `datos/procesados/silver_upz_mes.parquet` ✅
-- [x] Tabla final: **1,918 filas × 17 columnas**, 120 UPZs, años 2025–2026
+- [x] Tabla final: **111,606 filas × 20 columnas**, 120 UPZs, 86 tipos NUSE, 19 localidades, ene 2025–abr 2026
 
 **Visualizaciones obligatorias del EDA:**
 - [x] V1 — Mapa de calor de delitos NUSE por UPZ (Folium choropleta) → `graficas/v1_mapa_calor_upz.html`
@@ -115,13 +115,13 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 - [x] V7 — Distribución n_delitos + cobertura policial (supplementary) → `graficas/v7_distribucion_cobertura.png`
 
 **Entregables al cerrar Fase 1B:**
-- [x] `datos/procesados/delitos_upz_mes.parquet` — NUSE filtrado por crimen × UPZ × mes + lags (1,918 filas)
+- [x] `datos/procesados/delitos_upz_mes.parquet` — todos los tipos NUSE × UPZ × mes + lags + flag `es_crimen` (**111,606 filas**)
 - [x] `datos/procesados/clima_diario.parquet` — temperatura y precipitación diarios (2,338 días)
 - [x] `datos/procesados/features_cuadrantes_upz.csv` — cuadrantes/km² + nombre CAI por UPZ (111 UPZs)
-- [x] `datos/procesados/nuse_upz_mes.parquet` — todos los incidentes NUSE por UPZ × mes (1,920 filas)
+- [x] `datos/procesados/nuse_upz_mes.parquet` — incidentes NUSE agregados por UPZ × mes (todos los tipos)
 - [x] `datos/procesados/estrato_por_upz.csv` — estrato promedio ponderado por UPZ (43 UPZs cubiertas)
 - [x] `datos/procesados/features_tm_upz.csv` — n_estaciones_tm y dist_tm_metros por UPZ (112 UPZs)
-- [x] `datos/procesados/silver_upz_mes.parquet` — **tabla unida final** (17 columnas, input para Gold)
+- [x] `datos/procesados/silver_upz_mes.parquet` — **tabla unida final** (**20 columnas**, 111,606 filas, input para Gold)
 - [x] `SeguroData_02_EDA.ipynb` — 6 visualizaciones requeridas + 1 complementaria, ejecutable de inicio a fin
 
 ---
@@ -139,7 +139,7 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 
 ### Notebook 04 — Modelo (13–20 junio)
 
-- [ ] Split temporal: TRAIN = 2020–2023, TEST = 2024 (NO split aleatorio)
+- [ ] Split temporal: TRAIN = ene–oct 2025, TEST = nov 2025–abr 2026 (NO split aleatorio — F5 NUSE solo disponible 2025–2026)
 - [ ] Entrenar XGBoost con parámetros por defecto como baseline
 - [ ] Métricas: Precision, Recall, F1 por clase (ALTO/MEDIO/BAJO) + AUC-ROC macro
 - [ ] Tuning básico: GridSearch sobre `max_depth`, `n_estimators`, `learning_rate`
