@@ -57,7 +57,7 @@ El sistema responde tres preguntas concretas:
 > **F11 (IDU obras)** y **F12 (Plan Desarrollo Bogotá 2024-2027)** se planifican para Fase 2 y Fase 3.  
 > **Silver**: 111,606 filas × 20 cols — generadas por F5 NUSE. F1/F6 no tienen desglose UPZ.
 
-**Investigación completa de 20 fuentes** (incluyendo descartadas y alternativas) en `docs/INVESTIGACION_FUENTES.md`, `docs/fuentes_validadas.xlsx` y `docs/FUENTES_PROVENANCE.md`.
+**Investigación completa de 20 fuentes** (incluyendo descartadas y alternativas) en el [Wiki — Investigacion-Fuentes](https://github.com/angelestrada14019/segurodata/wiki/Investigacion-Fuentes) y `docs/fuentes_validadas.xlsx`.
 
 ---
 
@@ -112,22 +112,20 @@ proyecto/
 │   ├── transform.py      ← Transformación Silver (limpieza + spatial joins)
 │   └── validar_fuentes.py← genera fuentes_validadas.xlsx con 20 fuentes
 ├── docs/
-│   ├── ESTADO_DEL_ARTE.md         ← 20+ sistemas internacionales, 18 papers
-│   ├── INVESTIGACION_FUENTES.md   ← catálogo completo de 20 fuentes
-│   ├── TRANSFORMACION.md          ← guía capa Silver para el equipo
-│   ├── FUENTES_PROVENANCE.md      ← URLs, licencias, causalidad — para el jurado
-│   ├── diagrama_arquitectura.svg  ← diagrama visual de la arquitectura
+│   ├── diagrama_arquitectura.svg  ← diagrama visual de la arquitectura (linkeado en README)
 │   └── fuentes_validadas.xlsx     ← Excel validado (4 hojas)
-├── wiki_pages/           ← Páginas del GitHub Wiki (Home, Fuentes, Arquitectura, etc.)
-│   └── PUSH_WIKI.bat     ← helper: clonar wiki y hacer push (requiere init en GitHub web)
+├── wiki_pages/           ← FUENTE ÚNICA de documentación pública → PUSH_WIKI.bat → GitHub wiki
+│   ├── Home.md / Fuentes-de-Datos.md / Arquitectura.md / Modulos.md
+│   ├── Metodologia.md / Replicacion.md / Instalacion.md
+│   ├── Transformacion.md / Estado-del-Arte.md / Provenance.md
+│   ├── Investigacion-Fuentes.md / Reglas-Concurso.md
+│   └── PUSH_WIKI.bat     ← helper: git push al wiki (wiki ya inicializado en GitHub)
 ├── .github/
 │   └── workflows/
 │       └── etl-semanal.yml ← GitHub Action ETL semanal (desactivado)
 ├── .claude/commands/     ← slash commands del proyecto
-├── CLAUDE.md             ← este archivo
-├── PROYECTO.md           ← documento activo de gobernanza
-├── CRONOGRAMA.md         ← fases y tareas por fecha
-├── REGLAS.md             ← restricciones del concurso
+├── CLAUDE.md             ← este archivo (contexto IA)
+├── CRONOGRAMA.md         ← checklists de tareas por fase ✅/⏳
 ├── requirements.txt
 ├── README.md
 ├── SeguroData_01_Plan_y_Fuentes.ipynb  ← Notebook 01 ✅
@@ -164,7 +162,7 @@ El Módulo 3 usa SHAP para identificar la causa dominante del riesgo y conecta d
 
 **Red flags que corregir:**
 - Usar Claude API como modelo predictivo (viola el espíritu del concurso — XGBoost es el modelo)
-- Usar validación aleatoria (train/test split random) en lugar de temporal (2020-2023 → 2024)
+- Usar validación aleatoria (train/test split random) en lugar de temporal — el split correcto es TRAIN = ene–oct 2025, TEST = nov 2025–abr 2026 (F5 NUSE solo disponible 2025–2026)
 - Modelar por localidad en lugar de UPZ (demasiado grueso — 20 localidades vs 112 UPZs)
 - Saltarse el análisis de sesgo por estrato en el Notebook 04 (el jurado siempre pregunta esto)
 - Dejar el deploy de Streamlit Cloud para la última semana (hacerlo en Fase 3, no al final)
@@ -183,3 +181,36 @@ El Módulo 3 usa SHAP para identificar la causa dominante del riesgo y conecta d
 | ⏳ 11 – 13 julio | **Fase 4:** Docs + video + registro → Notebook 06 |
 | **13 julio** | **Entrega:** GitHub público + registro en datos.gov.co |
 | 14–17 julio | Sustentación oral (10 minutos + preguntas) |
+
+---
+
+## Preguntas difíciles del jurado — respuestas preparadas
+
+**"¿Su modelo discrimina por estrato?"**
+→ Sí lo analizamos. El Notebook 04 incluye análisis de sesgo por estrato socioeconómico. El modelo usa estrato como variable pero los SHAP values permiten identificar si produce predicciones sistemáticamente sesgadas. PredPol en EE.UU. fue discontinuado por esto — nosotros lo prevenimos por diseño.
+
+**"¿Qué pasa si el SIEDCO tiene subregistro?"**
+→ Lo mitigamos de dos formas: (1) usamos el crimen reportado como proxy, explicitando la limitación, y (2) el ratio NUSE_123/delitos_formales_por_UPZ es un feature del modelo que captura el nivel de subregistro por zona. Barrera et al. (Uniandes 2023) es la referencia metodológica.
+
+**"¿Cómo escala esto a otra ciudad?"**
+→ La arquitectura es modular. Para replicar en otra ciudad: sustituir el dataset Socrata por el ID equivalente local, reemplazar los shapefiles de UPZ por la división administrativa local, y recalibrar los thresholds del modelo. El README documenta este proceso. Para Barranquilla se puede usar transfer learning preentrenado en Bogotá.
+
+**"¿Cómo previenen el crimen, no solo lo predicen?"**
+→ La capa prescriptiva diagnostica la causa raíz (temporal, estructural, urbanística) y mapea cada diagnóstico a la entidad distrital responsable de la intervención. No mandamos más policías — identificamos qué tipo de intervención necesita cada zona y quién debe ejecutarla.
+
+**"¿Qué diferencia esto del Atlas del Crimen que ganó en 2025?"**
+→ El Atlas del Crimen es análisis descriptivo — explica qué ha pasado históricamente. Este sistema es predictivo y prescriptivo. Además, el Atlas operó a nivel departamental sin modelo ML. Este proyecto opera a nivel UPZ con XGBoost + SHAP + FastAPI operacional.
+
+---
+
+## Decisiones de diseño ya tomadas (no reabrir sin justificación fuerte)
+
+| Decisión | Justificación |
+|----------|--------------|
+| Solo Bogotá | Calidad de datos superior + volumen garantizado + no penalización por enfoque único |
+| Granularidad UPZ (no localidad, no barrio) | Balance entre resolución y estabilidad estadística |
+| Stack Python + scikit-learn + XGBoost | Reproducible, bien documentado, compatible con CRISP-ML |
+| ~~Hawkes Process~~ → **GraphRAG causal** | Hawkes descartado por complejidad/tiempo. GraphRAG (nano-graphrag + Claude API) diferencia mejor: explica el *por qué* del crimen usando boletines SCJ + noticias + Plan Desarrollo |
+| SHAP para interpretabilidad | Requerido para la capa prescriptiva y valorado por el jurado técnico |
+| Streamlit para dashboard | Fácil de desplegar en Streamlit Cloud, no requiere backend separado |
+| `wiki_pages/` como fuente única de docs | Editar wiki_pages/ + correr PUSH_WIKI.bat → wiki actualizado. El código solo tiene README, CLAUDE.md y CRONOGRAMA.md |

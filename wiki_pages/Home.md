@@ -31,3 +31,11 @@ El **Módulo 3 (Recomendación)** usa SHAP para identificar la causa dominante d
 - [[Metodologia]] — CRISP-ML, validación temporal, análisis de sesgo
 - [[Replicacion]] — Cómo usar SeguroData en otra ciudad
 - [[Instalacion]] — Guía paso a paso
+
+### Documentación técnica
+
+- [[Transformacion]] — Capa Silver: esquema 20 cols, comandos, advertencia RAM F7
+- [[Estado-del-Arte]] — 20+ sistemas internacionales, 18 papers, diferenciación
+- [[Provenance]] — URLs verificadas, licencias, tabla causal, cumplimiento concurso
+- [[Investigacion-Fuentes]] — Catálogo 20 fuentes, IDs descartados, snippets ETL
+- [[Reglas-Concurso]] — Checklist obligatorios, preguntas del jurado, decisiones de diseño

@@ -134,7 +134,7 @@ clima   = pl.read_parquet("datos/raw/f3_clima_bogota.parquet")
 ## Silver — Transformación (`src/transform.py`)
 
 Toma los archivos Bronze y produce una tabla limpia agregada por **UPZ × mes**.  
-Ver `docs/TRANSFORMACION.md` para instrucciones completas.
+Ver [Wiki — Transformacion](https://github.com/angelestrada14019/segurodata/wiki/Transformacion) para instrucciones completas.
 
 ```bash
 python src/transform.py --dry-run         # ver qué transformaría sin ejecutar
@@ -164,7 +164,7 @@ silver = pl.read_parquet("datos/procesados/silver_upz_mes.parquet")
 | f8 | `f8_transmilenio.geojson` | `features_tm_upz.csv` | Distancia y conteo TM por UPZ |
 | silver | todos los anteriores | `silver_upz_mes.parquet` | Tabla final unida (20 columnas, 111,606 filas) |
 
-> ⚠️ El paso `f7` (estratificación) carga ~115K polígonos. En Colab gratuito puede agotar RAM — ver `docs/TRANSFORMACION.md` para alternativas.
+> ⚠️ El paso `f7` (estratificación) carga ~115K polígonos. En Colab gratuito puede agotar RAM — ver [Wiki — Transformacion](https://github.com/angelestrada14019/segurodata/wiki/Transformacion) para alternativas.
 
 ---
 
@@ -189,22 +189,19 @@ segurodata/
 │   └── workflows/
 │       └── etl-semanal.yml  <- GitHub Action (desactivado — activar descomentando schedule)
 ├── docs/
-│   ├── TRANSFORMACION.md    <- Instrucciones completas para la capa Silver
-│   ├── ESTADO_DEL_ARTE.md   <- 20+ sistemas internacionales, 18 papers
-│   ├── INVESTIGACION_FUENTES.md
-│   ├── FUENTES_PROVENANCE.md  <- URLs, licencias, causalidad — para el jurado
 │   ├── diagrama_arquitectura.svg <- Diagrama visual de la arquitectura (abre en browser)
-│   └── fuentes_validadas.xlsx
-├── wiki_pages/           <- Páginas del GitHub Wiki (7 páginas)
+│   └── fuentes_validadas.xlsx    <- Excel de 20 fuentes validadas (4 hojas)
+├── wiki_pages/           <- FUENTE ÚNICA de documentación → PUSH_WIKI.bat → GitHub wiki
+│   ├── Home.md / Fuentes-de-Datos.md / Arquitectura.md / Modulos.md / Metodologia.md
+│   ├── Replicacion.md / Instalacion.md / Transformacion.md / Estado-del-Arte.md
+│   ├── Provenance.md / Investigacion-Fuentes.md / Reglas-Concurso.md
 │   └── PUSH_WIKI.bat     <- helper para publicar el wiki
 ├── SeguroData_01_Plan_y_Fuentes.ipynb
 ├── SeguroData_02_EDA.ipynb
 ├── .env.example          <- Template de variables de entorno
 ├── .gitignore
-├── CLAUDE.md
-├── PROYECTO.md
-├── CRONOGRAMA.md
-├── REGLAS.md
+├── CLAUDE.md             <- contexto para sesiones de IA
+├── CRONOGRAMA.md         <- checklists de tareas por fase
 ├── requirements.txt
 └── README.md
 ```
@@ -250,16 +247,15 @@ Dashboard        streamlit · plotly · folium
 
 ---
 
-## Documentación de referencia
+## Documentación
 
-| Documento | Ubicación | Para qué |
-|-----------|----------|---------|
-| Catálogo 20 fuentes (investigación) | `docs/INVESTIGACION_FUENTES.md` | Referencia fuentes descartadas y alternativas |
-| Excel de fuentes validadas (4 hojas) | `docs/fuentes_validadas.xlsx` | Metadatos, URLs, estado de cada fuente |
-| Estado del arte internacional | `docs/ESTADO_DEL_ARTE.md` | 20+ sistemas, 18 papers, lecciones aprendidas |
-| Guía capa Silver | `docs/TRANSFORMACION.md` | Instrucciones completas para el equipo de transformación |
-| Provenance de fuentes (URLs, licencias, causalidad) | `docs/FUENTES_PROVENANCE.md` | Trazabilidad de datos para el jurado |
+📖 **[Documentación completa en el Wiki](https://github.com/angelestrada14019/segurodata/wiki)**
+
+El wiki incluye: catálogo de 20 fuentes · estado del arte internacional · guía capa Silver · provenance de datos · reglas del concurso y preguntas del jurado.
+
+| Código | Ubicación | Para qué |
+|--------|----------|---------|
 | Conectores ETL | `src/etl.py` | CKAN, Socrata, ArcGIS, Open-Meteo de bajo nivel |
 | Pipeline Bronze | `src/pipeline.py` | Extracción incremental de las 10 fuentes |
 | Pipeline Silver | `src/transform.py` | Limpieza, joins espaciales, tabla silver |
-| Validación de fuentes | `src/validar_fuentes.py` | Genera el Excel de 20 fuentes |
+| Excel fuentes validadas | `docs/fuentes_validadas.xlsx` | Metadatos, URLs, estado de cada fuente |
