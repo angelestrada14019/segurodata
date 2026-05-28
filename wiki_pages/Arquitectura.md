@@ -40,6 +40,6 @@ F12 PDF → pdfplumber → graph.insert(texto)  ← Plan Desarrollo
 
 **Ventaja del GraphRAG sobre corpus plano**: Claude recibe un subgrafo contextualizado con relaciones explícitas (UPZ → OBRA_ACTIVA → HURTO_ALTA → BOLETIN_MENCIONA), no solo chunks de texto desconectados.
 
-## Diagrama SVG
+## Diagrama de arquitectura
 
-Ver el diagrama completo de fuentes en: [docs/diagrama_arquitectura.svg](https://github.com/angelestrada14019/segurodata/blob/main/docs/diagrama_arquitectura.svg)
+![Diagrama de arquitectura de fuentes SeguroData](diagrama_arquitectura.svg)
