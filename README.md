@@ -250,7 +250,7 @@ Escalamiento     Google Cloud Run (FastAPI — inferencia en tiempo real, post-c
 | `SeguroData_03_Features.ipynb` | 2 | 17 variables + tabla ontológica prescriptiva + Supabase | ⏳ |
 | `SeguroData_04_Modelo.ipynb` | 2 | XGBoost + SHAP pre-computados + análisis sesgo | ⏳ |
 | `SeguroData_05_Dashboard.ipynb` | 3 | Arquitectura React+FastAPI+Supabase + screenshots | ⏳ |
-| `SeguroData_06_Deployment.ipynb` | 4 | Deploy Railway+Vercel + registro datos.gov.co | ⏳ |
+| `SeguroData_06_Deployment.ipynb` | 4 | Deploy Vercel+Supabase + registro datos.gov.co | ⏳ |
 
 ---
 

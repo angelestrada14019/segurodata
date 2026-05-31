@@ -90,7 +90,7 @@
 | Modelo | SEPP Hawkes | ML + imagen + clima + RRSS | Sin modelo publicado | SEPP Hawkes (CAP-AUC=0.8) | **XGBoost + SHAP + ruptures (cambios estructurales)** |
 | Interpretabilidad | ❌ No (caja negra) | ❌ No | ❌ No | ❌ No publicado | **✅ SHAP values por UPZ (pre-computados)** |
 | Capa prescriptiva | ❌ No | ❌ No | ❌ No | ❌ No | **✅ Tabla ontológica + diagnóstico causal + entidades responsables** |
-| API operacional | Propietaria (SaaS) | SaaS (licencia $) | ❌ No | ❌ No | **✅ API REST pública (FastAPI + Railway)** |
+| API operacional | Propietaria (SaaS) | SaaS (licencia $) | ❌ No | ❌ No | **✅ API REST pública (FastAPI + Google Cloud Run)** |
 | Sesgo documentado | ❌ No (lo hundió) | ⚠️ Sin publicar | ❌ No aplica | ❌ No publicado | **✅ Notebook 04 — análisis estrato** |
 | Compatible EU AI Act | ❌ No (perfilamiento individual) | ⚠️ Zona-level pero con cámaras | N/A | ⚠️ Punto geoespacial | **✅ Zone-level, sin perfilamiento individual** |
 | Datos abiertos | ❌ No (propietarios) | ❌ No | ✅ Sí (nacional) | ⚠️ Parcial | **✅ 20 fuentes verificadas, 100% abiertas** |
@@ -206,4 +206,4 @@ Revisados 20+ sistemas en 15+ países y 5 sistemas colombianos: **ninguno** comb
 → La capa prescriptiva diagnostica la causa raíz del riesgo — si es temporal (evento próximo), estructural (desempleo, hacinamiento) o urbanística (iluminación, espacio público) — y mapea cada diagnóstico a la entidad distrital responsable de la intervención. No es "más policías en zonas pobres" (el error de PredPol). Es identificar qué tipo de intervención específica necesita cada zona y quién debe ejecutarla. Ninguno de los sistemas internacionales revisados tiene esta capa.
 
 **"¿Qué diferencia esto del Atlas del Crimen que ganó en 2025?"**
-→ El Atlas del Crimen es análisis descriptivo — explica qué ha pasado históricamente. Este sistema tiene tres capas: descriptivo (mapa deck.gl en tiempo real), predictivo (XGBoost + SHAP + ruptures para cambios estructurales), y prescriptivo real (tabla ontológica SHAP→entidad→acción + Claude API en lenguaje operacional). El Atlas operó a nivel departamental sin modelo ML ni capa prescriptiva. Este proyecto opera a nivel UPZ con API REST pública (FastAPI + Railway).
+→ El Atlas del Crimen es análisis descriptivo — explica qué ha pasado históricamente. Este sistema tiene tres capas: descriptivo (mapa deck.gl en tiempo real), predictivo (XGBoost + SHAP + ruptures para cambios estructurales), y prescriptivo real (tabla ontológica SHAP→entidad→acción + Claude API en lenguaje operacional). El Atlas operó a nivel departamental sin modelo ML ni capa prescriptiva. Este proyecto opera a nivel UPZ con API REST pública (FastAPI + Cloud Run, serverless).
