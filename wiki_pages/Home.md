@@ -14,8 +14,8 @@
 |---|---------|--------|-----------|
 | 1 | ¿Qué está pasando? | Diagnóstico | React + deck.gl + Supabase Realtime |
 | 2 | ¿Qué va a pasar? | Predicción | XGBoost + SHAP + ruptures |
-| 3 | ¿Qué hacer? | Prescriptivo | Tabla ontológica + Claude API |
-| 4 | ¿Por qué? | Chatbot causal | LangChain + Supabase pgvector + Claude API |
+| 3 | ¿Qué hacer? | Prescriptivo | Tabla ontológica + OpenRouter (Gemini Flash) |
+| 4 | ¿Por qué? | Chatbot causal | Supabase Edge Function + pgvector + OpenRouter |
 
 ## El diferenciador clave
 

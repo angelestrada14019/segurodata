@@ -1,6 +1,6 @@
 # Guía de Instalación
 
-El proyecto tiene tres componentes: **pipeline de datos** (Python), **backend ML** (FastAPI/Python), y **frontend** (React). En producción corren en Railway (backend) + Vercel (frontend) + Supabase (BD).
+El proyecto tiene tres componentes: **pipeline de datos** (Python), **backend serverless** (Supabase Edge Functions), y **frontend** (React). En producción: Vercel (frontend) + Supabase (BD + Edge Functions). No se requiere servidor dedicado.
 
 ---
 
@@ -22,7 +22,7 @@ pip install -r requirements.txt
 # Configurar variables de entorno
 cp .env.example .env
 # Editar .env:
-#   ANTHROPIC_API_KEY=sk-ant-...       (Módulos 3 y 4)
+#   OPENROUTER_API_KEY=sk-or-...        (Módulos 3 y 4 — gratis en openrouter.ai)
 #   SUPABASE_URL=https://xxx.supabase.co
 #   SUPABASE_ANON_KEY=eyJ...
 ```
@@ -49,31 +49,15 @@ python src/pipeline.py --status  # ver estado de cada fuente
 
 ---
 
-## 2. Backend ML — FastAPI
+## 2. Indexar corpus GraphRAG (una sola vez)
+
+Genera los embeddings del corpus de texto (F9 + F10) y los carga en Supabase pgvector:
 
 ```bash
-cd backend
-pip install -r requirements.txt    # fastapi, uvicorn, xgboost, shap, langchain-anthropic
-
-# Desarrollo local
-uvicorn main:app --reload --port 8000
-
-# Variables de entorno requeridas
-ANTHROPIC_API_KEY=sk-ant-...
-SUPABASE_URL=https://xxx.supabase.co
-SUPABASE_SERVICE_KEY=eyJ...        # service role (no anon)
-MODEL_PATH=../datos/modelos/xgboost_segurodata.pkl
-```
-
-### Deploy en Railway
-
-```bash
-# Desde raíz del repo
-railway login
-railway new
-railway add --service backend
-railway deploy
-# Railway detecta automáticamente el Dockerfile o requirements.txt en /backend
+# Requiere que F9/F10 Bronze existan (pipeline.py --source f9 f10)
+python scripts/index_corpus.py
+# Usa sentence-transformers all-MiniLM-L6-v2 (local, sin costo de API)
+# Resultado: ~220 embeddings de 384 dims → Supabase pgvector tabla 'documents'
 ```
 
 ---
@@ -86,23 +70,45 @@ railway deploy
 CREATE EXTENSION IF NOT EXISTS postgis;
 CREATE EXTENSION IF NOT EXISTS vector;
 ```
-3. Ejecutar schema inicial:
+3. Aplicar schema y cargar datos:
 ```bash
-# Desde raíz del repo
-python scripts/setup_supabase.py   # crea tablas + índices + carga Silver
-```
-4. Cargar tabla Silver desde parquet:
-```python
-import polars as pl
-from supabase import create_client
-
-silver = pl.read_parquet("datos/procesados/silver_upz_mes.parquet")
-# → subir a Supabase tabla silver_upz_mes
+python scripts/setup_supabase.py   # crea tablas + índices
+python scripts/load_silver.py      # carga silver_upz_mes.parquet
+python scripts/load_predictions.py # carga predicciones XGBoost pre-computadas
+python scripts/load_shap.py        # carga SHAP values pre-computados
+python scripts/index_corpus.py     # carga embeddings pgvector
 ```
 
 ---
 
-## 4. Frontend — React + deck.gl
+## 4. Backend serverless — Supabase Edge Functions
+
+Las Edge Functions se encargan del GraphRAG (chatbot + prescriptivo) y proxean la llamada a OpenRouter, manteniendo la API key server-side.
+
+```bash
+# Instalar Supabase CLI
+npm install -g supabase
+
+# Login
+supabase login
+
+# Vincular al proyecto
+supabase link --project-ref <project-ref>
+
+# Configurar secretos
+supabase secrets set OPENROUTER_API_KEY=sk-or-...
+supabase secrets set LLM_MODEL=google/gemini-flash-1.5
+
+# Desplegar funciones
+supabase functions deploy graphrag
+supabase functions deploy prescriptivo
+```
+
+Las Edge Functions están siempre activas — no hay sleep, no se necesita cron.
+
+---
+
+## 5. Frontend — React + deck.gl
 
 ```bash
 cd frontend
@@ -114,16 +120,36 @@ npm run dev              # abre en http://localhost:5173
 # Variables de entorno (.env.local)
 VITE_SUPABASE_URL=https://xxx.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJ...
-VITE_API_URL=http://localhost:8000   # o URL de Railway en producción
 ```
 
 ### Deploy en Vercel
 
 ```bash
-# Desde raíz del repo
 vercel --cwd frontend
 # O conectar repo GitHub en vercel.com → seleccionar carpeta /frontend
 ```
+
+---
+
+## 6. Backend ML en producción — Google Cloud Run (opcional)
+
+Para inferencia XGBoost en tiempo real (UPZ + fecha arbitraria, no pre-computada), se puede desplegar el backend Python en Google Cloud Run:
+
+```bash
+cd backend
+# Construir imagen Docker
+docker build -t segurodata-api .
+
+# Deploy en Cloud Run (free tier: 2M requests/mes, cold start 2-3s)
+gcloud run deploy segurodata-api \
+  --image gcr.io/PROJECT_ID/segurodata-api \
+  --platform managed \
+  --region us-central1 \
+  --allow-unauthenticated \
+  --set-env-vars SUPABASE_URL=...,OPENROUTER_API_KEY=...
+```
+
+No se requiere keep-alive ni cron — Cloud Run escala a cero y arranca en 2-3 segundos cuando llega una petición.
 
 ---
 
@@ -131,10 +157,11 @@ vercel --cwd frontend
 
 | Variable | Componente | Cómo obtener |
 |----------|-----------|-------------|
-| `ANTHROPIC_API_KEY` | Backend + pipeline | console.anthropic.com |
-| `SUPABASE_URL` | Backend + frontend + pipeline | Supabase Dashboard → Settings → API |
+| `OPENROUTER_API_KEY` | Edge Functions + pipeline | openrouter.ai (gratis con límites) |
+| `LLM_MODEL` | Edge Functions | `google/gemini-flash-1.5` (por defecto, gratis) |
+| `SUPABASE_URL` | Todos | Supabase Dashboard → Settings → API |
 | `SUPABASE_ANON_KEY` | Frontend (lectura pública) | Supabase Dashboard → Settings → API |
-| `SUPABASE_SERVICE_KEY` | Backend (escritura) | Supabase Dashboard → Settings → API |
-| `VITE_API_URL` | Frontend | URL de Railway una vez desplegado |
+| `SUPABASE_SERVICE_KEY` | Scripts de carga | Supabase Dashboard → Settings → API |
+| `VITE_SUPABASE_URL` | Frontend build | Igual que SUPABASE_URL |
 
 Open-Meteo, CKAN, Socrata son APIs públicas sin autenticación requerida.

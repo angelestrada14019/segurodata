@@ -4,18 +4,22 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│  CAPA 5 — APLICACIÓN                                                │
-│  React + Vite + deck.gl + Tailwind CSS  →  Vercel (CDN)             │
+│  CAPA 5 — FRONTEND                                                   │
+│  React + Vite + deck.gl + Tailwind CSS  →  Vercel (CDN, siempre ON) │
 │  4 páginas: Diagnóstico / Predicción / Prescriptivo / Chatbot       │
 ├─────────────────────────────────────────────────────────────────────┤
-│  CAPA 4 — BACKEND ML + GRAPHRAG                                      │
-│  FastAPI (Python)  →  Railway (free tier, siempre activo)           │
-│  /predict (XGBoost) · /explain (SHAP) · /query (GraphRAG→Claude)   │
+│  CAPA 4 — BACKEND SERVERLESS                                         │
+│  [Demo]      Supabase Edge Functions (Deno) — siempre activo        │
+│              graphrag() → pgvector search → OpenRouter → respuesta  │
+│  [Producción] Google Cloud Run (FastAPI) — cold start 2-3s          │
+│              /predict (XGBoost) · /explain (SHAP) · /query (RAG)   │
 ├───────────────────────────┬─────────────────────────────────────────┤
 │  CAPA 3 — BASE DE DATOS   │  CAPA 3B — VECTOR STORE                 │
-│  Supabase PostgreSQL       │  Supabase pgvector                      │
+│  Supabase PostgreSQL       │  Supabase pgvector (384 dims)           │
 │  + PostGIS (geometrías UPZ)│  Embeddings F9/F10 corpus               │
-│  + Realtime (NUSE updates) │  LangChain SupabaseVectorStore          │
+│  predictions (1,920 filas) │  sentence-transformers all-MiniLM-L6-v2│
+│  shap_values pre-computados│  (indexado una sola vez, offline)       │
+│  change_points (ruptures)  │                                         │
 ├───────────────────────────┴─────────────────────────────────────────┤
 │  CAPA 2 — MODEL / GOLD                                               │
 │  datos/modelos/  XGBoost + SHAP pre-computado + ruptures            │
@@ -26,6 +30,18 @@
 │  Silver: datos/procesados/ ← src/transform.py  (111,606 × 23 cols)  │
 └─────────────────────────────────────────────────────────────────────┘
 ```
+
+## Demo vs Producción — modos de deploy
+
+| Componente | Demo concurso | Producción (post-concurso) |
+|---|---|---|
+| Frontend | Vercel (gratis, CDN) | Vercel (igual) |
+| Predicciones XGBoost | Pre-computadas en Supabase | FastAPI en Google Cloud Run |
+| GraphRAG / Chatbot | Supabase Edge Function → OpenRouter | Google Cloud Run FastAPI |
+| LLM | OpenRouter: Gemini Flash (gratis) | OpenRouter: modelo configurable |
+| Embeddings | Indexados offline con sentence-transformers | Igual (índice persistente) |
+| Keep-alive | No necesario — todo serverless | No necesario — Cloud Run escala |
+| Costo mensual | $0 | ~$0-5 (Cloud Run free tier + OpenRouter) |
 
 ## Medallion Architecture (datos)
 
@@ -60,12 +76,21 @@ MapLibre GL JS: basemap OSM gratuito
 supabase-js: acceso directo a PostgreSQL + Realtime desde React
 ```
 
-### Backend ML — FastAPI
+### Backend — Supabase Edge Functions (demo) + Google Cloud Run (producción)
+
+**Demo (Edge Functions — Deno/TypeScript):**
+```typescript
+// supabase/functions/graphrag/index.ts
+// Recibe pregunta → busca pgvector → llama OpenRouter → devuelve respuesta
+// OPENROUTER_API_KEY queda server-side (no expuesta al browser)
+```
+
+**Producción (Google Cloud Run — FastAPI Python):**
 ```python
 # Endpoints principales
 POST /predict   → XGBoost: {upz, fecha} → {nivel_riesgo, probabilidades}
 GET  /explain   → SHAP: {upz, mes} → shap_values pre-computados desde Supabase
-POST /query     → GraphRAG: {pregunta, upz_contexto} → Claude API response
+POST /query     → GraphRAG: {pregunta, upz_contexto} → OpenRouter response
 ```
 
 ### Base de datos — Supabase
@@ -81,23 +106,28 @@ CREATE EXTENSION postgis;
 CREATE EXTENSION vector;  -- pgvector para embeddings GraphRAG
 ```
 
-## GraphRAG — LangChain + Supabase pgvector
+## GraphRAG — sentence-transformers + Supabase pgvector + OpenRouter
 
 Los corpus de texto (F9 boletines SCJ + F10 noticias RSS + F12 Plan Desarrollo) se indexan como embeddings en Supabase pgvector:
 
 ```
-F9 PDF  → pdfplumber → texto → LangChain splitter → Claude embeddings → pgvector
-F10 RSS → feedparser → texto → LangChain splitter → Claude embeddings → pgvector
-F12 PDF → pdfplumber → texto → LangChain splitter → Claude embeddings → pgvector
-               ↓
-    SupabaseVectorStore (match_documents RPC)
-               ↓
-    LangChain RetrievalQA + ChatAnthropic
-               ↓
-    Claude API → respuesta operacional con citas de fuentes reales
+INDEXACIÓN (offline, una sola vez — scripts/index_corpus.py):
+F9 PDF  → pdfplumber → texto → sentence-transformers (all-MiniLM-L6-v2) → pgvector
+F10 RSS → feedparser → texto → sentence-transformers (all-MiniLM-L6-v2) → pgvector
+F12 PDF → pdfplumber → texto → sentence-transformers (all-MiniLM-L6-v2) → pgvector
+
+CONSULTA EN TIEMPO REAL (Supabase Edge Function — Deno):
+pregunta_usuario
+    → sentence-transformers embed (o API de embeddings ligera)
+    → Supabase match_documents RPC (pgvector cosine similarity)
+    → chunks relevantes recuperados
+    → OpenRouter API (google/gemini-flash-1.5)
+    → respuesta operacional con citas de fuentes reales
 ```
 
-**Ventaja vs corpus plano:** pgvector hace búsqueda semántica por similitud coseno en < 50ms. Claude recibe solo los chunks más relevantes para la pregunta + contexto de la UPZ seleccionada.
+**Por qué sentence-transformers:** corre local en Python sin costo de API. Genera 384 dimensiones compatibles con pgvector. Un modelo de 22MB que procesa 220 documentos en segundos.
+
+**Por qué OpenRouter:** una sola API key da acceso a 200+ modelos. `google/gemini-flash-1.5` es gratuito (1M tokens/día) y multilingüe — ideal para el chatbot en español. Si se requiere mayor calidad, se cambia la variable `LLM_MODEL` sin tocar código.
 
 ## Detección de puntos de cambio (ruptures)
 

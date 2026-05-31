@@ -92,10 +92,10 @@
 
 - [ ] Repositorio GitHub público con todos los archivos
 - [ ] 6 notebooks `SeguroData_01` a `SeguroData_06` completos y ejecutables
-- [ ] README.md con instrucciones de instalación + URLs Railway (API) + Vercel (frontend)
+- [ ] README.md con instrucciones de instalación + URL Vercel (frontend) + URL Supabase Edge Functions
 - [ ] **Aplicación React + deck.gl** desplegada en Vercel — URL pública, 4 módulos funcionando
-- [ ] **FastAPI** desplegado en Railway — `/predict`, `/explain`, `/query` respondiendo
-- [ ] **Supabase** configurado — Silver table + SHAP pre-computados + pgvector embeddings cargados
+- [ ] **Supabase Edge Functions** desplegadas — `graphrag` y `prescriptivo` respondiendo
+- [ ] **Supabase** configurado — Silver table + predicciones + SHAP pre-computados + pgvector cargados
 - [ ] Módulo 3 Prescriptivo: tabla ontológica documentada en Notebook 03 + Claude API operacional (nombre CAI incluido)
 - [ ] SHAP values pre-computados en Notebook 04 + cargados en Supabase (NO cálculo on-demand)
 - [ ] Análisis de sesgo por estrato en Notebook 04

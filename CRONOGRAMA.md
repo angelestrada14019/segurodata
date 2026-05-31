@@ -194,11 +194,12 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 
 ### Deploy
 
-- [ ] FastAPI → Railway: `railway deploy` desde `/backend`
+- [ ] Supabase Edge Functions: `supabase functions deploy graphrag prescriptivo`
+- [ ] Configurar secretos Edge Functions: `supabase secrets set OPENROUTER_API_KEY=sk-or-...`
+- [ ] Configurar secretos Edge Functions: `supabase secrets set LLM_MODEL=google/gemini-flash-1.5`
 - [ ] React → Vercel: conectar repo GitHub → `/frontend`
-- [ ] Configurar variables de entorno en Railway (ANTHROPIC_API_KEY, SUPABASE_SERVICE_KEY)
-- [ ] Configurar variables en Vercel (VITE_SUPABASE_URL, VITE_API_URL)
-- [ ] Verificar URL pública funciona desde móvil
+- [ ] Configurar variables en Vercel (VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY)
+- [ ] Verificar URL pública funciona desde móvil — las Edge Functions son siempre activas, sin cold start
 
 ---
 

@@ -32,16 +32,18 @@ El sistema responde tres preguntas concretas:
 | Análisis espacial | `geopandas`, `shapely` |
 | Modelo ML | `xgboost`, `scikit-learn`, `shap`, `ruptures` |
 | Change point detection | `ruptures` (PELT sobre DAI histórico 2018–2026) |
-| IA Generativa / GraphRAG | `langchain`, `langchain-anthropic`, **Claude API** |
-| Base de datos | **Supabase** (PostgreSQL + PostGIS + pgvector + Realtime) |
-| Backend ML | **FastAPI** (Python) — solo inferencia: /predict, /explain, /query |
+| Embeddings (GraphRAG) | `sentence-transformers` — `all-MiniLM-L6-v2` (local, gratis, 384 dims) |
+| LLM / GraphRAG | **OpenRouter** — `google/gemini-flash-1.5` (gratis 1M tokens/día) como primaria; `anthropic/claude-haiku` como fallback |
+| Base de datos | **Supabase** (PostgreSQL + PostGIS + pgvector) |
+| Backend serverless | **Supabase Edge Functions** (Deno) — GraphRAG + proxy OpenRouter |
 | Frontend / mapa | **React + Vite + deck.gl + Tailwind CSS** |
-| Deploy backend | **Railway** (FastAPI, siempre activo, free tier) |
-| Deploy frontend | **Vercel** (React, CDN global) |
+| Deploy frontend | **Vercel** (React, CDN global, siempre activo) |
+| Deploy producción ML | **Google Cloud Run** (FastAPI, serverless, 2-3s cold start, free tier 2M req/mes) |
 | Repositorio | GitHub (público, obligatorio para el concurso) |
 
-**No hay Streamlit como frontend principal, ni nano-graphrag, ni proceso de Hawkes.**  
-El frontend React consume FastAPI (ML) + Supabase (datos + embeddings) directamente.
+**No hay Streamlit, no hay Railway, no hay cron externo, no hay nano-graphrag.**  
+- **Demo de concurso:** predicciones y SHAP pre-computados → Supabase. GraphRAG → Edge Function → OpenRouter. No se necesita servidor persistente.  
+- **Producción (post-concurso):** FastAPI en Google Cloud Run para inferencia en tiempo real.
 
 ---
 
@@ -242,8 +244,11 @@ El Módulo 3 usa SHAP para identificar la causa dominante del riesgo y conecta d
 | ~~Hawkes Process~~ → **ruptures + GraphRAG** | Hawkes descartado. ruptures (PELT) detecta cambios estructurales históricos. GraphRAG (LangChain + pgvector + Claude) explica el *por qué* con boletines SCJ + noticias |
 | SHAP pre-computado (no on-demand) | Supabase sirve SHAP values pre-calculados → sin crash de RAM en producción |
 | **React + deck.gl** para frontend | Mapa WebGL interactivo OSIRIS-style, capas toggleables, click-to-analyze por UPZ |
-| **Supabase** como backbone | PostgreSQL + PostGIS + pgvector + Realtime en un solo servicio. Reemplaza ChromaDB, Redis y base SQL separados |
-| **FastAPI + Railway** para ML | Backend Python liviano (inferencia XGBoost + GraphRAG). Railway free tier = siempre activo |
+| **Supabase** como backbone | PostgreSQL + PostGIS + pgvector en un solo servicio. Reemplaza ChromaDB y base SQL separados. Edge Functions para backend serverless |
+| **Supabase Edge Functions** para demo | GraphRAG + proxy OpenRouter en Deno. Siempre activo, sin cold start, sin cron |
+| **Google Cloud Run** para producción | FastAPI Python serverless. Cold start 2-3s (vs 15-30s de alternativas con sleep). Free tier: 2M requests/mes |
+| **OpenRouter** como proxy LLM | Una API key da acceso a 200+ modelos. Demo: Gemini Flash (gratis). Producción: escalable |
+| **sentence-transformers** para embeddings | all-MiniLM-L6-v2, corre local una sola vez, resultado se guarda en pgvector. Sin costo de API |
 | `wiki_pages/` como fuente única de docs | Editar wiki_pages/ + correr PUSH_WIKI.bat → wiki actualizado. El código solo tiene README, CLAUDE.md y CRONOGRAMA.md |
 
 ---
