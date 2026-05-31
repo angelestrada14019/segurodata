@@ -60,7 +60,7 @@ El sistema responde tres preguntas concretas:
 | F7 | Estratificación por manzana — SDP | CKAN — URL directa | Feature socioeconómica + análisis sesgo |
 | F8 | Estaciones TransMilenio — TM S.A. | ArcGIS REST | Features movilidad/afluencia |
 | F9 | Boletines SCJ — Sec. Distrital Seguridad | scj.gov.co (PDFs) | Corpus GraphRAG → pgvector (Supabase) |
-| F10 | Noticias RSS — El Tiempo / Espectador | RSS público | Corpus GraphRAG → pgvector (Supabase) |
+| F10 | Noticias RSS — El Tiempo / Espectador / El Informante Soy Yo | RSS público (3 feeds verificados) | Corpus GraphRAG → pgvector (Supabase) |
 | **F11** | **Malla Vial + Obras IDU activas** | **IDECA / datosabiertos.bogota.gov.co** | **Feature km_via_intervenida_upz → XGBoost** |
 | **F13** | **Cámaras Salvavidas SDM** | **ArcGIS Hub SDM** | **Feature n_camaras_upz + capa visual deck.gl** |
 | **F14** | **Alumbrado Público UAESP por UPZ** | **CKAN Bogotá** | **Feature luminarias_led_upz → XGBoost** |

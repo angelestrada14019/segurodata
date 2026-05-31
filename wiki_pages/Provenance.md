@@ -150,21 +150,36 @@
 | **Rol en pipeline** | Corpus LLM — GraphRAG (Fase 3) — NO entra en XGBoost |
 | **Archivo Bronze** | `datos/raw/boletines_scj/*.pdf` |
 
-## F10 — Noticias RSS — Seguridad Bogotá
+## F10 — Noticias RSS — Seguridad Bogotá (3 feeds)
 
 | Campo | Valor |
 |-------|-------|
-| **Entidad** | El Tiempo S.A. / El Espectador (Casa Editorial El Tiempo) |
+| **Entidades** | El Tiempo S.A. / El Espectador / elinformantesoyyo.com |
 | **Portal** | RSS público — sin autenticación |
-| **URL de descarga** | https://www.eltiempo.com/rss/bogota.xml + https://feeds.elespectador.com/elespectador/justicia |
-| **Resource ID** | — feeds RSS públicos |
-| **Formato** | RSS/XML (feedparser) |
+| **URLs de descarga** | https://www.eltiempo.com/rss/bogota.xml + https://feeds.elespectador.com/elespectador/justicia + https://elinformantesoyyo.com/feed/ |
+| **Formato** | RSS 2.0 / XML (feedparser — todos los feeds verificados) |
 | **Granularidad** | Artículo / fecha |
-| **Período** | Diaria — últimas 100–200 noticias |
+| **Período** | Diaria — últimas 100–200 noticias por feed |
 | **Registros Bronze** | N/A (texto — no filas) |
 | **Licencia** | RSS público — uso no comercial, sin ToS violation |
-| **Rol en pipeline** | Corpus LLM — GraphRAG (Fase 3) — NO entra en XGBoost |
+| **Rol en pipeline** | Corpus GraphRAG → sentence-transformers → Supabase pgvector |
 | **Archivo Bronze** | `datos/raw/noticias_rss.jsonl` |
+
+### F10b — El Informante Soy Yo (feed adicional verificado)
+
+| Campo | Valor |
+|-------|-------|
+| **Entidad** | elinformantesoyyo.com (periodismo investigativo ciudadano) |
+| **URL feed** | https://elinformantesoyyo.com/feed/ |
+| **Formato** | RSS 2.0 — verificado, feedparser lo lee directamente ✅ |
+| **Contenido** | Política de seguridad, operativos, grupos armados, movilidad, economía |
+| **Cobertura Bogotá** | Presente — artículos de política distrital y movilidad urbana |
+| **Período** | Continuo — artículos activos a mayo 2026 |
+| **Licencia** | Periodismo web de acceso libre — uso informativo sin restricción |
+| **Aporte al GraphRAG** | Contexto político-institucional: qué medidas tomó el gobierno, cambios de mando, operativos de seguridad — complementa F9 (datos crimen) y F10a (hechos noticiosos) |
+| **Estado** | ✅ ACTIVAR |
+
+> **¿Por qué el periodismo investigativo ciudadano aporta?** Los medios masivos cubren casos de alto impacto. El periodismo investigativo ciudadano captura el contexto político que no aparece en los boletines SCJ: cambios de comandancia, decisiones de inversión en seguridad, operativos fallidos. Exactamente lo que el chatbot necesita para responder "¿qué pasó institucionalmente cuando subió el hurto en X zona?"
 
 ## F11 — IDU — Calzada y Estado Superficial
 

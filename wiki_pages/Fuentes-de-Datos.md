@@ -32,10 +32,12 @@ Estas fuentes alimentan la tabla Silver y el modelo predictivo.
 
 Estas fuentes **no entran en XGBoost**. Son corpus de texto indexados en Supabase pgvector para el Módulo 4 (chatbot causal) y el Módulo 3 (contexto prescriptivo).
 
+> **F10 incluye tres feeds RSS verificados:** El Tiempo (seguridad Bogotá), El Espectador (judicial nacional), y El Informante Soy Yo — [elinformantesoyyo.com](https://elinformantesoyyo.com) (política de seguridad, operativos, contexto institucional). Los tres feeds son accesibles con `feedparser` sin autenticación.
+
 | # | Fuente | Tipo | Actualización | Procesamiento |
 |---|--------|------|--------------|--------------|
 | F9 | Boletines SCJ — PDFs mensuales | PDF texto | Mensual | pdfplumber → LangChain → Claude embeddings → pgvector |
-| F10 | Noticias RSS — El Tiempo / Espectador | RSS | Diaria | feedparser → LangChain → Claude embeddings → pgvector |
+| F10 | Noticias RSS — El Tiempo / Espectador / El Informante Soy Yo | RSS | Diaria | feedparser → sentence-transformers → pgvector |
 
 ---
 
@@ -51,6 +53,7 @@ Estas fuentes **no entran en XGBoost**. Son corpus de texto indexados en Supabas
 
 | Fuente | Razón descarte |
 |--------|---------------|
+| El Periodista Soy Yo — Noticias Caracol | Contenido audiovisual (ciudadanos envían videos a TV). Sin RSS de texto — no integrable como corpus. |
 | SIMUR cámaras C4 (red CCTV seguridad) | Sin API pública — circuito cerrado de la Secretaría |
 | Feeds de video en tiempo real | Inviable legalmente (Ley 1581/2012) + sin API |
 | Google Street View | API de pago — viola reglas concurso |
