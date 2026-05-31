@@ -72,7 +72,7 @@ Este módulo no dice "hay riesgo ALTO". Dice **quién actúa, qué hace, cuándo
 ## Módulo 4 — Chatbot Causal ("¿Por qué?")
 
 **Usuarios:** Ciudadano, periodista, funcionario distrital, investigador  
-**Tecnología:** Supabase Edge Function + pgvector + OpenRouter (GraphRAG)
+**Tecnología:** FastAPI (Cloud Run) + pgvector + OpenRouter (GraphRAG)
 
 Permite preguntas en lenguaje natural. El sistema busca en el knowledge graph de boletines SCJ + noticias + Plan de Desarrollo:
 
@@ -82,4 +82,4 @@ Permite preguntas en lenguaje natural. El sistema busca en el knowledge graph de
 >
 > 🤖 *"Según el Boletín SCJ de noviembre 2023, el incremento en Kennedy (especialmente UPZs Américas y Timiza) coincide con: (1) el desplazamiento de grupos dedicados al hurto de celulares desde La Candelaria tras operativos de octubre, y (2) el inicio de obras IDU en Av. 1° de Mayo que redujo la visibilidad policial en la zona. El Plan de Desarrollo 2024-2027 contempla la instalación de 45 cámaras adicionales en las UPZs afectadas (meta 2.3.1 del Programa Bogotá Avanza en Seguridad)."*
 
-El chatbot cita fuentes reales con número de boletín y fecha — no genera respuestas genéricas. El modelo LLM se configura vía variable `LLM_MODEL` en Supabase Edge Functions (por defecto: `google/gemini-flash-1.5` vía OpenRouter, gratuito). La API key permanece en el servidor — nunca se expone al browser.
+El chatbot cita fuentes reales con número de boletín y fecha — no genera respuestas genéricas. El modelo LLM se configura vía variable de entorno `LLM_MODEL` en FastAPI (Cloud Run). Por defecto: `google/gemini-flash-1.5` vía OpenRouter (gratuito). La `OPENROUTER_API_KEY` permanece en Cloud Run — nunca se expone al browser.

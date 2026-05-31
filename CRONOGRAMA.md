@@ -194,12 +194,12 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 
 ### Deploy
 
-- [ ] Supabase Edge Functions: `supabase functions deploy graphrag prescriptivo`
-- [ ] Configurar secretos Edge Functions: `supabase secrets set OPENROUTER_API_KEY=sk-or-...`
-- [ ] Configurar secretos Edge Functions: `supabase secrets set LLM_MODEL=google/gemini-flash-1.5`
+- [ ] FastAPI → Cloud Run: `gcloud run deploy segurodata-api --source ./backend --allow-unauthenticated`
+- [ ] Configurar variables en Cloud Run: OPENROUTER_API_KEY, LLM_MODEL, SUPABASE_URL, SUPABASE_SERVICE_KEY
 - [ ] React → Vercel: conectar repo GitHub → `/frontend`
-- [ ] Configurar variables en Vercel (VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY)
-- [ ] Verificar URL pública funciona desde móvil — las Edge Functions son siempre activas, sin cold start
+- [ ] Configurar variables en Vercel: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_API_URL (URL de Cloud Run)
+- [ ] Verificar URL pública funciona desde móvil
+- [ ] Pre-demo: visitar URL de Cloud Run 2 minutos antes de la presentación para calentar el contenedor
 
 ---
 

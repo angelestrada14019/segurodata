@@ -8,11 +8,9 @@
 │  React + Vite + deck.gl + Tailwind CSS  →  Vercel (CDN, siempre ON) │
 │  4 páginas: Diagnóstico / Predicción / Prescriptivo / Chatbot       │
 ├─────────────────────────────────────────────────────────────────────┤
-│  CAPA 4 — BACKEND SERVERLESS                                         │
-│  [Demo]      Supabase Edge Functions (Deno) — siempre activo        │
-│              graphrag() → pgvector search → OpenRouter → respuesta  │
-│  [Producción] Google Cloud Run (FastAPI) — cold start 2-3s          │
-│              /predict (XGBoost) · /explain (SHAP) · /query (RAG)   │
+│  CAPA 4 — BACKEND ML (Python)                                        │
+│  FastAPI (Python)  →  Google Cloud Run  (cold start 2-3s)           │
+│  /predict (XGBoost) · /explain (SHAP) · /graphrag (pgvector+OpenRouter)│
 ├───────────────────────────┬─────────────────────────────────────────┤
 │  CAPA 3 — BASE DE DATOS   │  CAPA 3B — VECTOR STORE                 │
 │  Supabase PostgreSQL       │  Supabase pgvector (384 dims)           │
@@ -31,17 +29,17 @@
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-## Demo vs Producción — modos de deploy
+## Stack de aplicación
 
-| Componente | Demo concurso | Producción (post-concurso) |
+| Componente | Tecnología | Deploy |
 |---|---|---|
-| Frontend | Vercel (gratis, CDN) | Vercel (igual) |
-| Predicciones XGBoost | Pre-computadas en Supabase | FastAPI en Google Cloud Run |
-| GraphRAG / Chatbot | Supabase Edge Function → OpenRouter | Google Cloud Run FastAPI |
-| LLM | OpenRouter: Gemini Flash (gratis) | OpenRouter: modelo configurable |
-| Embeddings | Indexados offline con sentence-transformers | Igual (índice persistente) |
-| Keep-alive | No necesario — todo serverless | No necesario — Cloud Run escala |
-| Costo mensual | $0 | ~$0-5 (Cloud Run free tier + OpenRouter) |
+| Frontend | React + Vite + deck.gl + Tailwind + supabase-js | Vercel (gratis, CDN) |
+| Backend ML | FastAPI (Python) — todo en Python | Google Cloud Run (free tier, 2M req/mes) |
+| Base de datos | Supabase PostgreSQL + PostGIS + pgvector | Supabase (siempre activo) |
+| LLM | OpenRouter → `google/gemini-flash-1.5` (gratis) | Variable OPENROUTER_API_KEY en Cloud Run |
+| Embeddings | sentence-transformers all-MiniLM-L6-v2 (offline) | Resultado en pgvector Supabase |
+| Keep-alive | Ninguno — Cloud Run escala a cero y arranca en 2-3s | Pre-calentar 2 min antes del demo |
+| Costo demo | ~$0 | Cloud Run free tier + OpenRouter free tier |
 
 ## Medallion Architecture (datos)
 
@@ -76,22 +74,19 @@ MapLibre GL JS: basemap OSM gratuito
 supabase-js: acceso directo a PostgreSQL + Realtime desde React
 ```
 
-### Backend — Supabase Edge Functions (demo) + Google Cloud Run (producción)
+### Backend — FastAPI en Google Cloud Run (Python)
 
-**Demo (Edge Functions — Deno/TypeScript):**
-```typescript
-// supabase/functions/graphrag/index.ts
-// Recibe pregunta → busca pgvector → llama OpenRouter → devuelve respuesta
-// OPENROUTER_API_KEY queda server-side (no expuesta al browser)
-```
+Todo el backend es Python. Un solo servicio, un solo lenguaje, un solo deploy.
 
-**Producción (Google Cloud Run — FastAPI Python):**
 ```python
-# Endpoints principales
-POST /predict   → XGBoost: {upz, fecha} → {nivel_riesgo, probabilidades}
-GET  /explain   → SHAP: {upz, mes} → shap_values pre-computados desde Supabase
-POST /query     → GraphRAG: {pregunta, upz_contexto} → OpenRouter response
+# backend/main.py — Endpoints principales
+POST /predict    → XGBoost: {upz, mes} → {nivel_riesgo, probabilidades}
+GET  /explain    → SHAP: {upz, mes} → shap_values pre-computados desde Supabase
+POST /graphrag   → {pregunta, upz_contexto} → pgvector search → OpenRouter → respuesta
+POST /prescribe  → {upz, shap_top} → tabla ontológica → OpenRouter → recomendación CAI
 ```
+
+La `OPENROUTER_API_KEY` se configura como variable de entorno en Cloud Run — nunca se expone al browser. El frontend React llama este endpoint con un POST normal.
 
 ### Base de datos — Supabase
 ```sql
@@ -116,12 +111,13 @@ F9 PDF  → pdfplumber → texto → sentence-transformers (all-MiniLM-L6-v2) �
 F10 RSS → feedparser → texto → sentence-transformers (all-MiniLM-L6-v2) → pgvector
 F12 PDF → pdfplumber → texto → sentence-transformers (all-MiniLM-L6-v2) → pgvector
 
-CONSULTA EN TIEMPO REAL (Supabase Edge Function — Deno):
+CONSULTA EN TIEMPO REAL (FastAPI — Python en Cloud Run):
 pregunta_usuario
-    → sentence-transformers embed (o API de embeddings ligera)
+    → FastAPI POST /graphrag
+    → sentence-transformers embed la pregunta (Python)
     → Supabase match_documents RPC (pgvector cosine similarity)
     → chunks relevantes recuperados
-    → OpenRouter API (google/gemini-flash-1.5)
+    → OpenRouter API (google/gemini-flash-1.5) con OPENROUTER_API_KEY server-side
     → respuesta operacional con citas de fuentes reales
 ```
 

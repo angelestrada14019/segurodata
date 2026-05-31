@@ -92,9 +92,9 @@
 
 - [ ] Repositorio GitHub público con todos los archivos
 - [ ] 6 notebooks `SeguroData_01` a `SeguroData_06` completos y ejecutables
-- [ ] README.md con instrucciones de instalación + URL Vercel (frontend) + URL Supabase Edge Functions
+- [ ] README.md con instrucciones de instalación + URL Vercel (frontend) + URL FastAPI Cloud Run (backend)
 - [ ] **Aplicación React + deck.gl** desplegada en Vercel — URL pública, 4 módulos funcionando
-- [ ] **Supabase Edge Functions** desplegadas — `graphrag` y `prescriptivo` respondiendo
+- [ ] **FastAPI en Google Cloud Run** desplegado y respondiendo — `/graphrag` y `/prescribe` operativos
 - [ ] **Supabase** configurado — Silver table + predicciones + SHAP pre-computados + pgvector cargados
 - [ ] Módulo 3 Prescriptivo: tabla ontológica documentada en Notebook 03 + Claude API operacional (nombre CAI incluido)
 - [ ] SHAP values pre-computados en Notebook 04 + cargados en Supabase (NO cálculo on-demand)

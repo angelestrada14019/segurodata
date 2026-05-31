@@ -1,6 +1,6 @@
 # Guía de Instalación
 
-El proyecto tiene tres componentes: **pipeline de datos** (Python), **backend serverless** (Supabase Edge Functions), y **frontend** (React). En producción: Vercel (frontend) + Supabase (BD + Edge Functions). No se requiere servidor dedicado.
+El proyecto tiene tres componentes: **pipeline de datos** (Python), **backend ML** (FastAPI en Google Cloud Run), y **frontend** (React). En producción: Vercel (frontend) + Supabase (BD + pgvector) + Cloud Run (backend). Todo el backend es Python.
 
 ---
 
@@ -81,30 +81,38 @@ python scripts/index_corpus.py     # carga embeddings pgvector
 
 ---
 
-## 4. Backend serverless — Supabase Edge Functions
+## 4. Backend ML — FastAPI (Google Cloud Run)
 
-Las Edge Functions se encargan del GraphRAG (chatbot + prescriptivo) y proxean la llamada a OpenRouter, manteniendo la API key server-side.
+El backend Python sirve el GraphRAG, el prescriptivo y la inferencia XGBoost. La `OPENROUTER_API_KEY` permanece en Cloud Run — nunca en el browser.
 
+### Desarrollo local
 ```bash
-# Instalar Supabase CLI
-npm install -g supabase
+cd backend
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
 
-# Login
-supabase login
-
-# Vincular al proyecto
-supabase link --project-ref <project-ref>
-
-# Configurar secretos
-supabase secrets set OPENROUTER_API_KEY=sk-or-...
-supabase secrets set LLM_MODEL=google/gemini-flash-1.5
-
-# Desplegar funciones
-supabase functions deploy graphrag
-supabase functions deploy prescriptivo
+# Variables de entorno (.env en /backend):
+OPENROUTER_API_KEY=sk-or-...
+LLM_MODEL=google/gemini-flash-1.5
+SUPABASE_URL=https://xxx.supabase.co
+SUPABASE_SERVICE_KEY=eyJ...
 ```
 
-Las Edge Functions están siempre activas — no hay sleep, no se necesita cron.
+### Deploy en Google Cloud Run
+```bash
+# Desde la raíz del repo
+gcloud run deploy segurodata-api \
+  --source ./backend \
+  --platform managed \
+  --region us-central1 \
+  --allow-unauthenticated \
+  --set-env-vars OPENROUTER_API_KEY=sk-or-...,LLM_MODEL=google/gemini-flash-1.5,SUPABASE_URL=...
+
+# La URL resultante va en el frontend como variable:
+# VITE_API_URL=https://segurodata-api-xxx-uc.a.run.app
+```
+
+Cloud Run escala a cero y arranca en 2-3 segundos. **Para el demo en vivo:** visitar la URL de la API 2 minutos antes de la presentación. Sin cron, sin servicio externo adicional.
 
 ---
 
@@ -131,25 +139,6 @@ vercel --cwd frontend
 
 ---
 
-## 6. Backend ML en producción — Google Cloud Run (opcional)
-
-Para inferencia XGBoost en tiempo real (UPZ + fecha arbitraria, no pre-computada), se puede desplegar el backend Python en Google Cloud Run:
-
-```bash
-cd backend
-# Construir imagen Docker
-docker build -t segurodata-api .
-
-# Deploy en Cloud Run (free tier: 2M requests/mes, cold start 2-3s)
-gcloud run deploy segurodata-api \
-  --image gcr.io/PROJECT_ID/segurodata-api \
-  --platform managed \
-  --region us-central1 \
-  --allow-unauthenticated \
-  --set-env-vars SUPABASE_URL=...,OPENROUTER_API_KEY=...
-```
-
-No se requiere keep-alive ni cron — Cloud Run escala a cero y arranca en 2-3 segundos cuando llega una petición.
 
 ---
 
@@ -157,8 +146,8 @@ No se requiere keep-alive ni cron — Cloud Run escala a cero y arranca en 2-3 s
 
 | Variable | Componente | Cómo obtener |
 |----------|-----------|-------------|
-| `OPENROUTER_API_KEY` | Edge Functions + pipeline | openrouter.ai (gratis con límites) |
-| `LLM_MODEL` | Edge Functions | `google/gemini-flash-1.5` (por defecto, gratis) |
+| `OPENROUTER_API_KEY` | Backend FastAPI (Cloud Run) | openrouter.ai (gratis con límites) |
+| `LLM_MODEL` | Backend FastAPI (Cloud Run) | `google/gemini-flash-1.5` (por defecto, gratis) |
 | `SUPABASE_URL` | Todos | Supabase Dashboard → Settings → API |
 | `SUPABASE_ANON_KEY` | Frontend (lectura pública) | Supabase Dashboard → Settings → API |
 | `SUPABASE_SERVICE_KEY` | Scripts de carga | Supabase Dashboard → Settings → API |

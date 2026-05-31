@@ -232,7 +232,7 @@ Ingesta          polars · requests · geopandas · python-dotenv
 Transformación   geopandas · shapely · polars
 Modelado         xgboost · scikit-learn · shap · ruptures
 Embeddings       sentence-transformers (all-MiniLM-L6-v2, local, sin costo de API)
-GraphRAG         Supabase pgvector + Edge Functions (Deno)
+GraphRAG         FastAPI (Python) — pgvector + OpenRouter
 LLM              OpenRouter (google/gemini-flash-1.5 por defecto — gratis)
 Base de datos    Supabase (PostgreSQL + PostGIS + pgvector)
 Frontend / mapa  React + Vite + deck.gl + Tailwind CSS → Vercel
