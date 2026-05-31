@@ -4,7 +4,7 @@
 
 **Concurso:** Datos al Ecosistema 2026 — MinTIC · Reto #2 Seguridad Ciudadana · Nivel Medio  
 **Repositorio:** https://github.com/angelestrada14019/segurodata  
-**Estado:** Fases 1A y 1B completadas (Bronze + Silver) — En progreso Fase 2 (Gold + Modelo)
+**Estado:** Fases 1A y 1B completadas (Bronze + Silver + EDA) — En progreso Fase 2 (Gold + Modelo + Setup Supabase)
 
 ---
 
@@ -12,16 +12,16 @@
 
 | # | Pregunta | Módulo | Tecnología |
 |---|---------|--------|-----------|
-| 1 | ¿Qué está pasando? | Diagnóstico | GeoPandas + Folium + Plotly |
-| 2 | ¿Qué va a pasar? | Predicción | XGBoost + SHAP |
-| 3 | ¿Qué hacer? | Recomendación | Claude API (Anthropic) |
-| 4 | ¿Por qué? | Chatbot causal | Claude API + GraphRAG |
+| 1 | ¿Qué está pasando? | Diagnóstico | React + deck.gl + Supabase Realtime |
+| 2 | ¿Qué va a pasar? | Predicción | XGBoost + SHAP + ruptures |
+| 3 | ¿Qué hacer? | Prescriptivo | Tabla ontológica + Claude API |
+| 4 | ¿Por qué? | Chatbot causal | LangChain + Supabase pgvector + Claude API |
 
 ## El diferenciador clave
 
 > *"SeguroData no solo predice dónde habrá delitos — le dice exactamente a qué cuadrante de la Policía tiene que ir y por qué. Ese es el puente que hoy no existe entre los datos abiertos de Bogotá y la acción institucional."*
 
-El **Módulo 3 (Recomendación)** usa SHAP para identificar la causa dominante del riesgo (¿es el clima? ¿es la obra del IDU? ¿es el subregistro policial?) y conecta directamente con el CAI responsable. El **Módulo 4 (Chatbot causal)** usa GraphRAG + Claude API para responder preguntas como "¿por qué está subiendo el hurto en Kennedy?" con contexto de boletines SCJ, noticias y el Plan de Desarrollo.
+El **Módulo 3 (Prescriptivo)** combina SHAP values + detección de cambios estructurales (`ruptures`) + tabla ontológica de intervenciones → Claude API genera la recomendación en lenguaje operacional para el comandante de CAI. El **Módulo 4 (Chatbot causal)** usa GraphRAG (LangChain + Supabase pgvector + Claude API) para responder preguntas como "¿por qué está subiendo el hurto en Kennedy?" con citas de boletines SCJ, noticias y el Plan de Desarrollo.
 
 ## Navegación
 

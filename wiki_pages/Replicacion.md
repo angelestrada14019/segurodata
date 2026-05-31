@@ -28,13 +28,21 @@ LAT_BOGOTA, LON_BOGOTA = 4.711, -74.072  # Bogotá
 LAT_MEDELLIN, LON_MEDELLIN = 6.244, -75.574  # Medellín
 ```
 
+### Paso 4 — Crear nuevo proyecto Supabase para la ciudad
+```bash
+# Crear nuevo proyecto en supabase.com
+# Actualizar variables de entorno SUPABASE_URL + SUPABASE_SERVICE_KEY
+# Ejecutar python scripts/setup_supabase.py con el nuevo proyecto
+```
+
 ## Lo que NO cambia
 
 - La arquitectura Medallion completa (Bronze → Silver → Gold → Model)
-- El modelo XGBoost y su estructura de 14 variables
-- El pipeline de GraphRAG (apuntar F9/F10 a fuentes locales)
-- El dashboard Streamlit y los 4 módulos
-- Los notebooks CRISP-ML
+- El modelo XGBoost y su estructura de 17 variables
+- El pipeline de GraphRAG (LangChain + pgvector — apuntar F9/F10 a fuentes locales)
+- La aplicación React + deck.gl y los 4 módulos
+- Los notebooks CRISP-ML (SeguroData_01 a _06)
+- El backend FastAPI (solo cambiar el modelo pkl y los parámetros de Supabase)
 
 ## Ciudades con datos abiertos en Colombia
 

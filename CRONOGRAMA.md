@@ -126,72 +126,94 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 
 ---
 
-## Fase 2 ⏳ — Modelo XGBoost + SHAP (7 – 20 junio 2026)
+## Fase 2 ⏳ — Modelo + Supabase + Nuevas Fuentes (7 – 20 junio 2026)
 
 **Entregables:** `SeguroData_03_Features.ipynb` + `SeguroData_04_Modelo.ipynb`
 
+### Setup Supabase + nuevas fuentes (7–10 junio) — EN PARALELO con modelo
+
+- [ ] Crear proyecto Supabase → habilitar PostGIS + pgvector
+- [ ] Ejecutar schema inicial (`scripts/setup_supabase.py`) + cargar Silver table
+- [ ] Integrar F13 Cámaras Salvavidas SDM → spatial join → feature `n_camaras_upz`
+- [ ] Integrar F14 Alumbrado UAESP → merge directo → feature `luminarias_led_upz`
+- [ ] Integrar F11 IDU Obras Viales → spatial join → feature `km_via_intervenida_upz`
+- [ ] Correr `ruptures` PELT sobre F1 DAI 2018–2026 por localidad → cargar en Supabase `change_points`
+
 ### Notebook 03 — Features (7–12 junio)
 
-- [ ] Construir tabla maestra `datos/features/tabla_maestra_upz.parquet` con las 14 variables
-- [ ] Definir `nivel_riesgo` (Y): top 25% UPZs por mes = ALTO, 25–60% = MEDIO, rest = BAJO
-- [ ] Verificar balanceo de clases (crimen es raro → esperar desbalance)
-- [ ] Normalizar features numéricas con StandardScaler (guardado en `datos/modelos/scaler.pkl`)
+- [ ] Construir tabla maestra `datos/features/tabla_maestra_upz.parquet` con las **17 variables** (14 originales + F11/F13/F14)
+- [ ] Definir `nivel_riesgo` (Y): `GROUP BY upz_cod, anio, mes` sobre `es_crimen=True` → top 25% = ALTO, 25–60% = MEDIO, resto = BAJO (1,920 filas modelo)
+- [ ] Documentar tabla ontológica prescriptiva (17 filas SHAP→diagnóstico→entidad→acción) en celda 1
+- [ ] Verificar imputación de estrato faltante (69 UPZs sin dato → mediana de la localidad)
+- [ ] Normalizar features numéricas con StandardScaler → `datos/modelos/scaler.pkl`
 
 ### Notebook 04 — Modelo (13–20 junio)
 
-- [ ] Split temporal: TRAIN = ene–oct 2025, TEST = nov 2025–abr 2026 (NO split aleatorio — F5 NUSE solo disponible 2025–2026)
+- [ ] Split temporal: TRAIN = ene–oct 2025, TEST = nov 2025–abr 2026 (F5 NUSE solo disponible 2025–2026)
 - [ ] Entrenar XGBoost con parámetros por defecto como baseline
 - [ ] Métricas: Precision, Recall, F1 por clase (ALTO/MEDIO/BAJO) + AUC-ROC macro
-- [ ] Tuning básico: GridSearch sobre `max_depth`, `n_estimators`, `learning_rate`
-- [ ] Calcular SHAP values → Feature Importance por UPZ
-- [ ] Análisis de sesgo: comparar F1 en UPZs estrato 1-2 vs. 5-6 (¿el modelo discrimina?)
+- [ ] Tuning básico: RandomizedSearchCV sobre `max_depth`, `n_estimators`, `learning_rate`
+- [ ] Calcular SHAP values → **pre-computar y guardar en Supabase** (NO on-demand)
+- [ ] Análisis de sesgo: comparar F1 en UPZs estrato 1-2 vs. 5-6
 - [ ] Guardar modelo: `datos/modelos/xgboost_segurodata.pkl`
+
+### Track paralelo — Knowledge Graph F9/F10 (7–20 junio)
+
+- [ ] Procesar F9 PDFs boletines SCJ → pdfplumber → texto limpio
+- [ ] Procesar F10 RSS → feedparser → texto
+- [ ] LangChain splitter → Claude embeddings → cargar en Supabase pgvector
+- [ ] Verificar búsqueda semántica: query de prueba → resultados relevantes
 
 ---
 
-## Fase 3 ⏳ — Dashboard + IA Generativa (21 junio – 10 julio 2026)
+## Fase 3 ⏳ — React + FastAPI + GraphRAG (21 junio – 10 julio 2026)
 
-**Entregable:** `SeguroData_05_Dashboard.ipynb` + app Streamlit desplegada
+**Entregable:** `SeguroData_05_Dashboard.ipynb` + app React desplegada en Vercel
 
-### Módulo 1 — Diagnóstico (semana del 21 junio)
+### Semana 1 — FastAPI backend + mapa base (21–27 junio)
 
-- [ ] Mapa interactivo Folium con choropleta de hurtos por UPZ + filtros (año, tipo delito)
-- [ ] Top 5 localidades con más delitos — gráfica de barras
-- [ ] Heatmap día × hora en Streamlit (Plotly)
-- [ ] Tendencia anual con variación %
+- [ ] Skeleton FastAPI en `/backend` con endpoints `/predict`, `/explain`, `/query`
+- [ ] Conectar XGBoost model + SHAP pre-computados desde Supabase
+- [ ] Skeleton React + Vite + Tailwind + supabase-js
+- [ ] deck.gl: PolygonLayer con 112 UPZs coloreadas (ALTO/MEDIO/BAJO) + hover tooltip
+- [ ] Slider temporal funcional → cambia colores del mapa
 
-### Módulo 2 — Predicción (semana del 28 junio)
+### Semana 2 — Módulo Diagnóstico + Predicción (28 junio – 4 julio)
 
-- [ ] Cargar modelo XGBoost en la app Streamlit (joblib.load)
-- [ ] Input: seleccionar UPZ + fecha + hora → output: ALTO/MEDIO/BAJO + probabilidades
-- [ ] Mapa predictivo de Bogotá: todas las UPZs coloreadas rojo/amarillo/verde
-- [ ] Tabla de top-10 UPZs en riesgo ALTO para la fecha seleccionada
+- [ ] Módulo 1: capas toggleables deck.gl (crimen · cámaras F13 · cuadrantes · alumbrado F14)
+- [ ] Módulo 1: Heatmap día × hora (Plotly React) + tendencia con change points marcados
+- [ ] Módulo 2: click en UPZ → FastAPI /predict → panel con nivel_riesgo + probabilidades
+- [ ] Módulo 2: mapa predictivo rojo/amarillo/verde + top-10 UPZs en riesgo ALTO
 
-### Módulos 3 y 4 — Recomendación + Chatbot (semana del 5 julio)
+### Semana 3 — Módulo Prescriptivo + Chatbot (5–10 julio)
 
-- [ ] Configurar `CLAUDE_API_KEY` como secreto en Streamlit Cloud
-- [ ] Módulo 3: prompt que convierte SHAP values → mensaje de recomendación para el comandante
-- [ ] Incluir nombre y dirección del CAI correspondiente al cuadrante de mayor riesgo
-- [ ] Módulo 4: chatbot que responde preguntas con contexto de la tabla maestra UPZ
-- [ ] Probar con 10 preguntas tipo de los 3 usuarios (comandante, funcionario, ciudadano)
+- [ ] Módulo 3: tabla ontológica + SHAP top feature → diagnóstico → Claude API → recomendación operacional
+- [ ] Módulo 3: panel CAI (nombre + dirección + turno) + indicador change point (estructural vs temporal)
+- [ ] Módulo 4: chat input → FastAPI /query → LangChain SupabaseVectorStore → Claude API → respuesta con citas
+- [ ] Probar 10 preguntas tipo de los 3 perfiles de usuario
 
 ### Deploy
 
-- [ ] Desplegar en Streamlit Cloud (conectar repo GitHub → Streamlit Cloud → branch main)
-- [ ] Verificar que el secreto CLAUDE_API_KEY está configurado en Streamlit Cloud
-- [ ] Verificar URL pública funciona desde el móvil (demo para la sustentación)
+- [ ] FastAPI → Railway: `railway deploy` desde `/backend`
+- [ ] React → Vercel: conectar repo GitHub → `/frontend`
+- [ ] Configurar variables de entorno en Railway (ANTHROPIC_API_KEY, SUPABASE_SERVICE_KEY)
+- [ ] Configurar variables en Vercel (VITE_SUPABASE_URL, VITE_API_URL)
+- [ ] Verificar URL pública funciona desde móvil
 
 ---
 
-## Fase 4 ⏳ — Documentación, Video y Entrega (11 – 13 julio 2026)
+## Fase 4 ⏳ — Documentación, Video y Entrega (11 julio – 1 agosto 2026)
 
 **Entregable:** `SeguroData_06_Deployment.ipynb` + README + Video + Registro
 
-- [ ] `README.md` completo: descripción, URL del dashboard, instrucciones `pip install -r requirements.txt`
-- [ ] Notebook 06: URLs de producción, instrucciones de reproducción local, decisiones de diseño
-- [ ] Video pitch de 3 minutos: problema → solución → demo del dashboard
-- [ ] **13 julio:** Repositorio GitHub en modo público
-- [ ] **13 julio:** Registrar en datos.gov.co → sección "Usos" con enlace al repo — **OBLIGATORIO**
+> ⚠️ Verificar fecha exacta de entrega/registro en datos.gov.co. Final confirmado: GovCamps primera semana de agosto 2026.
+
+- [ ] `README.md`: descripción, URL Railway + Vercel + Supabase, instrucciones instalación completas
+- [ ] Notebook 06: URLs de producción, schema Supabase, instrucciones reproducción local, decisiones de diseño
+- [ ] Video pitch de 3 minutos: problema → solución → demo (mapa + prescriptivo + chatbot)
+- [ ] Auditoría de git history para API keys antes de hacer repo público
+- [ ] Repositorio GitHub en modo público
+- [ ] Registrar en datos.gov.co → sección "Usos" con enlace al repo — **OBLIGATORIO**
 
 ---
 

@@ -1,62 +1,41 @@
 # Guía de Instalación
 
-## Requisitos
+El proyecto tiene tres componentes: **pipeline de datos** (Python), **backend ML** (FastAPI/Python), y **frontend** (React). En producción corren en Railway (backend) + Vercel (frontend) + Supabase (BD).
 
-- Python 3.10 o superior
-- Git
-- ~2 GB de espacio en disco (datos Bronze)
-- Clave API de Anthropic (solo para Módulos 3 y 4)
+---
 
-## Instalación local
+## 1. Pipeline de datos (Python) — notebooks + ETL
 
 ```bash
-# 1. Clonar el repositorio
+# Clonar el repositorio
 git clone https://github.com/angelestrada14019/segurodata.git
 cd segurodata
 
-# 2. Crear entorno virtual
+# Crear entorno virtual
 python -m venv .venv
+source .venv/bin/activate      # Linux/Mac
+.venv\Scripts\activate         # Windows
 
-# Linux/Mac:
-source .venv/bin/activate
-
-# Windows:
-.venv\Scripts\activate
-
-# 3. Instalar dependencias
+# Instalar dependencias de datos
 pip install -r requirements.txt
 
-# 4. Configurar variables de entorno
+# Configurar variables de entorno
 cp .env.example .env
 # Editar .env:
-#   ANTHROPIC_API_KEY=sk-ant-...   (solo para Módulos 3 y 4)
+#   ANTHROPIC_API_KEY=sk-ant-...       (Módulos 3 y 4)
+#   SUPABASE_URL=https://xxx.supabase.co
+#   SUPABASE_ANON_KEY=eyJ...
 ```
 
-## Descarga de datos Bronze
+### Descarga Bronze y generación Silver
 
 ```bash
-# Ver qué se descargaría sin ejecutar
-python src/pipeline.py --dry-run
-
-# Descargar todas las fuentes (solo lo nuevo)
-python src/pipeline.py
-
-# Verificar estado
-python src/pipeline.py --status
+python src/pipeline.py           # descarga 12 fuentes (solo lo nuevo)
+python src/transform.py          # Bronze → Silver (111,606 × 23 cols)
+python src/pipeline.py --status  # ver estado de cada fuente
 ```
 
-## Generar tabla Silver
-
-```bash
-# Transformar Bronze → Silver (requiere que Bronze esté completo)
-python src/transform.py
-
-# Verificar resultado
-python -c "import polars as pl; df = pl.read_parquet('datos/procesados/silver_upz_mes.parquet'); print(df.shape, df.columns)"
-# Esperado: (111606, 20)
-```
-
-## Ejecutar en Google Colab
+### En Google Colab
 
 ```python
 !git clone https://github.com/angelestrada14019/segurodata.git
@@ -66,19 +45,96 @@ python -c "import polars as pl; df = pl.read_parquet('datos/procesados/silver_up
 !python src/transform.py
 ```
 
-⚠️ **Advertencia Colab:** El paso `f7` (estratificación, ~115K polígonos) puede agotar la RAM gratuita. Ver `docs/TRANSFORMACION.md` para opciones de optimización.
+⚠️ **F7 (estratificación, ~44K polígonos):** puede agotar RAM en Colab gratuito. Ver [[Transformacion]] para opciones.
 
-## Levantar el dashboard
+---
+
+## 2. Backend ML — FastAPI
 
 ```bash
-# Cuando esté implementado (Fase 3):
-streamlit run app.py
-# Abre automáticamente en http://localhost:8501
+cd backend
+pip install -r requirements.txt    # fastapi, uvicorn, xgboost, shap, langchain-anthropic
+
+# Desarrollo local
+uvicorn main:app --reload --port 8000
+
+# Variables de entorno requeridas
+ANTHROPIC_API_KEY=sk-ant-...
+SUPABASE_URL=https://xxx.supabase.co
+SUPABASE_SERVICE_KEY=eyJ...        # service role (no anon)
+MODEL_PATH=../datos/modelos/xgboost_segurodata.pkl
 ```
 
-## Variables de entorno necesarias
+### Deploy en Railway
 
-| Variable | Requerida para | Cómo obtener |
-|----------|--------------|-------------|
-| `ANTHROPIC_API_KEY` | Módulos 3 y 4 (Claude API) | console.anthropic.com |
-| Ninguna otra | — | Open-Meteo, CKAN, Socrata son públicos |
+```bash
+# Desde raíz del repo
+railway login
+railway new
+railway add --service backend
+railway deploy
+# Railway detecta automáticamente el Dockerfile o requirements.txt en /backend
+```
+
+---
+
+## 3. Base de datos — Supabase
+
+1. Crear proyecto en https://supabase.com/dashboard
+2. Habilitar extensiones:
+```sql
+CREATE EXTENSION IF NOT EXISTS postgis;
+CREATE EXTENSION IF NOT EXISTS vector;
+```
+3. Ejecutar schema inicial:
+```bash
+# Desde raíz del repo
+python scripts/setup_supabase.py   # crea tablas + índices + carga Silver
+```
+4. Cargar tabla Silver desde parquet:
+```python
+import polars as pl
+from supabase import create_client
+
+silver = pl.read_parquet("datos/procesados/silver_upz_mes.parquet")
+# → subir a Supabase tabla silver_upz_mes
+```
+
+---
+
+## 4. Frontend — React + deck.gl
+
+```bash
+cd frontend
+npm install              # instala React, deck.gl, MapLibre, Tailwind, supabase-js
+
+# Desarrollo local
+npm run dev              # abre en http://localhost:5173
+
+# Variables de entorno (.env.local)
+VITE_SUPABASE_URL=https://xxx.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJ...
+VITE_API_URL=http://localhost:8000   # o URL de Railway en producción
+```
+
+### Deploy en Vercel
+
+```bash
+# Desde raíz del repo
+vercel --cwd frontend
+# O conectar repo GitHub en vercel.com → seleccionar carpeta /frontend
+```
+
+---
+
+## Variables de entorno — resumen
+
+| Variable | Componente | Cómo obtener |
+|----------|-----------|-------------|
+| `ANTHROPIC_API_KEY` | Backend + pipeline | console.anthropic.com |
+| `SUPABASE_URL` | Backend + frontend + pipeline | Supabase Dashboard → Settings → API |
+| `SUPABASE_ANON_KEY` | Frontend (lectura pública) | Supabase Dashboard → Settings → API |
+| `SUPABASE_SERVICE_KEY` | Backend (escritura) | Supabase Dashboard → Settings → API |
+| `VITE_API_URL` | Frontend | URL de Railway una vez desplegado |
+
+Open-Meteo, CKAN, Socrata son APIs públicas sin autenticación requerida.

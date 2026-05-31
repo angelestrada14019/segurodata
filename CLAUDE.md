@@ -17,10 +17,10 @@ El sistema responde tres preguntas concretas:
 
 | Pregunta | Módulo | Tecnología |
 |----------|--------|-----------|
-| ¿Qué está pasando? | 1 — Diagnóstico | GeoPandas + Folium + Plotly |
-| ¿Qué va a pasar? | 2 — Predicción | XGBoost + SHAP |
-| ¿Qué hacer? | 3 — Recomendación | Claude API (Anthropic) |
-| Consulta en lenguaje natural | 4 — Chatbot | Claude API + contexto de datos |
+| ¿Qué está pasando? | 1 — Diagnóstico | React + deck.gl + Supabase Realtime |
+| ¿Qué va a pasar? | 2 — Predicción | XGBoost + SHAP + ruptures (cambios estructurales) |
+| ¿Qué hacer? | 3 — Recomendación | Tabla ontológica + Claude API (operacional) |
+| ¿Por qué? | 4 — Chatbot causal | LangChain + Supabase pgvector + Claude API |
 
 ---
 
@@ -28,36 +28,46 @@ El sistema responde tres preguntas concretas:
 
 | Capa | Tecnologías |
 |------|------------|
-| Ingesta y limpieza | `pandas`, `geopandas`, `requests` |
-| Análisis espacial | `geopandas`, `shapely`, `folium` |
-| Modelo ML | `xgboost`, `scikit-learn`, `shap` |
-| IA Generativa | **Claude API** (`anthropic` SDK) |
-| Dashboard | `streamlit`, `plotly`, `folium` |
+| Ingesta y limpieza | `polars`, `geopandas`, `requests` |
+| Análisis espacial | `geopandas`, `shapely` |
+| Modelo ML | `xgboost`, `scikit-learn`, `shap`, `ruptures` |
+| Change point detection | `ruptures` (PELT sobre DAI histórico 2018–2026) |
+| IA Generativa / GraphRAG | `langchain`, `langchain-anthropic`, **Claude API** |
+| Base de datos | **Supabase** (PostgreSQL + PostGIS + pgvector + Realtime) |
+| Backend ML | **FastAPI** (Python) — solo inferencia: /predict, /explain, /query |
+| Frontend / mapa | **React + Vite + deck.gl + Tailwind CSS** |
+| Deploy backend | **Railway** (FastAPI, siempre activo, free tier) |
+| Deploy frontend | **Vercel** (React, CDN global) |
 | Repositorio | GitHub (público, obligatorio para el concurso) |
 
-**No hay FastAPI, Docker, LangChain, OpenAI, Raspberry Pi, ni proceso de Hawkes en este proyecto.** El dashboard Streamlit es autónomo (carga el modelo directamente, sin API backend separada).
+**No hay Streamlit como frontend principal, ni nano-graphrag, ni proceso de Hawkes.**  
+El frontend React consume FastAPI (ML) + Supabase (datos + embeddings) directamente.
 
 ---
 
-## Las 10 fuentes de datos activas (+ F11/F12 planificadas)
+## Las 12 fuentes de datos activas (+ F12 planificada)
 
 | # | Fuente | Plataforma | Rol en el modelo |
 |---|--------|-----------|-----------------|
-| F1 | Delito de Alto Impacto — Sec. Seguridad | CKAN — descarga ZIP | EDA histórico 2018–2026 (granularidad localidad, no UPZ) |
+| F1 | Delito de Alto Impacto — Sec. Seguridad | CKAN — descarga ZIP | EDA histórico 2018–2026 + **ruptures** (cambios estructurales por localidad) |
 | F2 | UPZ Shapefile — IDECA | ArcGIS REST | Base espacial — spatial joins |
-| F3 | Open-Meteo — Clima Bogotá | REST API (sin clave) | Features climáticas en tiempo real |
+| F3 | Open-Meteo — Clima Bogotá | REST API (sin clave) | Features climáticas |
 | F4 | Cuadrantes de Policía — MEBOG | CKAN — descarga ZIP | Feature cobertura policial + conexión CAI |
 | F5 | Incidentes NUSE 123 — C4 | CKAN Datastore API | **BASE Silver**: genera 111,606 filas × 20 cols |
 | F6 | Hurto Personas — Policía Nacional | Socrata `4rxi-8m8d` | Benchmarking nacional — contexto oral |
 | F7 | Estratificación por manzana — SDP | CKAN — URL directa | Feature socioeconómica + análisis sesgo |
 | F8 | Estaciones TransMilenio — TM S.A. | ArcGIS REST | Features movilidad/afluencia |
-| F9 | Boletines SCJ — Sec. Distrital Seguridad | scj.gov.co (PDFs) | Corpus LLM → GraphRAG (NO entra en XGBoost) |
-| F10 | Noticias RSS — El Tiempo / Espectador | RSS público | Corpus LLM → GraphRAG (NO entra en XGBoost) |
+| F9 | Boletines SCJ — Sec. Distrital Seguridad | scj.gov.co (PDFs) | Corpus GraphRAG → pgvector (Supabase) |
+| F10 | Noticias RSS — El Tiempo / Espectador | RSS público | Corpus GraphRAG → pgvector (Supabase) |
+| **F11** | **Malla Vial + Obras IDU activas** | **IDECA / datosabiertos.bogota.gov.co** | **Feature km_via_intervenida_upz → XGBoost** |
+| **F13** | **Cámaras Salvavidas SDM** | **ArcGIS Hub SDM** | **Feature n_camaras_upz + capa visual deck.gl** |
+| **F14** | **Alumbrado Público UAESP por UPZ** | **CKAN Bogotá** | **Feature luminarias_led_upz → XGBoost** |
 
-> **F11 (IDU obras)** y **F12 (Plan Desarrollo Bogotá 2024-2027)** se planifican para Fase 2 y Fase 3.  
-> **Silver**: 111,606 filas × 20 cols — generadas por F5 NUSE. F1/F6 no tienen desglose UPZ.
+> **F12 (Plan Desarrollo Bogotá 2024-2027)** se planifica para Fase 3 (corpus GraphRAG).  
+> **Silver actual**: 111,606 filas × 20 cols. Con F11+F13+F14 → 23 columnas (3 features nuevas).  
+> F1/F6 no tienen desglose UPZ pero F1 se usa con **ruptures** para detección de puntos de cambio históricos.
 
-**Investigación completa de 20 fuentes** (incluyendo descartadas y alternativas) en el [Wiki — Investigacion-Fuentes](https://github.com/angelestrada14019/segurodata/wiki/Investigacion-Fuentes) y `docs/fuentes_validadas.xlsx`.
+**Investigación completa de 20+ fuentes** (incluyendo descartadas) en el [Wiki — Investigacion-Fuentes](https://github.com/angelestrada14019/segurodata/wiki/Investigacion-Fuentes) y `docs/fuentes_validadas.xlsx`.
 
 ---
 
@@ -86,10 +96,17 @@ ESPACIALES:
   dist_tm_metros          ← distancia al centroide de la UPZ a TM más cercana
 
 SUBREGISTRO:
-  ratio_nuse_delitos_upz  ← llamadas al 123 / delitos formales por UPZ·mes
+  ratio_nuse_criminal_upz ← fracción de llamadas NUSE que son crimen / total llamadas por UPZ·mes
+
+NUEVAS (F11, F13, F14):
+  km_via_intervenida_upz  ← kilómetros de vía con obra IDU activa en la UPZ
+  n_camaras_upz           ← número de cámaras Salvavidas SDM en la UPZ
+  luminarias_led_upz      ← número de luminarias LED (iluminación pública UAESP)
 
 VARIABLE OBJETIVO (Y):
-  nivel_riesgo: ALTO / MEDIO / BAJO  (umbralizado por percentiles del dataset)
+  nivel_riesgo: ALTO / MEDIO / BAJO
+  → definido por percentiles de n_delitos agregado por upz_cod × anio × mes (solo es_crimen=True)
+  → top 25% = ALTO, 25–60% = MEDIO, resto = BAJO (1,920 filas de entrenamiento)
 ```
 
 ---
@@ -102,15 +119,24 @@ proyecto/
 │   ├── raw/              ← Bronze: archivos como se descargan (generados por pipeline.py)
 │   │   └── boletines_scj/← F9: PDFs descargados de SCJ
 │   ├── procesados/       ← Silver: datos limpios y unificados (generados por transform.py)
-│   ├── features/         ← Gold: tabla maestra UPZ con las 14 variables (Notebook 03)
-│   ├── grafo/            ← GraphRAG: índice nano-graphrag persistido (Fase 3)
-│   └── modelos/          ← Model: XGBoost entrenado + SHAP values (Notebook 04)
+│   ├── features/         ← Gold: tabla maestra UPZ con las 17 variables (Notebook 03)
+│   ├── grafo/            ← GraphRAG: embeddings pgvector exportados para Supabase
+│   └── modelos/          ← Model: XGBoost + SHAP pre-computado (Notebook 04)
 ├── graficas/             ← Outputs visuales del EDA (7 gráficas V1-V7)
 ├── src/
 │   ├── etl.py            ← 4 conectores de bajo nivel: CKAN, Socrata, ArcGIS, Open-Meteo
-│   ├── pipeline.py       ← Extracción incremental Bronze (10 fuentes F1-F10)
+│   ├── pipeline.py       ← Extracción incremental Bronze (12 fuentes F1-F14)
 │   ├── transform.py      ← Transformación Silver (limpieza + spatial joins)
-│   └── validar_fuentes.py← genera fuentes_validadas.xlsx con 20 fuentes
+│   └── validar_fuentes.py← genera fuentes_validadas.xlsx con fuentes activas
+├── backend/              ← FastAPI (Python) — inferencia ML: /predict /explain /query
+│   ├── main.py
+│   ├── routers/          ← predict.py, explain.py, graphrag.py
+│   └── requirements.txt  ← fastapi, xgboost, shap, langchain-anthropic
+├── frontend/             ← React + Vite + deck.gl
+│   ├── src/
+│   │   ├── components/   ← MapView, PrescriptivoPanel, ChatBot
+│   │   └── pages/        ← Diagnostico, Prediccion, Prescriptivo, Chat
+│   └── package.json
 ├── docs/
 │   ├── diagrama_arquitectura.svg  ← diagrama visual de la arquitectura (linkeado en README)
 │   └── fuentes_validadas.xlsx     ← Excel validado (4 hojas)
@@ -134,11 +160,11 @@ proyecto/
 
 Los notebooks del proyecto siguen el esquema `SeguroData_0X_Nombre.ipynb`:
 - `SeguroData_01_Plan_y_Fuentes.ipynb` — Plan + catálogo ✅
-- `SeguroData_02_EDA.ipynb` — Diagnóstico descriptivo (Módulo 1)
-- `SeguroData_03_Features.ipynb` — Construcción de las 14 variables
-- `SeguroData_04_Modelo.ipynb` — XGBoost + backtesting + SHAP (Módulos 2-3)
-- `SeguroData_05_Dashboard.ipynb` — Streamlit + Claude API (Módulos 3-4)
-- `SeguroData_06_Deployment.ipynb` — Deploy en Streamlit Cloud + registro
+- `SeguroData_02_EDA.ipynb` — Diagnóstico descriptivo + change points F1 DAI ✅
+- `SeguroData_03_Features.ipynb` — Construcción de las 17 variables (F11+F13+F14) + tabla prescriptiva
+- `SeguroData_04_Modelo.ipynb` — XGBoost + backtesting + SHAP pre-computado + sesgo
+- `SeguroData_05_Dashboard.ipynb` — Arquitectura React+FastAPI+Supabase + screenshots
+- `SeguroData_06_Deployment.ipynb` — Deploy Railway+Vercel + registro datos.gov.co
 
 ---
 
@@ -156,17 +182,20 @@ El Módulo 3 usa SHAP para identificar la causa dominante del riesgo y conecta d
 
 **Cuando el usuario traiga código:** revisar con énfasis en correctitud, reproducibilidad en Colab, y eficiencia con datasets grandes. Los dos datasets más pesados: F6 Hurto PN (638K filas, solo benchmarking) y F7 Estratificación (44K polígonos de manzanas — el spatial join agota RAM en Colab gratuito).
 
-**Cuando pida análisis:** usar el contexto de Bogotá — 112 UPZs, localidades, las 10 fuentes activas (F1-F10). No generalizar.
+**Cuando pida análisis:** usar el contexto de Bogotá — 112 UPZs, localidades, las 12 fuentes activas (F1-F14). No generalizar.
 
 **Cuando pida texto para el chatbot o recomendaciones:** el Módulo 3 y 4 usan Claude API. Los mensajes son operacionales (lenguaje del comandante de CAI, no jerga de ML). Distinguir del registro técnico de los notebooks.
 
 **Red flags que corregir:**
 - Usar Claude API como modelo predictivo (viola el espíritu del concurso — XGBoost es el modelo)
-- Usar validación aleatoria (train/test split random) en lugar de temporal — el split correcto es TRAIN = ene–oct 2025, TEST = nov 2025–abr 2026 (F5 NUSE solo disponible 2025–2026)
+- Usar validación aleatoria (train/test split random) en lugar de temporal — TRAIN = ene–oct 2025, TEST = nov 2025–abr 2026 (F5 NUSE solo disponible 2025–2026)
 - Modelar por localidad en lugar de UPZ (demasiado grueso — 20 localidades vs 112 UPZs)
 - Saltarse el análisis de sesgo por estrato en el Notebook 04 (el jurado siempre pregunta esto)
-- Dejar el deploy de Streamlit Cloud para la última semana (hacerlo en Fase 3, no al final)
-- Cargar el GeoJSON de Estratificación (FUENTE 7, 100K+ manzanas) sin pre-calcular el promedio por UPZ — agota la RAM de Colab gratuito
+- Usar Streamlit como frontend principal del dashboard — el frontend es React + deck.gl
+- Calcular SHAP on-demand en la app — los SHAP values se pre-computan en Notebook 04 y se sirven desde Supabase
+- Proponer nano-graphrag o Microsoft GraphRAG — el stack es LangChain + Supabase pgvector + Claude API
+- Agregar una fuente nueva sin pasar por la regla de investigación quirúrgica (ver sección abajo)
+- Cargar el GeoJSON de Estratificación (F7, 100K+ manzanas) sin pre-calcular el promedio por UPZ — agota la RAM de Colab gratuito
 
 ---
 
@@ -177,10 +206,10 @@ El Módulo 3 usa SHAP para identificar la causa dominante del riesgo y conecta d
 | ✅ 23 mayo | Notebook 01 completado — plan + catálogo de 12 fuentes (F1-F10 activas + F11-F12 planificadas) |
 | ✅ 26 mayo – 6 junio | **Fase 1:** EDA de las 10 fuentes → Notebook 02 ✅ |
 | ⏳ 7 – 20 junio | **Fase 2:** XGBoost + SHAP → Notebooks 03+04 |
-| ⏳ 21 junio – 10 julio | **Fase 3:** Dashboard Streamlit + Claude API → Notebook 05 |
-| ⏳ 11 – 13 julio | **Fase 4:** Docs + video + registro → Notebook 06 |
-| **13 julio** | **Entrega:** GitHub público + registro en datos.gov.co |
-| 14–17 julio | Sustentación oral (10 minutos + preguntas) |
+| ⏳ 21 junio – 10 julio | **Fase 3:** React+deck.gl + FastAPI + GraphRAG Supabase → Notebook 05 |
+| ⏳ 11 julio – 1 agosto | **Fase 4:** Deploy Railway+Vercel + Docs + video → Notebook 06 |
+| **⚠️ Verificar** | Fecha exacta entrega/registro en datos.gov.co — posiblemente agosto (GovCamps 2026) |
+| Primera semana agosto | **Final GovCamps 2026** (sustentación oral — confirmado MinTIC) |
 
 ---
 
@@ -199,7 +228,7 @@ El Módulo 3 usa SHAP para identificar la causa dominante del riesgo y conecta d
 → La capa prescriptiva diagnostica la causa raíz (temporal, estructural, urbanística) y mapea cada diagnóstico a la entidad distrital responsable de la intervención. No mandamos más policías — identificamos qué tipo de intervención necesita cada zona y quién debe ejecutarla.
 
 **"¿Qué diferencia esto del Atlas del Crimen que ganó en 2025?"**
-→ El Atlas del Crimen es análisis descriptivo — explica qué ha pasado históricamente. Este sistema es predictivo y prescriptivo. Además, el Atlas operó a nivel departamental sin modelo ML. Este proyecto opera a nivel UPZ con XGBoost + SHAP + FastAPI operacional.
+→ El Atlas del Crimen es análisis descriptivo — explica qué ha pasado históricamente. Este sistema tiene tres capas: descriptivo (mapa interactivo en tiempo real), predictivo (XGBoost + SHAP por UPZ), y prescriptivo real (ruptures detecta cuándo cambia el patrón + GraphRAG identifica la causa + tabla ontológica mapea a la entidad responsable). El Atlas operó a nivel departamental sin modelo ML ni capa prescriptiva.
 
 ---
 
@@ -210,7 +239,36 @@ El Módulo 3 usa SHAP para identificar la causa dominante del riesgo y conecta d
 | Solo Bogotá | Calidad de datos superior + volumen garantizado + no penalización por enfoque único |
 | Granularidad UPZ (no localidad, no barrio) | Balance entre resolución y estabilidad estadística |
 | Stack Python + scikit-learn + XGBoost | Reproducible, bien documentado, compatible con CRISP-ML |
-| ~~Hawkes Process~~ → **GraphRAG causal** | Hawkes descartado por complejidad/tiempo. GraphRAG (nano-graphrag + Claude API) diferencia mejor: explica el *por qué* del crimen usando boletines SCJ + noticias + Plan Desarrollo |
-| SHAP para interpretabilidad | Requerido para la capa prescriptiva y valorado por el jurado técnico |
-| Streamlit para dashboard | Fácil de desplegar en Streamlit Cloud, no requiere backend separado |
+| ~~Hawkes Process~~ → **ruptures + GraphRAG** | Hawkes descartado. ruptures (PELT) detecta cambios estructurales históricos. GraphRAG (LangChain + pgvector + Claude) explica el *por qué* con boletines SCJ + noticias |
+| SHAP pre-computado (no on-demand) | Supabase sirve SHAP values pre-calculados → sin crash de RAM en producción |
+| **React + deck.gl** para frontend | Mapa WebGL interactivo OSIRIS-style, capas toggleables, click-to-analyze por UPZ |
+| **Supabase** como backbone | PostgreSQL + PostGIS + pgvector + Realtime en un solo servicio. Reemplaza ChromaDB, Redis y base SQL separados |
+| **FastAPI + Railway** para ML | Backend Python liviano (inferencia XGBoost + GraphRAG). Railway free tier = siempre activo |
 | `wiki_pages/` como fuente única de docs | Editar wiki_pages/ + correr PUSH_WIKI.bat → wiki actualizado. El código solo tiene README, CLAUDE.md y CRONOGRAMA.md |
+
+---
+
+## Regla de fuentes quirúrgicas (obligatoria antes de agregar cualquier fuente)
+
+Antes de proponer o agregar una fuente nueva, documentar este checklist completo:
+
+```yaml
+fuente_candidata:
+  nombre: ""
+  url_descarga: ""
+  granularidad: ""           # UPZ / localidad / municipio / punto — ¿tiene UPZ?
+  ultima_actualizacion: ""   # ¿está activa? ¿cuándo fue la última actualización?
+  contribucion_modelo: ""    # ¿qué feature nueva agrega al XGBoost?
+  contribucion_mapa: ""      # ¿aparece como capa en deck.gl?
+  licencia: ""               # CC BY 4.0, pública, privada
+  esfuerzo_horas: 0          # estimado realista de integración
+  evidencia_causal: ""       # paper o dato empírico que justifica la relación con crimen
+  decision: ACTIVAR | PLANIFICAR | DESCARTAR
+  justificacion: ""          # razón de la decisión
+```
+
+**Fuentes descartadas automáticamente** (sin necesidad de checklist):
+- Granularidad solo municipio o departamento (sin desglose UPZ)
+- APIs de pago o scraping de redes sociales (viola reglas concurso)
+- Datos privados o de vigilancia con restricción legal (Ley 1581/2012)
+- Esfuerzo > 2 semanas sin contribución diferencial clara

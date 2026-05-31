@@ -54,9 +54,12 @@ Todas públicas y gratuitas — **868,140 registros Bronze en total**:
 | F6 | Hurto a Personas — Policía Nacional | 638,569 | Municipio × día | Benchmarking nacional (no tiene UPZ) | Mensual |
 | F7 | Estratificación por manzana — SDP | 44,260 | Manzana (polígono) | +1 col: `estrato_promedio_upz` | Según necesidad |
 | F8 | Estaciones TransMilenio — TM S.A. | 153 | Estación (punto) | +2 cols: `dist_tm_metros`, `n_estaciones_tm` | Estático |
-| F9 | Boletines SCJ — Sec. Distrital Seguridad | N/A (texto) | Documento / Artículo | Corpus LLM — NO entra en XGBoost | Mensual |
-| F10 | Noticias RSS — El Tiempo / Espectador | N/A (texto) | Documento / Artículo | Corpus LLM — NO entra en XGBoost | Diaria |
-| | **TOTAL BRONZE** | **868,140** | | **Silver: 111,606 × 20 cols** | |
+| F9 | Boletines SCJ — Sec. Distrital Seguridad | N/A (texto) | Documento / Artículo | Corpus GraphRAG → Supabase pgvector | Mensual |
+| F10 | Noticias RSS — El Tiempo / Espectador | N/A (texto) | Documento / Artículo | Corpus GraphRAG → Supabase pgvector | Diaria |
+| **F11** | **Malla Vial + Obras IDU** | ~miles | Segmento vial | +1 col: `km_via_intervenida_upz` | Mensual |
+| **F13** | **Cámaras Salvavidas SDM** | ~400 | Punto (cámara) | +1 col: `n_camaras_upz` + capa deck.gl | Semestral |
+| **F14** | **Alumbrado Público UAESP** | 112 | UPZ (directo) | +1 col: `luminarias_led_upz` | Anual |
+| | **TOTAL BRONZE** | **~870,000+** | | **Silver: 111,606 × 23 cols** | |
 
 > **¿Por qué 868K Bronze → 111K Silver?**
 >
@@ -227,9 +230,12 @@ También ejecutable manualmente: **GitHub → Actions → ETL semanal → Run wo
 ```
 Ingesta          polars · requests · geopandas · python-dotenv
 Transformación   geopandas · shapely · polars
-Modelado         xgboost · scikit-learn · shap
-IA Generativa    anthropic (Claude API) — Módulos 3 y 4 únicamente
-Dashboard        streamlit · plotly · folium
+Modelado         xgboost · scikit-learn · shap · ruptures
+GraphRAG         langchain · langchain-anthropic · supabase (pgvector)
+IA Generativa    anthropic (Claude API) — Módulos 3 y 4
+Base de datos    Supabase (PostgreSQL + PostGIS + pgvector + Realtime)
+Backend ML       FastAPI → Railway
+Frontend / mapa  React + Vite + deck.gl + Tailwind CSS → Vercel
 ```
 
 ---
@@ -238,12 +244,12 @@ Dashboard        streamlit · plotly · folium
 
 | Notebook | Fase | Contenido | Estado |
 |----------|------|-----------|--------|
-| `SeguroData_01_Plan_y_Fuentes.ipynb` | 0 | Plan + catálogo de 12 fuentes (F1-F10 activas + F11-F12 planificadas) | ✅ |
-| `SeguroData_02_EDA.ipynb` | 1 | Análisis exploratorio (6 visualizaciones requeridas) | ✅ |
-| `SeguroData_03_Features.ipynb` | 2 | 14 variables + correlación | ⏳ |
-| `SeguroData_04_Modelo.ipynb` | 2 | XGBoost + SHAP + sesgo | ⏳ |
-| `SeguroData_05_Dashboard.ipynb` | 3 | Streamlit + Claude API | ⏳ |
-| `SeguroData_06_Deployment.ipynb` | 4 | Deploy + docs + video | ⏳ |
+| `SeguroData_01_Plan_y_Fuentes.ipynb` | 0 | Plan + catálogo de 14 fuentes activas + arquitectura | ✅ |
+| `SeguroData_02_EDA.ipynb` | 1 | Análisis exploratorio + change points ruptures | ✅ |
+| `SeguroData_03_Features.ipynb` | 2 | 17 variables + tabla ontológica prescriptiva + Supabase | ⏳ |
+| `SeguroData_04_Modelo.ipynb` | 2 | XGBoost + SHAP pre-computados + análisis sesgo | ⏳ |
+| `SeguroData_05_Dashboard.ipynb` | 3 | Arquitectura React+FastAPI+Supabase + screenshots | ⏳ |
+| `SeguroData_06_Deployment.ipynb` | 4 | Deploy Railway+Vercel + registro datos.gov.co | ⏳ |
 
 ---
 

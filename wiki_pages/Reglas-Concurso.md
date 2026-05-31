@@ -86,16 +86,22 @@
 
 ---
 
-## Checklist final antes del 13 de julio
+## Checklist final antes de la entrega
+
+> ⚠️ Verificar fecha exacta en datos.gov.co — final GovCamps confirmado primera semana de agosto 2026
 
 - [ ] Repositorio GitHub público con todos los archivos
 - [ ] 6 notebooks `SeguroData_01` a `SeguroData_06` completos y ejecutables
-- [ ] README.md con instrucciones de instalación (`pip install -r requirements.txt`) + URL del dashboard
-- [ ] Dashboard Streamlit desplegado y accesible via URL pública (4 módulos funcionando)
-- [ ] Módulo 3 con recomendación operacional via Claude API (nombre CAI incluido)
-- [ ] SHAP analysis visible en Notebook 04
+- [ ] README.md con instrucciones de instalación + URLs Railway (API) + Vercel (frontend)
+- [ ] **Aplicación React + deck.gl** desplegada en Vercel — URL pública, 4 módulos funcionando
+- [ ] **FastAPI** desplegado en Railway — `/predict`, `/explain`, `/query` respondiendo
+- [ ] **Supabase** configurado — Silver table + SHAP pre-computados + pgvector embeddings cargados
+- [ ] Módulo 3 Prescriptivo: tabla ontológica documentada en Notebook 03 + Claude API operacional (nombre CAI incluido)
+- [ ] SHAP values pre-computados en Notebook 04 + cargados en Supabase (NO cálculo on-demand)
 - [ ] Análisis de sesgo por estrato en Notebook 04
-- [ ] Enlace registrado en datos.gov.co en la sección "Usos" — **OBLIGATORIO**
+- [ ] `ruptures` — change points detectados y guardados en Supabase tabla `change_points`
+- [ ] Enlace registrado en datos.gov.co en la sección "Usos" — **OBLIGATORIO para no ser descalificado**
 - [ ] Video pitch de 3 minutos grabado y subido
 - [ ] Presentación de 10 minutos preparada
-- [ ] Respuestas para preguntas difíciles ensayadas (ver sección de preguntas difíciles arriba)
+- [ ] Auditoría de git history para API keys: `git log --all -p | grep -iE "api.key|token|secret"`
+- [ ] Respuestas para preguntas difíciles ensayadas (ver sección arriba)

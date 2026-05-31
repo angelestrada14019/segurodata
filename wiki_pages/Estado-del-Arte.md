@@ -87,18 +87,18 @@
 | Objetivo | Zonas de riesgo para patrullaje | Rutas de patrullaje optimizadas | Descripción + chatbot comunitario | Predicción de crimen en Bogotá | Predicción + diagnóstico causal + intervención |
 | Granularidad | Manzana (~100m) | Zona urbana | Municipal (Santander) | Punto geoespacial (lat/lon) | **UPZ (112 zonas Bogotá)** |
 | Tipo de análisis | Predictivo (caja negra) | Predictivo + routing | **Solo descriptivo** | Predictivo | Predictivo + **prescriptivo** |
-| Modelo | SEPP Hawkes | ML + imagen + clima + RRSS | Sin modelo publicado | SEPP Hawkes (CAP-AUC=0.8) | **XGBoost + Hawkes + SHAP** |
-| Interpretabilidad | ❌ No (caja negra) | ❌ No | ❌ No | ❌ No publicado | **✅ SHAP values por UPZ** |
-| Capa prescriptiva | ❌ No | ❌ No | ❌ No | ❌ No | **✅ Diagnóstico causal + entidades responsables** |
-| API operacional | Propietaria (SaaS) | SaaS (licencia $) | ❌ No | ❌ No | **✅ FastAPI pública (abierta)** |
-| Sesgo documentado | ❌ No (lo hundió) | ⚠️ Sin publicar | ❌ No aplica | ❌ No publicado | **✅ Notebook 05 — análisis estrato** |
+| Modelo | SEPP Hawkes | ML + imagen + clima + RRSS | Sin modelo publicado | SEPP Hawkes (CAP-AUC=0.8) | **XGBoost + SHAP + ruptures (cambios estructurales)** |
+| Interpretabilidad | ❌ No (caja negra) | ❌ No | ❌ No | ❌ No publicado | **✅ SHAP values por UPZ (pre-computados)** |
+| Capa prescriptiva | ❌ No | ❌ No | ❌ No | ❌ No | **✅ Tabla ontológica + diagnóstico causal + entidades responsables** |
+| API operacional | Propietaria (SaaS) | SaaS (licencia $) | ❌ No | ❌ No | **✅ API REST pública (FastAPI + Railway)** |
+| Sesgo documentado | ❌ No (lo hundió) | ⚠️ Sin publicar | ❌ No aplica | ❌ No publicado | **✅ Notebook 04 — análisis estrato** |
 | Compatible EU AI Act | ❌ No (perfilamiento individual) | ⚠️ Zona-level pero con cámaras | N/A | ⚠️ Punto geoespacial | **✅ Zone-level, sin perfilamiento individual** |
 | Datos abiertos | ❌ No (propietarios) | ❌ No | ✅ Sí (nacional) | ⚠️ Parcial | **✅ 20 fuentes verificadas, 100% abiertas** |
 | LLM / Generativa | ❌ No | ❌ No | Chatbot básico | ❌ No | **✅ Reporte operacional en lenguaje natural** |
 | Multi-ciudad | ❌ No (licencias por ciudad) | ✅ Sí (SaaS $) | ❌ No | ❌ No | **✅ Arquitectura modular (Medellín, Cali documentados)** |
 | Hardware / IoT | ❌ No (PredPol) | ✅ Cámaras desde dic 2023 | ❌ No | ❌ No | Roadmap futuro — fuera de scope v1 |
 
-**Conclusión crítica:** ninguno de los 20+ sistemas internacionales y colombianos revisados combina las 4 capas de este proyecto — predicción (Hawkes+XGBoost) + interpretabilidad causal (SHAP) + prescripción (diagnóstico con entidades responsables) + operacionalización (FastAPI pública + datos 100% abiertos). Esta combinación es genuinamente nueva en el contexto latinoamericano.
+**Conclusión crítica:** ninguno de los 20+ sistemas internacionales y colombianos revisados combina las 4 capas de este proyecto — predicción (XGBoost + detección de cambios estructurales con ruptures) + interpretabilidad causal (SHAP) + prescripción real (tabla ontológica SHAP→entidad→acción + GraphRAG causal) + operacionalización (API REST pública + datos 100% abiertos + 12 fuentes). Esta combinación es genuinamente nueva en el contexto latinoamericano.
 
 ---
 

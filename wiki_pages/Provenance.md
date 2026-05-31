@@ -195,8 +195,41 @@
 | **Período** | Estático (aprobado sep 2024) |
 | **Registros Bronze** | 1 PDF + 424 metas tabuladas |
 | **Licencia** | Documento público — uso libre |
-| **Rol en pipeline** | ⏳ PLANIFICADA Fase 3: corpus GraphRAG para Claude API (contexto político-institucional) |
+| **Rol en pipeline** | ⏳ PLANIFICADA Fase 3: corpus GraphRAG → pgvector Supabase (contexto político-institucional) |
 | **Archivo Bronze** | `datos/raw/f12_pdd/` (pendiente) |
+
+---
+
+## F13 — Cámaras Salvavidas SDM
+
+| Campo | Valor |
+|-------|-------|
+| **Entidad** | Secretaría Distrital de Movilidad (SDM) |
+| **Portal** | data-movilidadbogota.opendata.arcgis.com (ArcGIS Hub público) |
+| **URL de descarga** | https://data-movilidadbogota.opendata.arcgis.com/datasets/camaras-salvavidas-bogota |
+| **Formato** | GeoJSON / Feature Service ArcGIS |
+| **Granularidad** | Punto (lat/lon de cada cámara de foto-detección) |
+| **Período** | Estático — actualización semestral |
+| **Registros Bronze** | ~400 puntos estimados |
+| **Licencia** | ArcGIS Hub público — uso libre |
+| **Rol en pipeline** | Spatial join → feature `n_camaras_upz` (XGBoost) + capa ScatterplotLayer en deck.gl |
+| **Archivo Bronze** | `datos/raw/f13_camaras_sdm.geojson` |
+
+## F14 — Alumbrado Público UAESP por UPZ
+
+| Campo | Valor |
+|-------|-------|
+| **Entidad** | Unidad Administrativa Especial de Servicios Públicos (UAESP) |
+| **Portal** | datosabiertos.bogota.gov.co ✅ datos.gov.co |
+| **URL de descarga** | https://datosabiertos.bogota.gov.co/dataset/luminarias_upz-bogota-d-c |
+| **Formato** | CSV / Socrata API |
+| **Granularidad** | Por UPZ directamente — sin spatial join necesario |
+| **Período** | Anual (última actualización: feb 2026) |
+| **Registros Bronze** | 112 filas (una por UPZ) |
+| **Licencia** | CC BY 4.0 |
+| **Rol en pipeline** | Merge directo por `codigo_upz` → feature `luminarias_led_upz` (XGBoost) |
+| **Evidencia causal** | ScienceDirect 2025: correlación negativa significativa iluminación nocturna-crimen urbano |
+| **Archivo Bronze** | `datos/raw/f14_alumbrado_upz.csv` |
 
 ---
 
@@ -211,7 +244,9 @@ Esta tabla documenta las variables causales que explican el incremento o reducci
 | Alta distancia a TransMilenio | Mayor vulnerabilidad peatonal en zonas de baja cobertura de transporte masivo (Flórez & Gómez 2019) | F8 → feature `dist_tm_metros` | ✅ Implementado |
 | Temperatura alta / baja precipitación | Teoría de actividades rutinarias (Cohen & Felson 1979); validado para Bogotá (SCJ 2022) | F3 → features `temperatura_c`, `precipitacion_mm` | ✅ Implementado |
 | Subregistro alto (ratio NUSE/delitos formales) | SCJ Boletín dic 2024: 30–40% subregistro en estratos 1–2; NUSE capta incidentes no denunciados | F5 → feature `ratio_nuse_delitos_upz` | ✅ Implementado |
-| Obras viales activas (IDU) | Desplazamiento de residentes, reducción iluminación nocturna, flujo de trabajadores → oportunidad de hurto (SCJ Observatorio 2023) | F11 IDU → feature `km_via_intervenida_upz` | ⏳ Fase 2 |
+| Obras viales activas (IDU) | Desplazamiento de residentes, reducción iluminación nocturna, flujo de trabajadores → oportunidad de hurto (SCJ Observatorio 2023) | F11 IDU → feature `km_via_intervenida_upz` | ✅ ACTIVA Fase 2 |
+| Baja cobertura cámaras (SDM) | Menor disuasión tecnológica → mayor impunidad percibida (evidencia SCJ 2023: cobertura incompleta estrato 1-2) | F13 Cámaras → feature `n_camaras_upz` | ✅ ACTIVA Fase 2 |
+| Baja iluminación pública (UAESP) | ScienceDirect 2025: correlación negativa estadísticamente significativa entre iluminación nocturna y crimen urbano | F14 Alumbrado → feature `luminarias_led_upz` | ✅ ACTIVA Fase 2 |
 | Incumplimiento metas Plan de Desarrollo seguridad | Acuerdo 927 de 2024 — programa "Bogotá avanza en seguridad" ($7.5 billones COP); seguimiento SDP 2025 | F12 PDD → GraphRAG corpus | ⏳ Fase 3 |
 | Desempleo local | DANE ECV Bogotá 2023: correlación hurto × tasa desempleo por UPZ (r=0.62) | No implementado — DANE microdatos requieren procesamiento especial | ❌ Descartado por complejidad |
 
@@ -221,10 +256,10 @@ Esta tabla documenta las variables causales que explican el incremento o reducci
 
 | Criterio del concurso | Evidencia en SeguroData | Estado |
 |-----------------------|------------------------|--------|
-| ≥ 10,000 filas en dataset principal | Silver: **111,606 filas × 20 columnas** (F5 NUSE como base) | ✅ |
+| ≥ 10,000 filas en dataset principal | Silver: **111,606 filas × 23 columnas** (F5 NUSE como base + F11/F13/F14) | ✅ |
 | Repositorio GitHub público + README completo | https://github.com/angelestrada14019/segurodata | ✅ |
-| Datos de datos.gov.co | F1, F4, F5, F6, F7 registrados en portal nacional | ✅ (5 de 10 fuentes) |
-| Variedad de fuentes (no solo un dataset) | 10 fuentes activas de 8 plataformas distintas | ✅ |
+| Datos de datos.gov.co | F1, F4, F5, F6, F7, F11, F14 registrados en portal nacional | ✅ (7 de 12 fuentes) |
+| Variedad de fuentes (no solo un dataset) | 12 fuentes activas de 9 plataformas distintas | ✅ |
 | Correcta atribución | Este documento — URL y Resource ID para cada fuente | ✅ |
 | No datos privados ni de pago | Todas las fuentes son públicas y gratuitas | ✅ |
 | Reproducible (instrucciones instalación) | `pip install -r requirements.txt; python src/pipeline.py` | ✅ |
@@ -247,4 +282,4 @@ Durante la investigación se evaluaron 20+ fuentes. Las siguientes se descartaro
 | Twitter/X #inseguridad | API — $100+/mes | Viola reglas del concurso (scraping redes sociales) + costo |
 | SCJ histórico tabular 2015–2017 | scj.gov.co Observatorio | Solo dashboards web, sin exportación masiva; 2018–2026 ya cubierto por F1 |
 
-> Para contexto completo de las 20 fuentes investigadas, ver `docs/INVESTIGACION_FUENTES.md`.
+> Para contexto completo de las 20+ fuentes investigadas, ver [[Investigacion-Fuentes]].

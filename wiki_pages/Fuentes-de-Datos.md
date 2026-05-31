@@ -1,42 +1,86 @@
 # Fuentes de Datos
 
-SeguroData usa **10 fuentes activas** de datos abiertos + 2 planificadas. Todas son públicas y gratuitas.
+SeguroData usa **12 fuentes activas** de datos abiertos + 1 planificada. Todas son públicas y gratuitas.
 
-## Arquitectura de fuentes
+> **Regla de fuentes quirúrgicas:** Antes de proponer una fuente nueva, completar el checklist de investigación (ver sección al final). Las fuentes se agregan solo si tienen granularidad UPZ, licencia abierta, evidencia causal y esfuerzo justificado.
 
-Las fuentes se dividen en dos grupos según su rol:
+---
 
-### Grupo 1 — Fuentes estructuradas (F1-F8) → XGBoost
+## Grupo 1 — Fuentes estructuradas (F1-F8, F11, F13, F14) → XGBoost + mapa
+
 Estas fuentes alimentan la tabla Silver y el modelo predictivo.
 
-| # | Fuente | Entidad | Filas Bronze | Rol en Silver | datos.gov.co |
-|---|--------|---------|-------------|--------------|:---:|
-| F1 | Delito de Alto Impacto (DAI) | SDSCJ | 21 | EDA histórico (no UPZ) | ✅ |
+| # | Fuente | Entidad | Filas Bronze | Rol en Silver / Mapa | datos.gov.co |
+|---|--------|---------|-------------|----------------------|:---:|
+| F1 | Delito de Alto Impacto (DAI) | SDSCJ | 21 | EDA histórico + **ruptures** (cambios estructurales 2018–2026) | ✅ |
 | F2 | UPZ Shapefile — IDECA | Catastro | 112 | Base geométrica spatial joins | ❌ |
 | F3 | Clima Bogotá — Open-Meteo | Open-Meteo | 56,112 | +temperatura, +precipitación | ❌ |
-| F4 | Cuadrantes Policía MEBOG | Policía Nacional | 599 | +cuadrantes/km², +CAI | ✅ |
+| F4 | Cuadrantes Policía MEBOG | Policía Nacional | 599 | +cuadrantes/km², +CAI nombre+dirección | ✅ |
 | **F5** | **NUSE 123 — C4** | **C4 / SDSCJ** | **128,314** | **BASE: genera las 111,606 filas Silver** | **✅** |
 | F6 | Hurto Personas PN | Policía Nacional | 638,569 | Benchmarking nacional (no UPZ) | ✅ |
 | F7 | Estratificación — SDP | SDP | 44,260 | +estrato_promedio_upz | ✅ |
 | F8 | Estaciones TransMilenio | TM S.A. | 153 | +dist_tm, +n_estaciones | ❌ |
+| **F11** | **Malla Vial + Obras IDU** | **IDU / IDECA** | ~miles segs. | **+km_via_intervenida_upz** | ✅ |
+| **F13** | **Cámaras Salvavidas SDM** | **SDM** | ~400 puntos | **+n_camaras_upz + capa deck.gl** | ❌ ArcGIS Hub |
+| **F14** | **Alumbrado Público UAESP** | **UAESP** | 112 filas | **+luminarias_led_upz (granularidad nativa UPZ)** | ✅ |
 
-**Total Bronze: 868,140 registros → Silver: 111,606 filas × 20 columnas**
+**Total Bronze: ~870,000+ registros → Silver: 111,606 filas × 23 columnas**
 
-### Grupo 2 — Fuentes no estructuradas (F9-F10) → GraphRAG + Claude API
-Estas fuentes **no entran en XGBoost**. Son corpus de texto para el GraphRAG que alimenta los Módulos 3 y 4.
+---
 
-| # | Fuente | Tipo | Actualización |
-|---|--------|------|--------------|
-| F9 | Boletines SCJ — PDFs mensuales | PDF texto | Mensual |
-| F10 | Noticias RSS — El Tiempo / Espectador | RSS | Diaria |
+## Grupo 2 — Fuentes no estructuradas (F9-F10) → GraphRAG + pgvector
 
-### Planificadas (F11-F12)
+Estas fuentes **no entran en XGBoost**. Son corpus de texto indexados en Supabase pgvector para el Módulo 4 (chatbot causal) y el Módulo 3 (contexto prescriptivo).
+
+| # | Fuente | Tipo | Actualización | Procesamiento |
+|---|--------|------|--------------|--------------|
+| F9 | Boletines SCJ — PDFs mensuales | PDF texto | Mensual | pdfplumber → LangChain → Claude embeddings → pgvector |
+| F10 | Noticias RSS — El Tiempo / Espectador | RSS | Diaria | feedparser → LangChain → Claude embeddings → pgvector |
+
+---
+
+## Planificada (F12)
 
 | # | Fuente | Estado | Fase |
 |---|--------|--------|------|
-| F11 | IDU Calzada + Estado Superficial (obras viales) | ⏳ Planificada | Fase 2 |
 | F12 | Plan Desarrollo Bogotá 2024-2027 (Acuerdo 927/2024) | ⏳ Planificada | Fase 3 |
+
+---
+
+## Fuentes investigadas y descartadas
+
+| Fuente | Razón descarte |
+|--------|---------------|
+| SIMUR cámaras C4 (red CCTV seguridad) | Sin API pública — circuito cerrado de la Secretaría |
+| Feeds de video en tiempo real | Inviable legalmente (Ley 1581/2012) + sin API |
+| Google Street View | API de pago — viola reglas concurso |
+| SIEDCO `2bxu-b96f` | Endpoint 404 — no disponible en CKAN Bogotá |
+| Twitter/X #inseguridad | API de pago ($100+/mes) — viola reglas |
+| Tasa Desempleo SDDE | Solo ciudad completa — sin granularidad UPZ |
+
+---
+
+## Regla de investigación quirúrgica de fuentes
+
+Antes de proponer o agregar cualquier fuente nueva, completar este checklist:
+
+```yaml
+fuente_candidata:
+  nombre: ""
+  url_descarga: ""
+  granularidad: ""           # ¿tiene UPZ? Si no → descartar automáticamente
+  ultima_actualizacion: ""
+  contribucion_modelo: ""    # feature nueva para XGBoost
+  contribucion_mapa: ""      # capa en deck.gl
+  licencia: ""               # CC BY 4.0 o equivalente abierto
+  esfuerzo_horas: 0          # si > 40h sin contribución clara → descartar
+  evidencia_causal: ""       # paper o dato empírico
+  decision: ACTIVAR | PLANIFICAR | DESCARTAR
+  justificacion: ""
+```
+
+---
 
 ## Referencia completa
 
-Para URLs, Resource IDs, licencias y evidencia causal de cada fuente, ver: [docs/FUENTES_PROVENANCE.md](https://github.com/angelestrada14019/segurodata/blob/main/docs/FUENTES_PROVENANCE.md)
+Para URLs, Resource IDs, licencias y evidencia causal de cada fuente: [[Provenance]]
