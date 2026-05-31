@@ -194,7 +194,7 @@ Revisados 20+ sistemas en 15+ países y 5 sistemas colombianos: **ninguno** comb
 ## 7. Preguntas difíciles del jurado — respuestas con sustento de estado del arte
 
 **"¿Su modelo discrimina por estrato?"**
-→ Sí lo analizamos explícitamente en Notebook 05. Usamos SHAP values para verificar que el peso del estrato en las predicciones es proporcional a su correlación real con el crimen, y no produce predicciones sistemáticamente más altas para zonas de estrato bajo. PredPol en EE.UU. fue discontinuado por este problema — nosotros lo prevenimos por diseño.
+→ Sí lo analizamos explícitamente en Notebook 04. Usamos SHAP values para verificar que el peso del estrato en las predicciones es proporcional a su correlación real con el crimen, y no produce predicciones sistemáticamente más altas para zonas de estrato bajo. PredPol en EE.UU. fue discontinuado por este problema — nosotros lo prevenimos por diseño.
 
 **"¿Qué pasa con el subregistro?"**
 → Lo mitigamos de dos formas. Primero, cruzamos el Delito de Alto Impacto (SIEDCO) con NUSE 123 (FUENTE 1) para calcular el ratio llamadas/denuncias_formales por UPZ — ese ratio mismo es un proxy del nivel de subregistro por zona. Segundo, incorporamos datos de Medicina Legal (FUENTE 16 y 17) para capturar lesiones que llegan a urgencias pero no siempre a la policía. Barrera et al. (2023) de Uniandes es la referencia metodológica.
@@ -206,4 +206,4 @@ Revisados 20+ sistemas en 15+ países y 5 sistemas colombianos: **ninguno** comb
 → La capa prescriptiva diagnostica la causa raíz del riesgo — si es temporal (evento próximo), estructural (desempleo, hacinamiento) o urbanística (iluminación, espacio público) — y mapea cada diagnóstico a la entidad distrital responsable de la intervención. No es "más policías en zonas pobres" (el error de PredPol). Es identificar qué tipo de intervención específica necesita cada zona y quién debe ejecutarla. Ninguno de los sistemas internacionales revisados tiene esta capa.
 
 **"¿Qué diferencia esto del Atlas del Crimen que ganó en 2025?"**
-→ El Atlas del Crimen es análisis descriptivo — explica qué ha pasado históricamente. Este sistema es predictivo y prescriptivo — predice qué va a pasar y recomienda qué hacer. Adicionalmente, el Atlas operó a nivel departamental (Santander) sin modelo ML. Este proyecto opera a nivel UPZ en Bogotá con XGBoost + Proceso de Hawkes + SHAP + FastAPI operacional.
+→ El Atlas del Crimen es análisis descriptivo — explica qué ha pasado históricamente. Este sistema tiene tres capas: descriptivo (mapa deck.gl en tiempo real), predictivo (XGBoost + SHAP + ruptures para cambios estructurales), y prescriptivo real (tabla ontológica SHAP→entidad→acción + Claude API en lenguaje operacional). El Atlas operó a nivel departamental sin modelo ML ni capa prescriptiva. Este proyecto opera a nivel UPZ con API REST pública (FastAPI + Railway).
