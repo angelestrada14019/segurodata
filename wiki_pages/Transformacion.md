@@ -37,11 +37,11 @@ Archivos en `datos/raw/` generados por `src/pipeline.py`:
 | `f5_nuse_123.parquet` | F5 | **128,314** | **Fuente principal** — incidentes NUSE 123 por UPZ × mes × tipo (86 tipos, 2025–2026). Genera las filas de Silver |
 | `f7_estratificacion.parquet` | F7 | ~44,260 | Manzanas con estrato + geometría WKT |
 | `f8_transmilenio.geojson` | F8 | 153 | Puntos de estaciones TransMilenio |
-| `datos/raw/boletines_scj/` | F9 | N/A | PDFs boletines mensuales SCJ (corpus texto para Claude API) |
-| `datos/raw/noticias_rss.jsonl` | F10 | N/A | Artículos RSS El Tiempo + Espectador (corpus texto para Claude API) |
+| `datos/raw/boletines_scj/` | F9 | N/A | PDFs boletines mensuales SCJ (corpus texto para GraphRAG) |
+| `datos/raw/noticias_rss.jsonl` | F10 | N/A | Artículos RSS 3 feeds (corpus texto para GraphRAG) |
 
 > **F6** (Hurto Personas — Policía Nacional, 638,569 filas a nivel municipio) no entra al Silver — sin desglose UPZ. Solo benchmarking nacional.  
-> **F9/F10** no entran en XGBoost — son corpus de texto para los Módulos 3 y 4 (Claude API + GraphRAG).
+> **F9/F10** no entran en XGBoost — son corpus de texto para los Módulos 3 y 4 (GraphRAG — OpenRouter).
 
 ---
 
@@ -58,7 +58,7 @@ Archivos en `datos/procesados/`:
 | `nuse_upz_mes.parquet` | f5 | ~9,600 | Incidentes NUSE totales agregados por UPZ × mes (todos los tipos) |
 | `estrato_por_upz.csv` | f7 | 43 | Estrato promedio ponderado — 43 UPZs cubiertas por el spatial join |
 | `features_tm_upz.csv` | f8 | 112 | `n_estaciones_tm` y `dist_tm_metros` por UPZ |
-| **`silver_upz_mes.parquet`** | silver | **111,606** | **Tabla final: 111,606 filas × 20 columnas** — llave: upz_cod × anio × mes × tipo_crimen |
+| **`silver_upz_mes.parquet`** | silver | **111,606** | **Tabla final: 111,606 filas × 23 columnas** (20 base + F11/F13/F14) — llave: upz_cod × anio × mes × tipo_crimen |
 
 ---
 
@@ -91,8 +91,8 @@ La tabla `silver_upz_mes.parquet` tiene **una fila por UPZ × mes × tipo de inc
 | `n_estaciones_tm` | F8 | int | Estaciones TransMilenio dentro de la UPZ |
 | `dist_tm_metros` | F8 | float | Distancia del centroide de la UPZ al TM más cercano |
 
-> **20 columnas totales.** Estas son **todas las variables candidatas** para el modelo. En Gold (Notebook 03) se analizará correlación, VIF y SHAP para seleccionar las 14 que entran al XGBoost.  
-> F9/F10 (boletines + noticias) no aparecen en la silver — son corpus de texto para Claude API (Módulos 3 y 4).
+> **23 columnas totales** (20 base + 3 de F11/F13/F14). Estas son **todas las variables candidatas** para el modelo. En Gold (Notebook 03) se analizará correlación, VIF y SHAP para seleccionar las 17 que entran al XGBoost.  
+> F9/F10 (boletines + noticias) no aparecen en la silver — son corpus de texto para GraphRAG (Módulos 3 y 4 — OpenRouter).
 
 ---
 
@@ -227,7 +227,7 @@ f8  ──┘
 f2 (UPZ shapefile) se usa internamente en f4, f7 y f8 pero no produce
 un archivo Silver propio — es la base de todos los spatial joins.
 
-f9  ──► datos/procesados/boletines_corpus.json    (corpus texto → Claude API / GraphRAG)
+f9  ──► datos/procesados/boletines_corpus.json    (corpus texto → pgvector / GraphRAG)
 f10 ──► (datos/raw/noticias_rss.jsonl ya filtrado)
 ```
 

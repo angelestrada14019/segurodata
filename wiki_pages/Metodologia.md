@@ -10,7 +10,7 @@ SeguroData sigue la metodología CRISP-ML (Cross-Industry Standard Process for M
 | 1A — Bronze | src/pipeline.py | 10 fuentes descargadas, incremental | ✅ Completo |
 | 1B — Silver | src/transform.py | silver_upz_mes.parquet (111,606 × 20) | ✅ Completo |
 | 2 — Gold + Modelo | SeguroData_03 + 04 | 14 variables + XGBoost + SHAP | ⏳ Fase actual |
-| 3 — Dashboard | SeguroData_05 | Streamlit + Claude API + GraphRAG | ⏳ Jun 2026 |
+| 3 — Dashboard | SeguroData_05 | React + deck.gl + FastAPI + Supabase + GraphRAG | ⏳ Jun 2026 |
 | 4 — Entrega | SeguroData_06 | Deploy + registro datos.gov.co | ⏳ Jul 2026 |
 
 ## Validación temporal (no aleatoria)
@@ -28,7 +28,7 @@ Un split aleatorio daría resultados artificialmente buenos (data leakage tempor
 
 > **Nota:** F1 (Delito de Alto Impacto) cubre 2018–2026 a nivel localidad y se usa exclusivamente para **detección de puntos de cambio históricos** con `ruptures` — no para entrenamiento del modelo XGBoost.
 
-## Las 14 variables del modelo
+## Las 17 variables del modelo
 
 | Grupo | Variables |
 |-------|----------|
@@ -37,6 +37,7 @@ Un split aleatorio daría resultados artificialmente buenos (data leakage tempor
 | Climáticas | temperatura_c, precipitacion_mm |
 | Espaciales | estrato_promedio_upz, cuadrantes_por_km2, n_estaciones_tm, dist_tm_metros |
 | Subregistro | ratio_nuse_delitos_upz |
+| Infraestructura (F11+F13+F14) | km_via_intervenida_upz, n_camaras_upz, luminarias_led_upz |
 | **Objetivo (Y)** | nivel_riesgo — ALTO / MEDIO / BAJO |
 
 ## Detección de puntos de cambio estructural (ruptures)

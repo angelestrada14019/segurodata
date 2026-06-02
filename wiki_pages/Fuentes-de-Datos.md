@@ -36,7 +36,7 @@ Estas fuentes **no entran en XGBoost**. Son corpus de texto indexados en Supabas
 
 | # | Fuente | Tipo | Actualización | Procesamiento |
 |---|--------|------|--------------|--------------|
-| F9 | Boletines SCJ — PDFs mensuales | PDF texto | Mensual | pdfplumber → LangChain → Claude embeddings → pgvector |
+| F9 | Boletines SCJ — PDFs mensuales | PDF texto | Mensual | pdfplumber → sentence-transformers → pgvector (Supabase) |
 | F10 | Noticias RSS — El Tiempo / Espectador / El Informante Soy Yo | RSS | Diaria | feedparser → sentence-transformers → pgvector |
 
 ---
@@ -60,27 +60,6 @@ Estas fuentes **no entran en XGBoost**. Son corpus de texto indexados en Supabas
 | SIEDCO `2bxu-b96f` | Endpoint 404 — no disponible en CKAN Bogotá |
 | Twitter/X #inseguridad | API de pago ($100+/mes) — viola reglas |
 | Tasa Desempleo SDDE | Solo ciudad completa — sin granularidad UPZ |
-
----
-
-## Regla de investigación quirúrgica de fuentes
-
-Antes de proponer o agregar cualquier fuente nueva, completar este checklist:
-
-```yaml
-fuente_candidata:
-  nombre: ""
-  url_descarga: ""
-  granularidad: ""           # ¿tiene UPZ? Si no → descartar automáticamente
-  ultima_actualizacion: ""
-  contribucion_modelo: ""    # feature nueva para XGBoost
-  contribucion_mapa: ""      # capa en deck.gl
-  licencia: ""               # CC BY 4.0 o equivalente abierto
-  esfuerzo_horas: 0          # si > 40h sin contribución clara → descartar
-  evidencia_causal: ""       # paper o dato empírico
-  decision: ACTIVAR | PLANIFICAR | DESCARTAR
-  justificacion: ""
-```
 
 ---
 

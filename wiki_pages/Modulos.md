@@ -44,7 +44,7 @@ Este módulo no dice "hay riesgo ALTO". Dice **quién actúa, qué hace, cuándo
 1. Usuario selecciona UPZ en el mapa
 2. Sistema obtiene: SHAP top-3 features + ¿hay breakpoint reciente?
 3. Tabla ontológica mapea: feature → diagnóstico → entidad → acción
-4. Claude API genera el mensaje operacional en lenguaje del comandante:
+4. El LLM configurado (OpenRouter — variable LLM_MODEL en Cloud Run) genera el mensaje operacional:
 ```
 
 > *"**UPZ 44 — Américas (Kennedy)** lleva 14 meses con hurto estructuralmente elevado desde el cambio detectado en octubre 2023. El factor dominante es baja cobertura de cuadrantes (SHAP +0.34), agravado por obra IDU activa en Av. 1° de Mayo (SHAP +0.21).*

@@ -29,18 +29,6 @@
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-## Stack de aplicación
-
-| Componente | Tecnología | Deploy |
-|---|---|---|
-| Frontend | React + Vite + deck.gl + Tailwind + supabase-js | Vercel (gratis, CDN) |
-| Backend ML | FastAPI (Python) — todo en Python | Google Cloud Run (free tier, 2M req/mes) |
-| Base de datos | Supabase PostgreSQL + PostGIS + pgvector | Supabase (siempre activo) |
-| LLM | OpenRouter → `google/gemini-flash-1.5` (gratis) | Variable OPENROUTER_API_KEY en Cloud Run |
-| Embeddings | sentence-transformers all-MiniLM-L6-v2 (offline) | Resultado en pgvector Supabase |
-| Keep-alive | Ninguno — Cloud Run escala a cero y arranca en 2-3s | Pre-calentar 2 min antes del demo |
-| Costo demo | ~$0 | Cloud Run free tier + OpenRouter free tier |
-
 ## Medallion Architecture (datos)
 
 ```

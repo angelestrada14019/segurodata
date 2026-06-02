@@ -139,9 +139,6 @@ vercel --cwd frontend
 
 ---
 
-
----
-
 ## Variables de entorno — resumen
 
 | Variable | Componente | Cómo obtener |

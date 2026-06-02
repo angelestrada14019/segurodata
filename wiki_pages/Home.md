@@ -1,10 +1,10 @@
 # SeguroData Bogotá
 
-> Sistema de predicción y prescripción de crimen urbano para Bogotá D.C., construido sobre datos abiertos, XGBoost y Claude API.
+> Sistema de predicción y prescripción de crimen urbano para Bogotá D.C., construido sobre datos abiertos, XGBoost y OpenRouter.
 
 **Concurso:** Datos al Ecosistema 2026 — MinTIC · Reto #2 Seguridad Ciudadana · Nivel Medio  
 **Repositorio:** https://github.com/angelestrada14019/segurodata  
-**Estado:** Fases 1A y 1B completadas (Bronze + Silver + EDA) — En progreso Fase 2 (Gold + Modelo + Setup Supabase)
+**Estado:** Bronze + Silver + EDA completados — En progreso Fase 2 (Gold + Modelo + Supabase)
 
 ---
 
@@ -21,7 +21,7 @@
 
 > *"SeguroData no solo predice dónde habrá delitos — le dice exactamente a qué cuadrante de la Policía tiene que ir y por qué. Ese es el puente que hoy no existe entre los datos abiertos de Bogotá y la acción institucional."*
 
-El **Módulo 3 (Prescriptivo)** combina SHAP values + detección de cambios estructurales (`ruptures`) + tabla ontológica de intervenciones → Claude API genera la recomendación en lenguaje operacional para el comandante de CAI. El **Módulo 4 (Chatbot causal)** usa GraphRAG (LangChain + Supabase pgvector + Claude API) para responder preguntas como "¿por qué está subiendo el hurto en Kennedy?" con citas de boletines SCJ, noticias y el Plan de Desarrollo.
+El **Módulo 3 (Prescriptivo)** combina SHAP values + detección de cambios estructurales (`ruptures`) + tabla ontológica de intervenciones → OpenRouter (Gemini Flash vía `LLM_MODEL`) genera la recomendación en lenguaje operacional para el comandante de CAI. El **Módulo 4 (Chatbot causal)** usa GraphRAG (FastAPI + Supabase pgvector + OpenRouter) para responder preguntas como "¿por qué está subiendo el hurto en Kennedy?" con citas de boletines SCJ, noticias y el Plan de Desarrollo.
 
 ## Navegación
 
