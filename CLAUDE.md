@@ -19,8 +19,8 @@ El sistema responde tres preguntas concretas:
 |----------|--------|-----------|
 | ¿Qué está pasando? | 1 — Diagnóstico | React + deck.gl + Supabase Realtime |
 | ¿Qué va a pasar? | 2 — Predicción | XGBoost + SHAP + ruptures (cambios estructurales) |
-| ¿Qué hacer? | 3 — Recomendación | Tabla ontológica + Claude API (operacional) |
-| ¿Por qué? | 4 — Chatbot causal | LangChain + Supabase pgvector + Claude API |
+| ¿Qué hacer? | 3 — Recomendación | Tabla ontológica + OpenRouter (Gemini Flash) |
+| ¿Por qué? | 4 — Chatbot causal | FastAPI + Supabase pgvector + OpenRouter |
 
 ---
 
@@ -166,7 +166,7 @@ Los notebooks del proyecto siguen el esquema `SeguroData_0X_Nombre.ipynb`:
 - `SeguroData_03_Features.ipynb` — Construcción de las 17 variables (F11+F13+F14) + tabla prescriptiva
 - `SeguroData_04_Modelo.ipynb` — XGBoost + backtesting + SHAP pre-computado + sesgo
 - `SeguroData_05_Dashboard.ipynb` — Arquitectura React+FastAPI+Supabase + screenshots
-- `SeguroData_06_Deployment.ipynb` — Deploy Railway+Vercel + registro datos.gov.co
+- `SeguroData_06_Deployment.ipynb` — Deploy Cloud Run+Vercel + registro datos.gov.co
 
 ---
 
@@ -186,7 +186,7 @@ El Módulo 3 usa SHAP para identificar la causa dominante del riesgo y conecta d
 
 **Cuando pida análisis:** usar el contexto de Bogotá — 112 UPZs, localidades, las 12 fuentes activas (F1-F14). No generalizar.
 
-**Cuando pida texto para el chatbot o recomendaciones:** el Módulo 3 y 4 usan Claude API. Los mensajes son operacionales (lenguaje del comandante de CAI, no jerga de ML). Distinguir del registro técnico de los notebooks.
+**Cuando pida texto para el chatbot o recomendaciones:** el Módulo 3 y 4 usan OpenRouter (modelo configurable via `LLM_MODEL` — por defecto `google/gemini-flash-1.5`). Los mensajes son operacionales (lenguaje del comandante de CAI, no jerga de ML). Distinguir del registro técnico de los notebooks.
 
 **Red flags que corregir:**
 - Usar Claude API como modelo predictivo (viola el espíritu del concurso — XGBoost es el modelo)
@@ -195,7 +195,7 @@ El Módulo 3 usa SHAP para identificar la causa dominante del riesgo y conecta d
 - Saltarse el análisis de sesgo por estrato en el Notebook 04 (el jurado siempre pregunta esto)
 - Usar Streamlit como frontend principal del dashboard — el frontend es React + deck.gl
 - Calcular SHAP on-demand en la app — los SHAP values se pre-computan en Notebook 04 y se sirven desde Supabase
-- Proponer nano-graphrag o Microsoft GraphRAG — el stack es LangChain + Supabase pgvector + Claude API
+- Proponer nano-graphrag o Microsoft GraphRAG — el stack es FastAPI + Supabase pgvector + OpenRouter
 - Agregar una fuente nueva sin pasar por la regla de investigación quirúrgica (ver sección abajo)
 - Cargar el GeoJSON de Estratificación (F7, 100K+ manzanas) sin pre-calcular el promedio por UPZ — agota la RAM de Colab gratuito
 
@@ -207,9 +207,10 @@ El Módulo 3 usa SHAP para identificar la causa dominante del riesgo y conecta d
 |-------|------|
 | ✅ 23 mayo | Notebook 01 completado — plan + catálogo de 12 fuentes (F1-F10 activas + F11-F12 planificadas) |
 | ✅ 26 mayo – 6 junio | **Fase 1:** EDA de las 10 fuentes → Notebook 02 ✅ |
+| ✅ 1 junio (esta sesión) | Arquitectura pivotada a React+Supabase+FastAPI+Cloud Run · F13/F14 activadas · Wiki publicado (12 páginas) · GitHub Project #3 poblado (10 issues) · Ramas eliminadas (solo main) |
 | ⏳ 7 – 20 junio | **Fase 2:** XGBoost + SHAP → Notebooks 03+04 |
 | ⏳ 21 junio – 10 julio | **Fase 3:** React+deck.gl + FastAPI + GraphRAG Supabase → Notebook 05 |
-| ⏳ 11 julio – 1 agosto | **Fase 4:** Deploy Railway+Vercel + Docs + video → Notebook 06 |
+| ⏳ 11 julio – 1 agosto | **Fase 4:** Deploy Cloud Run+Vercel + Docs + video → Notebook 06 |
 | **⚠️ Verificar** | Fecha exacta entrega/registro en datos.gov.co — posiblemente agosto (GovCamps 2026) |
 | Primera semana agosto | **Final GovCamps 2026** (sustentación oral — confirmado MinTIC) |
 
@@ -241,7 +242,7 @@ El Módulo 3 usa SHAP para identificar la causa dominante del riesgo y conecta d
 | Solo Bogotá | Calidad de datos superior + volumen garantizado + no penalización por enfoque único |
 | Granularidad UPZ (no localidad, no barrio) | Balance entre resolución y estabilidad estadística |
 | Stack Python + scikit-learn + XGBoost | Reproducible, bien documentado, compatible con CRISP-ML |
-| ~~Hawkes Process~~ → **ruptures + GraphRAG** | Hawkes descartado. ruptures (PELT) detecta cambios estructurales históricos. GraphRAG (LangChain + pgvector + Claude) explica el *por qué* con boletines SCJ + noticias |
+| ~~Hawkes Process~~ → **ruptures + GraphRAG** | Hawkes descartado. ruptures (PELT) detecta cambios estructurales históricos. GraphRAG (FastAPI + pgvector + OpenRouter) explica el *por qué* con boletines SCJ + noticias |
 | SHAP pre-computado (no on-demand) | Supabase sirve SHAP values pre-calculados → sin crash de RAM en producción |
 | **React + deck.gl** para frontend | Mapa WebGL interactivo OSIRIS-style, capas toggleables, click-to-analyze por UPZ |
 | **Supabase** como backbone | PostgreSQL + PostGIS + pgvector en un solo servicio. El frontend lo consulta directamente para datos, predicciones y SHAP |
