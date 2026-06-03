@@ -2,7 +2,7 @@
 
 > **Estado:** EXPLORACIÓN — estas ideas no están en scope del concurso (entrega agosto 2026).  
 > **Objetivo:** capturar con rigor técnico, no descartar. Viabilidad a evaluar en fase post-concurso.  
-> **Stack actual de referencia:** React + deck.gl + FastAPI (Cloud Run) + Supabase + OpenRouter
+> **Stack actual de referencia:** React + deck.gl + FastAPI (Railway) + Supabase + OpenRouter
 
 ---
 
@@ -42,6 +42,16 @@ cualquier otro    → CIUDADANO (requiere aprobación de ADMIN)
 - ¿El CIUDADANO se autoaprovisionan libremente o requieren aprobación?
 - ¿Qué pasa con oficiales que no tienen correo `@policia.gov.co`?
 
+### Veredicto técnico
+
+**Estado:** ✅ VIABLE para el concurso
+
+Supabase Auth free tier (50,000 MAU, magic link, OAuth) cubre todo sin dependencias nuevas. El autoaprovisionamiento por dominio se implementa con Auth Hooks de Supabase (función PostgreSQL que dispara al crear el usuario).
+
+**Limitación real:** el dominio `@policia.gov.co` no garantiza identidad del oficial — solo que alguien tiene acceso al buzón. Para el prototipo del concurso es aceptable. En producción requeriría integración con el directorio LDAP de la MEBOG, fuera del alcance del reto.
+
+**Alternativa si no se implementa:** demo sin auth mostrando capturas de pantalla de los roles. Aceptable pero menos impactante — el 90% de los proyectos en concursos de datos no tienen auth real.
+
 ---
 
 ## 2. Permisos basados en rol (matriz completa)
@@ -75,11 +85,23 @@ CREATE POLICY "comandante solo ve su cuadrante"
   USING (cuadrante_id = auth.jwt()->>'cuadrante_asignado');
 ```
 
+### Veredicto técnico
+
+**Estado:** ✅ VIABLE — requiere Idea 1 implementada primero
+
+La policy RLS del ejemplo es SQL correcto de Supabase. El JWT puede incluir `cuadrante_asignado` como claim personalizado via Auth Hook.
+
+**Corrección importante:** la predicción del modelo es por UPZ, no por cuadrante. La policy debe usar el mapeo `cuadrante_id → upz_cod(s)` disponible en F4 (columna `PCUNOMCAI`), no una columna que no existe en la tabla de predicciones. Sin este mapeo, la policy falla silenciosamente devolviendo cero filas.
+
+**Sin alternativa:** si Idea 1 no se implementa, esta idea no aplica.
+
 ---
 
-## 3. Mapa interactivo estilo OSIRIS
+## 3. Mapa interactivo estilo C4 / Palantir
 
-**Referencia visual:** [osirisai.live](https://www.osirisai.live) — capas de calor con drill-down por zona y paneles de análisis al clic.
+**Referencia visual:** interfaz del C4 de Bogotá o Palantir Gotham Crime Intelligence — capas de calor con drill-down por zona y paneles de análisis al clic.
+
+> ⚠️ **Nota:** la referencia original a `osirisai.live` era incorrecta. OSIRIS.live es una plataforma OSINT global de rastreo de aeronaves, satélites y conflictos armados — no tiene relación con análisis de crimen urbano. Usar esa referencia ante el jurado sería rebatible.
 
 ### Comportamiento por nivel de zoom
 
@@ -130,71 +152,172 @@ new HeatmapLayer({ id: 'heatmap',    data: incidentes })      // Densidad de inc
 new ScatterplotLayer({ id: 'alarmas', data: alarmasActivas }) // Alarmas ciudadanas en tiempo real
 ```
 
+### Veredicto técnico
+
+**Estado:** ✅ VIABLE — es esencialmente el plan actual de Fase 3 con refinamiento UX
+
+**Corrección crítica sobre la referencia:** `osirisai.live` NO es una plataforma de análisis de crimen urbano. Es una plataforma OSINT global que rastrea aeronaves, satélites, redes CCTV y conflictos en tiempo real (alternativa open-source a Palantir). Usar esta referencia ante el jurado puede ser rebatida. Referencias correctas: PredPol/Geolitica (descontinuado por sesgo algorítmico documentado), la interfaz del C4 de Bogotá, o Palantir Gotham Crime Intelligence.
+
+El zoom-level switching (Localidades → UPZs) está confirmado en deck.gl via `CompositeLayer`. Esfuerzo: ~4 horas. El modal de 5 pestañas reorganiza los Módulos 1-4 existentes sin agregar nueva lógica de negocio.
+
+**Único elemento genuinamente nuevo:** la pestaña "Fuentes" (qué datasets de datos abiertos informan esta UPZ). Tiene alto valor para el criterio de trazabilidad del concurso. Ningún equipo competidor probablemente la tiene.
+
+**Sin alternativa necesaria:** este diseño ya es el plan de Fase 3. Sustituir referencia OSIRIS antes de la presentación oral.
+
+**Tiger T1 resuelto:** la migración a Railway (siempre activo) elimina el riesgo de cold start en el panel prescriptivo/chatbot del modal. El tab "Sugerencia" y el tab "Chatbot" responden sin demora desde el primer clic.
+
 ---
 
-## 4. Streaming de alarmas ciudadanas
+## 4. Streaming de alertas comunitarias — modelo Waze
 
-### Flujo de reporte normal
+> **Aclaración de concepto:** esta idea no es un sistema de denuncia formal (como "A Denunciar" de la Fiscalía). Es un modelo de reporte comunitario en tiempo real al estilo de Waze: cualquier ciudadano toca un botón, selecciona una categoría ("están robando", "accidente", "persona sospechosa") y el pin aparece en el mapa compartido. Si varios reportes se acumulan en el mismo cuadrante en poco tiempo, el sistema escala automáticamente al COMANDANTE_CAI.
 
-1. Ciudadano autenticado presiona **"Reportar incidente"** en la app
-2. App captura: lat/lon actual, timestamp, tipo de incidente (selección rápida: hurto / riña / sospechoso / otro)
-3. Se inserta en Supabase tabla `alarmas_ciudadanas`
-4. **Supabase Realtime** → los COMANDANTE_CAI suscritos a ese cuadrante reciben la alerta en tiempo real
-5. En el mapa del comandante: aparece un pin parpadeante en la ubicación exacta
+### Flujo de reporte ciudadano (modelo Waze)
 
-### Flujo de pánico (múltiples pulsaciones)
+1. Ciudadano — con o sin cuenta — toca **"Reportar"** en el mapa
+2. Selección rápida de categoría (máximo 3 toques):
 
-- **5 pulsaciones en < 3 segundos** → alerta tipo `PANICO` (prioridad máxima)
-- Diferente visual en el mapa del comandante: pin rojo intermitente + sonido de alerta
-- Datos enviados: lat/lon, cuadrante calculado server-side, hora exacta, usuario (anonimizado)
+   ```
+   🔴 Robo / Hurto      🟠 Riña / Violencia
+   🟡 Persona sospechosa  🔵 Accidente / Bloqueo
+   ⚪ Otro
+   ```
+
+3. App captura: lat/lon, timestamp, categoría, descripción libre opcional
+4. Pin aparece en el mapa de todos los usuarios de esa zona en <1 segundo (Supabase Realtime)
+5. Otros ciudadanos pueden **confirmar** el reporte (+1 en el pin)
+6. El reporte **expira automáticamente** a las 2 horas si nadie lo confirma ni atiende
+
+### Escalada automática al comandante
+
+```
+Si en los últimos 15 minutos hay ≥ 3 reportes del mismo tipo
+en el mismo cuadrante → se genera alerta automática al COMANDANTE_CAI
+```
+
+El comandante ve en su panel: tipo de evento + cantidad de reportes + mapa de calor del cluster.
+**El comandante decide si actuar — el sistema no despacha automáticamente.** (Ver crítica abajo.)
 
 ### Esquema de datos
 
 ```sql
-CREATE TABLE alarmas_ciudadanas (
-  id          uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id     uuid REFERENCES auth.users,          -- FK al usuario
-  lat         float NOT NULL,
-  lon         float NOT NULL,
-  upz_cod     varchar,                              -- calculado server-side (spatial lookup)
-  cuadrante_id varchar,                            -- calculado server-side
-  tipo        varchar CHECK (tipo IN ('REPORTE', 'PANICO')),
-  descripcion text,                                -- descripción libre opcional
-  estado      varchar DEFAULT 'ACTIVA'
-              CHECK (estado IN ('ACTIVA', 'ATENDIDA', 'FALSA_ALARMA')),
-  created_at  timestamptz DEFAULT now()
+CREATE TABLE reportes_comunidad (
+  id            uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id       uuid REFERENCES auth.users,   -- nullable: reportes anónimos permitidos
+  lat           float NOT NULL,
+  lon           float NOT NULL,
+  upz_cod       varchar,                      -- calculado server-side (spatial lookup)
+  cuadrante_id  varchar,                      -- calculado server-side
+  categoria     varchar CHECK (categoria IN ('ROBO', 'RIÑA', 'SOSPECHOSO', 'ACCIDENTE', 'OTRO')),
+  descripcion   text,
+  confirmaciones int DEFAULT 0,              -- votos de la comunidad
+  estado        varchar DEFAULT 'ACTIVO'
+                CHECK (estado IN ('ACTIVO', 'ATENDIDO', 'FALSO', 'EXPIRADO')),
+  created_at    timestamptz DEFAULT now(),
+  expires_at    timestamptz DEFAULT now() + interval '2 hours'
 );
 
--- Índice para queries por cuadrante (consultas de tiempo real)
-CREATE INDEX idx_alarmas_cuadrante ON alarmas_ciudadanas (cuadrante_id, estado);
+-- Alerta automática cuando se alcanza el umbral por cuadrante
+CREATE TABLE alertas_cluster (
+  id           uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  cuadrante_id varchar NOT NULL,
+  upz_cod      varchar,
+  categoria    varchar,
+  n_reportes   int,
+  creada_at    timestamptz DEFAULT now(),
+  vista_por_comandante boolean DEFAULT false
+);
+
+CREATE INDEX idx_reportes_cuadrante_activos
+  ON reportes_comunidad (cuadrante_id, categoria, created_at)
+  WHERE estado = 'ACTIVO';
 ```
 
-### Canal Supabase Realtime para comandantes
+### Canal Supabase Realtime — dos audiencias
 
 ```javascript
-// El comandante se suscribe a su cuadrante al hacer login
-const canal = supabase.channel(`cuadrante-${cuadranteDelComandante}`)
-  .on('postgres_changes', {
-    event: 'INSERT',
-    schema: 'public',
-    table: 'alarmas_ciudadanas',
-    filter: `cuadrante_id=eq.${cuadranteDelComandante}`
-  }, payload => {
-    mostrarAlertaEnMapa(payload.new)
-    reproducirSonidoAlerta(payload.new.tipo)
-  })
+// CIUDADANOS: ven todos los reportes activos de su UPZ (mapa público)
+supabase.channel('reportes-upz-' + upzCod)
+  .on('postgres_changes', { event: '*', table: 'reportes_comunidad',
+      filter: `upz_cod=eq.${upzCod}` }, actualizarMapa)
+  .subscribe()
+
+// COMANDANTE: solo ve las alertas de cluster de su cuadrante
+supabase.channel('alertas-' + cuadranteId)
+  .on('postgres_changes', { event: 'INSERT', table: 'alertas_cluster',
+      filter: `cuadrante_id=eq.${cuadranteId}` }, mostrarAlertaEnPanel)
   .subscribe()
 ```
 
-### Consideraciones de viabilidad y operación
+### Consideraciones de operación
 
 | Tema | Consideración |
 |------|--------------|
-| Anti-spam | Mínimo 60 segundos entre reportes por usuario |
-| Privacidad del ciudadano | El comandante ve solo: tipo, hora, cuadrante — nunca el nombre ni cuenta del usuario |
-| Falsas alarmas | El comandante puede marcar `FALSA_ALARMA` → el usuario acumula penalizaciones |
-| Umbral de suspensión | 3 falsas alarmas confirmadas → cuenta suspendida temporalmente |
-| Jurisdicción | Si la alarma cae fuera del cuadrante asignado al comandante → alerta al comandante más cercano |
+| ¿Requiere cuenta? | Reportes básicos: anónimos (más participación). Confirmaciones: requieren cuenta (evita bots) |
+| Anti-spam | Máximo 1 reporte por IP/dispositivo cada 5 minutos. Máximo 3 reportes por cuenta por hora |
+| Expiración | 2 horas sin confirmación → estado `EXPIRADO`, pin desaparece del mapa |
+| Comandante no despacha automáticamente | El cluster genera una alerta visual, no una orden. El comandante evalúa y decide |
+| Jurisdicción | Si el reporte cae fuera del cuadrante del comandante → va al comandante del cuadrante correcto (server-side) |
+
+### Veredicto técnico
+
+**Estado:** ✅ VIABLE técnicamente — con problemas estructurales importantes que el jurado puede señalar
+
+---
+
+**Lo que funciona bien:**
+
+Supabase Realtime free tier soporta el caso de uso (200 conexiones concurrentes, 2M mensajes/mes). La diferencia con "A Denunciar" (Fiscalía) es fundamental y articulable: "A Denunciar" es un sistema de denuncia formal con ventana de 24 horas. Este modelo es inteligencia comunitaria en tiempo real, no una denuncia. Son capas complementarias, no competidoras.
+
+La visualización Waze-style (pines en el mapa que los vecinos pueden confirmar) es un modelo que el jurado reconoce y entiende sin explicación. Aumenta el criterio de "impacto ciudadano" del concurso.
+
+---
+
+**Problema 1 — Sesgo de acceso digital (inherente a toda app web, no exclusivo de esta idea):**
+
+Cualquier app web o PWA tiene sesgo de acceso digital: requiere smartphone, conectividad y disposición a instalar/usar la app. Esto correlaciona con estrato socioeconómico en Bogotá. Este sesgo existe en Waze, WhatsApp, Instagram — no es exclusivo de esta feature.
+
+**La distinción crítica de diseño:** ese sesgo aplica a la capa de *visualización* (qué pines aparecen en el mapa), pero NO contamina la capa de *predicción* del modelo, siempre y cuando los reportes ciudadanos nunca sean features de entrada al XGBoost. Los módulos de predicción y prescripción usan únicamente datos institucionales (F5 NUSE 123, F1 DAI, F13 cámaras, F14 alumbrado) que capturan crimen real sin depender de quién tiene smartphone.
+
+**Regla de diseño no negociable:** los reportes de la tabla `reportes_comunidad` son una capa de conciencia situacional en tiempo real. Jamás deben convertirse en un feature del modelo XGBoost. Si se convirtieran en feature, el sesgo de estrato de los reportantes se propagaría directamente a las predicciones.
+
+**Los módulos sin sesgo de acceso digital:**
+- Módulo 2 (Predicción XGBoost): alimentado por NUSE 123 institucional — llegan de todos los estratos
+- Módulo 3 (Prescriptivo): usa output del modelo + tabla ontológica — sin input ciudadano
+- Vista COMANDANTE_CAI: usa datos F5 + predicciones — no depende de reportes voluntarios
+
+**Los módulos con sesgo de acceso digital (aceptado, no resuelto):**
+- Reportes comunitarios Waze (esta idea)
+- Botón de pánico ciudadano (Idea 6)
+- Cualquier vista del rol CIUDADANO
+
+Este sesgo es el mismo que tiene cualquier app de participación ciudadana. No invalida los módulos operacionales de la policía ni el modelo predictivo. Documentarlo honestamente en la presentación.
+
+---
+
+**Problema 2 — Escalada automática al comandante sin verificación:**
+
+Enviar una alerta al comandante basada en 3 reportes ciudadanos no verificados implica un riesgo operacional real. Falsos reportes coordinados (3 personas que se conocen) pueden manipular el sistema fácilmente. Si el comandante actúa sobre una alerta falsa → recursos policiales desperdiciados → el comandante pierde confianza en el sistema.
+
+**Mitigación implementada en el diseño:** el comandante decide si actuar (no despacho automático). El umbral de 3 reportes solo genera una notificación visual, no una orden. Este diseño ya es el correcto.
+
+**Pero el umbral de 3 puede ser demasiado bajo.** Para producción real, evaluar umbral dinámico basado en el historial de falsos positivos de esa zona.
+
+---
+
+**Problema 3 — Efecto de vigilancia vecinal:**
+
+Históricamente, apps de reporte comunitario (Neighbors de Amazon/Ring, Citizen en EE.UU.) han generado casos documentados de vigilantismo y señalamiento racial. Un ciudadano que reporta repetidamente "persona sospechosa" en su cuadra sin que haya crimen real puede generar perfil de vigilancia sobre esa persona.
+
+**Para el concurso:** mencionar este riesgo proactivamente en la presentación oral demuestra madurez del equipo. El jurado de un concurso público de datos va a valorar que el equipo lo identificó.
+
+---
+
+**Para el concurso (recomendación práctica):**
+
+El schema puede crearse en Supabase en Fase 2 sin costo adicional. Para el demo, mostrar el flujo con dos dispositivos: ciudadano reporta → pin aparece en el mapa del comandante. Tener video de respaldo si falla la conectividad. No demostrar la escalada automática en vivo — simularla con datos pre-cargados para evitar dependencia de N reportes reales.
+
+**Alternativa si no se implementa:** mostrar el schema + flujo de datos en diagrama en Notebook 05. El concepto Waze-style es suficientemente conocido para explicarse en 30 segundos sin demo en vivo.
 
 ---
 
@@ -226,6 +349,16 @@ Trigger de alerta automática:
 - Entrada: serie mensual de `n_delitos` por UPZ (mínimo 12 puntos, ya disponibles)
 - Ventaja vs extrapolación lineal: detecta picos estacionales (fin de año, Semana Santa, vacaciones)
 - Output: intervalo de predicción por semana → nivel de riesgo proyectado
+
+### Veredicto técnico
+
+**Estado:** ✅ VIABLE con extrapolación lineal — ⚠️ Prophet NO viable con los datos actuales del proyecto
+
+**Por qué Prophet no funciona aquí:** los datos NUSE (F5) comienzan enero 2025. Al momento del concurso habrá ~20 puntos mensuales por UPZ. Prophet (Taylor & Letham, *The American Statistician*, 2018) necesita 2+ años de datos para detectar estacionalidad anual de forma confiable. Con 20 observaciones mensuales por UPZ, los intervalos de confianza serán tan amplios que la proyección no agrega información útil — la banda de incertidumbre cubriría prácticamente todos los valores posibles.
+
+**Alternativa para el concurso (1-2 días de implementación):** extrapolación lineal con `lag4sem` y `lag8sem` ya presentes en `silver_upz_mes.parquet` + banda de ±1 desviación estándar de los últimos 3 meses. Produce salidas como: *"UPZ Kennedy — sin intervención, en 3 semanas: probabilidad de escalar a ALTO = 73%"*. Honesto y suficiente.
+
+**Prophet para post-concurso:** válido cuando el dataset tenga 2+ años de datos (disponible ~2027 con series NUSE continuas).
 
 ---
 
@@ -275,6 +408,41 @@ window.open(sms)
 - Pantalla de confirmación de 3 segundos antes de activar — con botón de cancelar
 - Vibración del teléfono como confirmación háptica al activar
 
+### Veredicto técnico
+
+**Estado:** ❌ Concepto original (hardware button con pantalla bloqueada + bloqueo de apagado) NO VIABLE en ningún stack — ✅ VIABLE con rediseño a botón interno en la app
+
+---
+
+**Por qué la detección de hardware con pantalla bloqueada no funciona:**
+
+- **PWA (cualquier browser):** el OS bloquea todos los eventos JavaScript cuando la pantalla está bloqueada. No existe ninguna Web API que los intercepte. Imposible.
+- **React Native / Flutter en Android:** posible via background service + `VolumeButtonReceiver`, pero requiere `AccessibilityService` — un permiso que Google restringe desde Android 12 y que Play Store suele rechazar sin justificación de accesibilidad real.
+- **iOS con pantalla bloqueada:** imposible en cualquier stack sin jailbreak. Apple no expone ninguna API para que apps de terceros intercepten botones físicos con el teléfono bloqueado. Solo el OS (Emergency SOS nativo) tiene ese acceso.
+
+---
+
+**Por qué el bloqueo de apagado del teléfono no existe en apps de terceros:**
+
+No hay ninguna API en PWA, React Native, Flutter ni Kotlin/Swift nativo para prevenir el apagado físico en dispositivos consumer. El `Device Admin API` de Android funciona solo en dispositivos enterprise con MDM enrollment previo. Apple no tiene equivalente. El sistema operativo permite el apagado siempre — es una característica de seguridad intencional del hardware, no una limitación técnica subsanable.
+
+**Lo que Wake Lock API sí hace:** mantiene la pantalla encendida mientras la app está en primer plano y el dispositivo está conectado. No previene el apagado físico.
+
+---
+
+**Rediseño correcto para el concurso — botón interno en la app:**
+
+Dado que la app necesita estar abierta de todas formas para que funcione el hardware button en PWA, un botón interno grande tiene exactamente la misma restricción operacional con menor complejidad. Flujo viable:
+
+1. Usuario presiona el botón de pánico visible en la app
+2. Confirmación de 3 segundos (evita activación accidental)
+3. Alarma → Supabase Realtime → pin en mapa del comandante (<1 seg)
+4. Wake Lock activo → pantalla no se apaga mientras alarma esté activa
+5. PIN de desactivación dentro de la app
+6. SMS fallback al 123 con coordenadas si no hay internet
+
+**Para post-concurso (React Native o Flutter puro — no FlutterFlow):** hardware button en background en Android. iOS sigue siendo imposible. FlutterFlow no es adecuado para integraciones con hardware APIs — genera código Dart difícil de mantener para este nivel de complejidad.
+
 ---
 
 ## 7. PWA vs. Aplicación nativa — análisis de viabilidad
@@ -320,6 +488,16 @@ window.open(sms)
 
 > La idea 6 (grabación sin apagar + botón de pánico persistente) requiere que la app esté en primer plano en iOS PWA. Para el MVP del concurso, el botón de pánico envía: alerta geolocalizada (Supabase Realtime) + grabación de audio activa mientras la app sea visible + SMS de respaldo con coordenadas. La grabación en background completa queda para React Native (Expo) en fase post-concurso.
 
+### Veredicto técnico
+
+**Estado:** ✅ Análisis técnico mayormente correcto — sin acción requerida para el concurso (es una decisión de arquitectura, no una feature)
+
+**Matiz sobre Flutter vs React Native no mencionado en el doc:** Flutter tiene acceso más directo a APIs de plataforma (background services, hardware buttons) que React Native via Expo. Si el objetivo post-concurso es la Idea 6 completa (hardware button en background en Android), Flutter puro es técnicamente superior. FlutterFlow (builder visual low-code de Flutter) **no es adecuado** para integraciones complejas con Supabase Realtime + hardware APIs — genera código Dart difícil de mantener y no permite el control granular que requieren esas integraciones.
+
+**Corrección sobre notificaciones push iOS en PWA:** disponibles desde iOS 16.4 (2023), pero solo si el usuario ha agregado el sitio al Home Screen previamente. Para el comandante (usuario recurrente con dispositivo asignado), este onboarding es manejable.
+
+**Decisión confirmada:** PWA para el concurso. React Native o Flutter puro para post-concurso si el proyecto se materializa.
+
 ---
 
 ## Dependencias cruzadas entre ideas
@@ -338,10 +516,64 @@ Idea 4 (Alarmas) ─────────────────────
 Idea 3 (Mapa modal) ─────────────────────► Chatbot contextualizado por UPZ (Módulo 4 existente)
 ```
 
+**Orden de implementación sugerido para el concurso (Fase 3):**
+1. Idea 3 (Mapa 5-tabs + zoom) — ya es el plan, semana 1
+2. Idea 5 (Tendencias +4sem) — semana 2
+3. Ideas 1+2 (Roles + Permisos) — semana 3, base de 4 y 6
+4. Idea 6 (Botón pánico interno) — semana 3, solo si Idea 4 schema está listo
+
 **Orden de implementación sugerido (post-concurso):**
-1. Idea 1+2 (Roles + Permisos) — base de todo lo demás
-2. Idea 3 (Mapa OSIRIS con modal) — mayor impacto visual
-3. Idea 4 (Alarmas PWA) — usa Supabase Realtime ya disponible
-4. Idea 5 (Tendencias) — extensión del modelo existente
-5. Idea 7 (Migrar a React Native Expo) — habilita la idea 6
-6. Idea 6 (Botón pánico completo) — requiere nativa
+1. Idea 4 (Alarmas Waze completa) — schema ya existe
+2. Idea 7 (Migrar a React Native / Flutter puro) — habilita la idea 6 completa
+3. Idea 6 (Hardware button en background) — requiere nativa Android
+
+---
+
+## Pre-Mortem — Riesgos Abiertos y Acciones Pendientes
+
+Resultado del pre-mortem ejecutado el 2026-06-02. Los tigers HIGH resueltos (T1 cold start → Railway) y aceptados (T2 expires_at → WHERE filter) se omiten.
+
+### Tigers activos
+
+**[T3 — HIGH] Demo Waze vacío en presentación oral**
+- Riesgo: el mapa de reportes comunitarios tendrá cero pines reales en la sustentación.
+- Acción: pre-cargar reportes de simulación con timestamps del día anterior. Documentar en el demo script que son datos de un escenario piloto, no reportes reales — esto es honesto y no compromete la credibilidad.
+- Responsable: definir antes del ensayo general (Fase 4).
+
+**[T4 — HIGH] Cluster anónimo = 3 POSTs fabricados disparan alerta policial**
+- Riesgo: sin cuenta requerida, cualquier atacante envía 3 requests y genera una alerta al comandante.
+- Acción: cambiar el diseño — requerir cuenta mínima (Supabase Auth anónima con device fingerprint) para publicar reportes básicos. Solo confirmaciones (+1) pueden ser completamente anónimas.
+- Impacto en schema: `user_id` deja de ser nullable para INSERT; se permite auth anónima de Supabase.
+
+**[T5 — HIGH] RLS silenciosa → comandante ve mapa vacío sin mensaje de error**
+- Riesgo: policy mal configurada devuelve 0 filas sin error HTTP. No hay forma de distinguir "no hay datos" de "política mal configurada" desde el frontend.
+- Acción: (1) crear endpoint de diagnóstico `GET /whoami` que retorna rol + cuadrante_asignado del JWT; (2) en el frontend, si el mapa de predicciones devuelve 0 filas, mostrar mensaje "Verifica tu cuadrante asignado" en lugar de mapa vacío.
+- Ver tarea en CRONOGRAMA.md Fase 3 semana 3.
+
+**[T6 — MEDIUM] "73% probabilidad" de la proyección tendencial no es probabilidad XGBoost**
+- Riesgo: la extrapolación lineal predice `n_delitos_futuro`, no una probabilidad de clase. Presentarlo como "73% probabilidad de ALTO" es estadísticamente incorrecto.
+- Acción: implementar el pipeline completo: `lag4sem/lag8sem → extrapolación → n_delitos_proyectado → XGBoost.predict_proba([n_delitos_proyectado, ...features_fijas]) → probabilidad de clase ALTO`. El `n_delitos_proyectado` entra como feature al modelo junto con las demás variables del mes proyectado.
+- Si el pipeline completo es demasiado complejo: etiquetar honestamente como "tendencia estimada" en lugar de "probabilidad", evitando el claim estadístico incorrecto.
+
+**[T7 — MEDIUM] F4 Cuadrantes no está en Supabase PostGIS — prerequisito de Ideas 4 y 6**
+- Riesgo: el spatial lookup `lat/lon → cuadrante_id` requiere `ST_Within(point, cuadrante_geom)` en PostGIS. Si F4 no está cargado, todos los reportes tienen `cuadrante_id = null` y nunca llegan al comandante.
+- Acción: agregar carga de F4 como tarea explícita en Fase 2 (ver CRONOGRAMA.md). Crear función RPC en Supabase: `get_cuadrante_from_coords(lat, lon) → cuadrante_id`.
+
+### Elephants activos
+
+**[E1 — HIGH] Sin orden de corte para Fase 3 — 5 features en 3 semanas**
+- Riesgo: si el tiempo aprieta, no está definido qué se sacrifica primero.
+- Orden de corte (de menor a mayor impacto en el concurso):
+  1. Idea 6 (botón pánico) — se puede mostrar en diagrama
+  2. Ideas 1+2 (Auth/Roles) — demo sin auth es viable
+  3. Idea 5 (tendencias) — segunda prioridad alta
+  4. Modal 5-tabs + zoom layers — es el plan base, no se puede cortar
+
+**[E2 — HIGH] Sin demo script — bugs se descubren en vivo ante el jurado**
+- Riesgo: una demo de 10 minutos sin guión previo garantiza que algo falla en el peor momento.
+- Acción: escribir demo script en Fase 4 con: UPZs de ejemplo (Kennedy para ALTO, Usaquén para BAJO), clicks exactos, datos preexistentes en Supabase, respuestas preparadas a interrupciones, plan B si falla la conectividad (video de 3 minutos ya grabado).
+- Ver tarea en CRONOGRAMA.md Fase 4.
+
+**[E3 — MEDIUM] JWT Supabase Auth ↔ FastAPI nunca testeado end-to-end**
+- Riesgo: la integración requiere que FastAPI use la clave pública de Supabase (o el JWT secret) para validar el token, y que los claims personalizados (`rol`, `cuadrante_asignado`) estén en el payload. Este flujo tiene varios puntos de falla que solo se descubren ejecutándolo.
+- Acción: crear test de integración mínimo antes de construir el sistema de roles completo. Ver tarea en CRONOGRAMA.md Fase 3 semana 3.

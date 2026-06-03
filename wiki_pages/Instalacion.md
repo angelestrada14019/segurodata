@@ -1,6 +1,6 @@
 # Guía de Instalación
 
-El proyecto tiene tres componentes: **pipeline de datos** (Python), **backend ML** (FastAPI en Google Cloud Run), y **frontend** (React). En producción: Vercel (frontend) + Supabase (BD + pgvector) + Cloud Run (backend). Todo el backend es Python.
+El proyecto tiene tres componentes: **pipeline de datos** (Python), **backend ML** (FastAPI en Railway), y **frontend** (React). En producción: Vercel (frontend) + Supabase (BD + pgvector) + Railway (backend). Todo el backend es Python.
 
 ---
 
@@ -81,9 +81,9 @@ python scripts/index_corpus.py     # carga embeddings pgvector
 
 ---
 
-## 4. Backend ML — FastAPI (Google Cloud Run)
+## 4. Backend ML — FastAPI (Railway)
 
-El backend Python sirve el GraphRAG, el prescriptivo y la inferencia XGBoost. La `OPENROUTER_API_KEY` permanece en Cloud Run — nunca en el browser.
+El backend Python sirve el GraphRAG, el prescriptivo y la inferencia XGBoost. La `OPENROUTER_API_KEY` permanece en Railway — nunca en el browser. Railway mantiene el servicio siempre activo: sin cold start, sin warmup previo al demo.
 
 ### Desarrollo local
 ```bash
@@ -98,21 +98,28 @@ SUPABASE_URL=https://xxx.supabase.co
 SUPABASE_SERVICE_KEY=eyJ...
 ```
 
-### Deploy en Google Cloud Run
+### Deploy en Railway
 ```bash
-# Desde la raíz del repo
-gcloud run deploy segurodata-api \
-  --source ./backend \
-  --platform managed \
-  --region us-central1 \
-  --allow-unauthenticated \
-  --set-env-vars OPENROUTER_API_KEY=sk-or-...,LLM_MODEL=google/gemini-flash-1.5,SUPABASE_URL=...
+# Instalar Railway CLI (una sola vez)
+npm install -g @railway/cli
 
-# La URL resultante va en el frontend como variable:
-# VITE_API_URL=https://segurodata-api-xxx-uc.a.run.app
+# Login y deploy
+railway login
+cd backend
+railway link          # seleccionar proyecto en el dashboard de railway.app
+railway up            # despliega desde ./backend
+
+# Configurar variables de entorno en Railway dashboard o CLI:
+railway variables set OPENROUTER_API_KEY=sk-or-...
+railway variables set LLM_MODEL=google/gemini-flash-1.5
+railway variables set SUPABASE_URL=https://xxx.supabase.co
+railway variables set SUPABASE_SERVICE_KEY=eyJ...
+
+# La URL pública queda disponible en Railway dashboard:
+# VITE_API_URL=https://segurodata-api.up.railway.app
 ```
 
-Cloud Run escala a cero y arranca en 2-3 segundos. **Para el demo en vivo:** visitar la URL de la API 2 minutos antes de la presentación. Sin cron, sin servicio externo adicional.
+Railway (Plan Hobby ~$5/mes) mantiene el proceso activo permanentemente. **Pre-demo:** verificar que `GET /health` responde antes de la presentación. Sin warmup, sin cron adicional.
 
 ---
 
@@ -143,8 +150,8 @@ vercel --cwd frontend
 
 | Variable | Componente | Cómo obtener |
 |----------|-----------|-------------|
-| `OPENROUTER_API_KEY` | Backend FastAPI (Cloud Run) | openrouter.ai (gratis con límites) |
-| `LLM_MODEL` | Backend FastAPI (Cloud Run) | `google/gemini-flash-1.5` (por defecto, gratis) |
+| `OPENROUTER_API_KEY` | Backend FastAPI (Railway) | openrouter.ai (gratis con límites) |
+| `LLM_MODEL` | Backend FastAPI (Railway) | `google/gemini-flash-1.5` (por defecto, gratis) |
 | `SUPABASE_URL` | Todos | Supabase Dashboard → Settings → API |
 | `SUPABASE_ANON_KEY` | Frontend (lectura pública) | Supabase Dashboard → Settings → API |
 | `SUPABASE_SERVICE_KEY` | Scripts de carga | Supabase Dashboard → Settings → API |
