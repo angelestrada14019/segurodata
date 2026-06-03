@@ -194,8 +194,8 @@
   <rect x="853" y="303" width="329" height="14" rx="3" fill="#ddd6fe"/>
   <text x="1017" y="313" text-anchor="middle" font-size="8" fill="#4c1d95" font-weight="bold">NO entran en XGBoost</text>
   <text x="855" y="331" font-size="8.5" fill="#5b21b6">Solo LLM context:</text>
-  <text x="869" y="345" font-size="8" fill="#6d28d9">Módulo 3 — Recomendaciones (Claude API)</text>
-  <text x="869" y="359" font-size="8" fill="#6d28d9">Módulo 4 — Chatbot (Claude API)</text>
+  <text x="869" y="345" font-size="8" fill="#6d28d9">Módulo 3 — Recomendaciones (OpenRouter)</text>
+  <text x="869" y="359" font-size="8" fill="#6d28d9">Módulo 4 — Chatbot (OpenRouter)</text>
   <rect x="853" y="365" width="329" height="16" rx="3" fill="#fecaca" stroke="#dc2626" stroke-width="1"/>
   <text x="1017" y="376" text-anchor="middle" font-size="8" font-weight="bold" fill="#991b1b">Twitter/X DESCARTADO — viola reglas + USD$100/mes API</text>
   <text x="855" y="400" font-size="7.5" fill="#7c3aed">Nota: permiten contextualizar alertas con</text>
@@ -299,7 +299,7 @@
   <text x="869" y="640" font-size="8" fill="#92400e">Feature dominante → CAI responsable</text>
   <text x="869" y="654" font-size="8" fill="#92400e">Puente datos → acción operacional</text>
   <line x1="853" y1="661" x2="1182" y2="661" stroke="#a16207" stroke-width="0.8" stroke-dasharray="4,2"/>
-  <text x="855" y="676" font-size="9" fill="#713f12" font-weight="bold">Claude API — Módulos 3+4:</text>
+  <text x="855" y="676" font-size="9" fill="#713f12" font-weight="bold">OpenRouter — Módulos 3+4:</text>
   <text x="869" y="690" font-size="8" fill="#92400e">Recom operacional + Chatbot NL</text>
 
   <!-- ===== LEYENDA ===== -->

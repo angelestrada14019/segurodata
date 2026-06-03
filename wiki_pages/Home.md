@@ -15,7 +15,8 @@
 | 1 | ¿Qué está pasando? | Diagnóstico | React + deck.gl + Supabase Realtime |
 | 2 | ¿Qué va a pasar? | Predicción | XGBoost + SHAP + ruptures |
 | 3 | ¿Qué hacer? | Prescriptivo | Tabla ontológica + OpenRouter (Gemini Flash) |
-| 4 | ¿Por qué? | Chatbot causal | FastAPI (Cloud Run) + pgvector + OpenRouter |
+| 4 | ¿Por qué? | Chatbot causal | FastAPI (Railway) + pgvector + OpenRouter |
+| 5 | ¿Cómo participo? | Plataforma Ciudadana | Supabase Auth + Realtime + React PWA |
 
 ## El diferenciador clave
 
@@ -26,8 +27,9 @@ El **Módulo 3 (Prescriptivo)** combina SHAP values + detección de cambios estr
 ## Navegación
 
 - [[Fuentes de Datos]] — 10 fuentes activas + 2 planificadas
-- [[Arquitectura]] — Medallion Architecture + GraphRAG
-- [[Modulos]] — Los 4 módulos del dashboard
+- [[Arquitectura]] — Medallion Architecture + GraphRAG + Autenticación
+- [[Modulos]] — Los 5 módulos del sistema + matriz de acceso por rol
+- [[Plataforma-Ciudadana]] — Roles, mapa interactivo, roadmap y features ciudadanas
 - [[Metodologia]] — CRISP-ML, validación temporal, análisis de sesgo
 - [[Replicacion]] — Cómo usar SeguroData en otra ciudad
 - [[Instalacion]] — Guía paso a paso

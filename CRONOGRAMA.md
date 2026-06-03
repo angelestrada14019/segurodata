@@ -138,11 +138,12 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 - [ ] Integrar F14 Alumbrado UAESP → merge directo → feature `luminarias_led_upz`
 - [ ] Integrar F11 IDU Obras Viales → spatial join → feature `km_via_intervenida_upz`
 - [ ] Correr `ruptures` PELT sobre F1 DAI 2018–2026 por localidad → cargar en Supabase `change_points`
+- [ ] **[Pre-mortem T7]** Cargar F4 Cuadrantes GeoJSON en Supabase PostGIS como tabla `cuadrantes_geom` con índice espacial GIST — prerequisito para spatial lookup lat/lon→cuadrante_id de Ideas 4 y 6
 
 ### Notebook 03 — Features (7–12 junio)
 
 - [ ] Construir tabla maestra `datos/features/tabla_maestra_upz.parquet` con las **17 variables** (14 originales + F11/F13/F14)
-- [ ] Definir `nivel_riesgo` (Y): `GROUP BY upz_cod, anio, mes` sobre `es_crimen=True` → top 25% = ALTO, 25–60% = MEDIO, resto = BAJO (1,920 filas modelo)
+- [ ] Definir `nivel_riesgo` (Y): `GROUP BY upz_cod, anio, mes` sobre `es_crimen=True` → top 5% = CRÍTICO, 5–25% = ALTO, 25–60% = MEDIO, resto = BAJO (1,920 filas modelo)
 - [ ] Documentar tabla ontológica prescriptiva (17 filas SHAP→diagnóstico→entidad→acción) en celda 1
 - [ ] Verificar imputación de estrato faltante (69 UPZs sin dato → mediana de la localidad)
 - [ ] Normalizar features numéricas con StandardScaler → `datos/modelos/scaler.pkl`
@@ -151,7 +152,7 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 
 - [ ] Split temporal: TRAIN = ene–oct 2025, TEST = nov 2025–abr 2026 (F5 NUSE solo disponible 2025–2026)
 - [ ] Entrenar XGBoost con parámetros por defecto como baseline
-- [ ] Métricas: Precision, Recall, F1 por clase (ALTO/MEDIO/BAJO) + AUC-ROC macro
+- [ ] Métricas: Precision, Recall, F1 por clase (CRÍTICO/ALTO/MEDIO/BAJO) + AUC-ROC macro
 - [ ] Tuning básico: RandomizedSearchCV sobre `max_depth`, `n_estimators`, `learning_rate`
 - [ ] Calcular SHAP values → **pre-computar y guardar en Supabase** (NO on-demand)
 - [ ] Análisis de sesgo: comparar F1 en UPZs estrato 1-2 vs. 5-6
@@ -175,7 +176,7 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 - [ ] Skeleton FastAPI en `/backend` con endpoints `/predict`, `/explain`, `/query`
 - [ ] Conectar XGBoost model + SHAP pre-computados desde Supabase
 - [ ] Skeleton React + Vite + Tailwind + supabase-js
-- [ ] deck.gl: PolygonLayer con 112 UPZs coloreadas (ALTO/MEDIO/BAJO) + hover tooltip
+- [ ] deck.gl: PolygonLayer con 112 UPZs coloreadas (CRÍTICO=morado, ALTO=rojo, MEDIO=naranja, BAJO=verde) + hover tooltip
 - [ ] Slider temporal funcional → cambia colores del mapa
 
 ### Semana 2 — Módulo Diagnóstico + Predicción (28 junio – 4 julio)
@@ -183,23 +184,25 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 - [ ] Módulo 1: capas toggleables deck.gl (crimen · cámaras F13 · cuadrantes · alumbrado F14)
 - [ ] Módulo 1: Heatmap día × hora (Plotly React) + tendencia con change points marcados
 - [ ] Módulo 2: click en UPZ → FastAPI /predict → panel con nivel_riesgo + probabilidades
-- [ ] Módulo 2: mapa predictivo rojo/amarillo/verde + top-10 UPZs en riesgo ALTO
+- [ ] Módulo 2: mapa predictivo morado/rojo/naranja/verde + top-10 UPZs en riesgo CRÍTICO o ALTO
 
-### Semana 3 — Módulo Prescriptivo + Chatbot (5–10 julio)
+### Semana 3 — Módulo Prescriptivo + Chatbot + Auth (5–10 julio)
 
-- [ ] Módulo 3: tabla ontológica + SHAP top feature → diagnóstico → Claude API → recomendación operacional
+- [ ] Módulo 3: tabla ontológica + SHAP top feature → diagnóstico → OpenRouter → recomendación operacional
 - [ ] Módulo 3: panel CAI (nombre + dirección + turno) + indicador change point (estructural vs temporal)
-- [ ] Módulo 4: chat input → FastAPI /query → LangChain SupabaseVectorStore → Claude API → respuesta con citas
+- [ ] Módulo 4: chat input → FastAPI /query → LangChain SupabaseVectorStore → OpenRouter → respuesta con citas
 - [ ] Probar 10 preguntas tipo de los 3 perfiles de usuario
+- [ ] **[Pre-mortem E3]** Test de integración JWT end-to-end: login Supabase Auth → obtener token → POST /predict con ese token → verificar que FastAPI lo decodifica y acepta antes de implementar roles completos
+- [ ] **[Pre-mortem T5]** Crear usuario de prueba COMANDANTE_CAI con cuadrante_asignado seteado → verificar que las policies RLS retornan filas (no vacío silencioso) → añadir validación en login que detecte cuadrante no asignado
 
 ### Deploy
 
-- [ ] FastAPI → Cloud Run: `gcloud run deploy segurodata-api --source ./backend --allow-unauthenticated`
-- [ ] Configurar variables en Cloud Run: OPENROUTER_API_KEY, LLM_MODEL, SUPABASE_URL, SUPABASE_SERVICE_KEY
+- [ ] FastAPI → Railway: `railway login && railway link && cd backend && railway up`
+- [ ] Configurar variables en Railway dashboard: OPENROUTER_API_KEY, LLM_MODEL, SUPABASE_URL, SUPABASE_SERVICE_KEY
 - [ ] React → Vercel: conectar repo GitHub → `/frontend`
-- [ ] Configurar variables en Vercel: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_API_URL (URL de Cloud Run)
+- [ ] Configurar variables en Vercel: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_API_URL (URL pública Railway)
 - [ ] Verificar URL pública funciona desde móvil
-- [ ] Pre-demo: visitar URL de Cloud Run 2 minutos antes de la presentación para calentar el contenedor
+- [ ] Pre-demo: Railway está siempre activo — verificar que /health responde y Supabase conecta 5 min antes
 
 ---
 
@@ -209,12 +212,14 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 
 > ⚠️ Verificar fecha exacta de entrega/registro en datos.gov.co. Final confirmado: GovCamps primera semana de agosto 2026.
 
-- [ ] `README.md`: descripción, URL Railway + Vercel + Supabase, instrucciones instalación completas
-- [ ] Notebook 06: URLs de producción, schema Supabase, instrucciones reproducción local, decisiones de diseño
+- [ ] `README.md`: descripción, URL Railway (backend) + Vercel (frontend) + Supabase, instrucciones instalación completas
+- [ ] Notebook 06: URLs de producción (Railway + Vercel), schema Supabase, instrucciones reproducción local, decisiones de diseño
 - [ ] Video pitch de 3 minutos: problema → solución → demo (mapa + prescriptivo + chatbot)
 - [ ] Auditoría de git history para API keys antes de hacer repo público
 - [ ] Repositorio GitHub en modo público
 - [ ] Registrar en datos.gov.co → sección "Usos" con enlace al repo — **OBLIGATORIO**
+- [ ] **[Pre-mortem E2]** Escribir demo script de 10 minutos: clicks exactos, UPZs de ejemplo (Kennedy, Chapinero), datos que deben preexistir en Supabase, orden de módulos, respuestas preparadas a interrupciones del jurado, fallback a video si algo falla en vivo
+- [ ] **[Pre-mortem T3]** Pre-cargar en Supabase reportes de prueba verosímiles para el demo Waze (Ideas 4/6): usar timestamps del día anterior para que se vean como datos reales del sistema, no de prueba. Documentar en demo script que estos son datos de simulación.
 
 ---
 
@@ -225,6 +230,6 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 | GeoJSON Delito Alto Impacto no tiene columna `hora` | Media | Imputar franja horaria desde `fecha` si la hora está en el timestamp |
 | Cuadrantes dataset sin info de CAI | Media | Crear `cai_bogota.csv` manual (~80 filas) — ver Fase 1 Semana 1 |
 | Memoria insuficiente en Colab para Estratificación (FUENTE 7) | Alta | Pre-calcular en Colab Pro o descargar a Drive → cargar desde Drive |
-| Streamlit Cloud tarda en desplegar | Alta | Iniciar deploy al principio de Fase 3, no al final |
-| Claude API Key cuota agotada | Baja | Cachear respuestas generadas; limitar chatbot a 20 consultas/sesión |
+| Railway no responde en el demo (cold start imposible pero servicio caído) | Baja | Verificar `GET /health` 5 min antes de la presentación. Tener capturas de pantalla como fallback |
+| OpenRouter API Key cuota agotada | Baja | Cachear respuestas generadas; limitar chatbot a 20 consultas/sesión. Fallback: `anthropic/claude-haiku` en la variable LLM_MODEL |
 | Fecha real del concurso es agosto (GovCamps) | Media | Si se confirma, extender Fase 3 para refinar el dashboard |

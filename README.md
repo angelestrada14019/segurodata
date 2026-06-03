@@ -214,7 +214,7 @@ GraphRAG         FastAPI (Python) — pgvector + OpenRouter
 LLM              OpenRouter (google/gemini-flash-1.5 por defecto — gratis)
 Base de datos    Supabase (PostgreSQL + PostGIS + pgvector)
 Frontend / mapa  React + Vite + deck.gl + Tailwind CSS → Vercel
-Escalamiento     Google Cloud Run (FastAPI — inferencia en tiempo real, post-concurso)
+Backend ML       Railway (FastAPI — siempre activo, sin cold start, ~$5/mes)
 ```
 
 ---

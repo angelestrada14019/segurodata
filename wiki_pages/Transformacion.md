@@ -208,7 +208,7 @@ Con ejecutarlo una sola vez es suficiente para todo el proyecto.
 | Selección de variables (cuáles entran al modelo) | Gold — Notebook 03 |
 | Análisis de correlación entre variables | Gold — Notebook 03 |
 | Normalización / escalado para XGBoost | Gold — Notebook 03 |
-| Definición de `nivel_riesgo` (ALTO/MEDIO/BAJO) | Gold — Notebook 03 |
+| Definición de `nivel_riesgo` (CRÍTICO/ALTO/MEDIO/BAJO) | Gold — Notebook 03 |
 | Balanceo de clases (SMOTE u otras técnicas) | Gold — Notebook 03 |
 | Entrenamiento del modelo | Model — Notebook 04 |
 
