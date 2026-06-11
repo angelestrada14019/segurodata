@@ -133,7 +133,9 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 ### Setup Supabase + nuevas fuentes (7–10 junio) — EN PARALELO con modelo
 
 - [x] ✅ (10-jun) Crear proyecto Supabase → habilitar PostGIS + pgvector — proyecto `segurodata` (ref `pluxaelenhkdaakxdrpm`, us-east-1), 8 migraciones en `supabase/migrations/`
-- [x] ✅ (10-jun) Schema inicial aplicado (8 tablas + RLS + hook claims + RPC match_documents) + seed sintético: 2,016 predicciones + 16,128 SHAP (`origen='seed_dev'`) + 112 UPZ + 599 cuadrantes. ⏳ Pendiente: cargar Silver 111K + geometrías reales con `scripts/seed_supabase.py` (requiere `SUPABASE_DB_URL` en .env) y habilitar el hook en Dashboard → Auth → Hooks
+- [x] ✅ (10-jun) Schema inicial aplicado (8 tablas + RLS + hook claims + RPC match_documents) + seed sintético: 2,016 predicciones + 16,128 SHAP (`origen='seed_dev'`) + 112 UPZ + 599 cuadrantes. ⏳ Pendiente: cargar Silver 111K + geometrías reales con `scripts/seed_supabase.py` (requiere `SUPABASE_DB_URL` en .env)
+- [ ] **[Paso manual]** Habilitar Custom Access Token Hook: Dashboard → Authentication → Hooks → `custom_access_token_hook` → ON (sin esto todos los usuarios caen a rol `CIUDADANO`)
+- [ ] **[Paso manual]** Habilitar Realtime en `silver_upz_mes`: Dashboard → Table Editor → `silver_upz_mes` → Replication → ON (necesario para que el mapa React se actualice sin recargar)
 - [ ] Integrar F13 Cámaras Salvavidas SDM → spatial join → feature `n_camaras_upz`
 - [ ] Integrar F14 Alumbrado UAESP → merge directo → feature `luminarias_led_upz`
 - [ ] Integrar F11 IDU Obras Viales → spatial join → feature `km_via_intervenida_upz`
@@ -191,7 +193,7 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 
 - [ ] Módulo 3: tabla ontológica + SHAP top feature → diagnóstico → OpenRouter → recomendación operacional
 - [ ] Módulo 3: panel CAI (nombre + dirección + turno) + indicador change point (estructural vs temporal)
-- [ ] Módulo 4: chat input → FastAPI /query → LangChain SupabaseVectorStore → OpenRouter → respuesta con citas
+- [ ] Módulo 4: chat input → FastAPI `/graphrag` → sentence-transformers embed → pgvector `match_documents` RPC → OpenRouter → respuesta con citas y número de boletín
 - [ ] Probar 10 preguntas tipo de los 3 perfiles de usuario
 - [~] **[Pre-mortem E3]** Test JWT end-to-end IMPLEMENTADO (`backend/tests/test_jwt_e2e.py`, marker `integration`) — ⏳ correrlo una vez con credenciales reales: `python -m pytest tests/test_jwt_e2e.py -m integration -v` (requiere E2E_EMAIL/E2E_PASSWORD + SUPABASE_JWT_SECRET)
 - [~] **[Pre-mortem T5]** Backend LISTO: `/whoami` devuelve `cuadrante_pendiente=true` + filtro comandante-por-cuadrante en services (tests verdes) — ⏳ crear usuario de prueba COMANDANTE_CAI real y verificar RLS del frontend
