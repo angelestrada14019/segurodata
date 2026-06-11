@@ -1,8 +1,10 @@
 # Los Módulos del Sistema
 
-> **Estado de implementación (10-jun-2026):**
+> **Estado de implementación (11-jun-2026):**
 > - ✅ **Backend FastAPI completo** — 6 endpoints, 31 tests verdes, Dockerfile listo (deploy en Fase 4)
-> - ✅ **Supabase configurado** — 8 migraciones, seed sintético activo (`origen='seed_dev'`)
+> - ✅ **Supabase configurado** — 11 migraciones, seed sintético activo (`origen='seed_dev'`), Realtime ON, hook JWT ON
+> - ✅ **change_points**: 59 breakpoints ruptures PELT cargados (F1 DAI 2018-2026), COVID 2020 validado
+> - ✅ **Corpus GraphRAG**: 18 chunks en pgvector (12 SEED_DEV + 5 El Tiempo + 1 El Informante)
 > - ⏳ **Frontend React** — pendiente Fase 3 (21 jun)
 > - ⏳ **Modelo XGBoost** — pendiente Notebook 04 (Fase 2)
 

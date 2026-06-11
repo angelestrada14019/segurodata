@@ -46,18 +46,23 @@ supabase/migrations/
   20260610_0008_advisor_fixes.sql
 ```
 
-### 2b. Cargar datos (seed + Silver)
+### 2b. Cargar datos de producción en Supabase
 
-Requiere solo `SUPABASE_URL` + `SUPABASE_SERVICE_KEY` en `backend/.env` (REST API — sin conexión directa a la BD):
+> **Decisión FTI (11-jun-2026): Silver 111K queda LOCAL.** Supabase solo recibe outputs del modelo y datos geográficos, no datos de entrenamiento.
+
+Requiere `SUPABASE_URL` + `SUPABASE_SERVICE_KEY` en `backend/.env`:
 
 ```bash
-# Todo: Silver 111K + geometrías F2/F4 + predicciones y SHAP sintéticos
-python scripts/seed_supabase.py
+# Geometrías UPZ/cuadrantes para el frontend
+python scripts/seed_supabase.py --solo geo      # 112 UPZ + 599 cuadrantes via PostGIS
 
-# O por partes:
-python scripts/seed_supabase.py --solo silver   # 111,606 filas en batches REST
-python scripts/seed_supabase.py --solo geo      # 112 UPZ + 599 cuadrantes via RPC PostGIS
-python scripts/seed_supabase.py --solo synth    # predicciones y SHAP seed_dev via RPC
+# Predicciones y SHAP sintéticos de demo (mientras Notebook 04 no esté listo)
+python scripts/seed_supabase.py --solo synth    # 2,016 predicciones + 16,128 SHAP seed_dev
+
+# Change points (ruptures PELT sobre F1 DAI 2018-2026)
+python scripts/compute_change_points.py         # 59 breakpoints → Supabase change_points
+
+# NO usar --solo silver: Silver permanece local para entrenamiento (patrón FTI)
 ```
 
 ### 2c. Paso manual obligatorio — custom_access_token_hook
@@ -88,21 +93,23 @@ python scripts/load_model_artifacts.py \
 
 ## 3. Corpus GraphRAG — indexar F9 + F10
 
-Los embeddings del corpus (boletines SCJ + noticias) se generan con `sentence-transformers all-MiniLM-L6-v2` (local, sin costo de API) y se cargan en Supabase pgvector.
+Los embeddings del corpus se generan con `fastembed` (`all-MiniLM-L6-v2`, 384 dims, local, sin costo de API) y se cargan en Supabase pgvector.
 
 ```bash
-# Paso 1: descargar corpus (si no existe en datos/raw/)
-python src/pipeline.py --source f9 f10
+# Paso 1: descargar corpus F10 RSS (F9 requiere Playwright — ver nota abajo)
+python src/pipeline.py --source f10
 
 # Paso 2: indexar → chunks 500 tokens → MiniLM → pgvector
-python scripts/index_corpus.py
+python scripts/index_corpus.py --seed-demo --backend fastembed   # demo + F10 real
+python scripts/index_corpus.py --backend fastembed                # solo F10 real
 
-# Para demo sin F9/F10 reales (10 chunks SEED_DEV ya cargados en Supabase):
-python scripts/index_corpus.py --seed-demo          # carga directo a DB
+# Sin credenciales (genera SQL para importar manualmente):
 python scripts/index_corpus.py --seed-demo --emit-sql  # genera datos/grafo/corpus_seed.sql
 ```
 
-> **Estado actual (10-jun-2026):** 10 chunks demo (`SEED_DEV`) cargados → `/graphrag` es demostrable. F9/F10 reales pendientes.
+> **Estado actual (11-jun-2026):** 18 chunks en Supabase — 12 SEED_DEV + 5 RSS_ELTIEMPO + 1 RSS_INFORMANTE. `/graphrag` es demostrable.
+
+> **F9 — boletines SCJ:** El Observatorio OSCJ migró a ArcGIS Experience Builder (`https://oaiee.scj.gov.co/ObservatorioSCJ.html`), que es 100% JavaScript. `pipeline.py --source f9` no puede scrapearlo sin Playwright. Para añadir boletines reales: descargar manualmente los PDFs desde el Observatorio (sección Boletines > Estudios), guardarlos en `datos/raw/boletines_scj/`, y re-ejecutar `index_corpus.py`.
 
 ---
 

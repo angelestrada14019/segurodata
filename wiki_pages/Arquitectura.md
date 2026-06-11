@@ -102,7 +102,7 @@ La `OPENROUTER_API_KEY` se configura como variable de entorno en Railway — nun
 
 ### Base de datos — Supabase
 
-> **Estado (10-jun-2026):** ✅ **Proyecto creado** — ref `pluxaelenhkdaakxdrpm` (us-east-1). 8 migraciones aplicadas. Seed sintético activo: 2,016 predicciones + 16,128 SHAP values (`origen='seed_dev'`). ⏳ Pendiente: Silver 111K filas + geometrías reales vía `scripts/seed_supabase.py`.
+> **Estado (11-jun-2026):** ✅ **Proyecto activo** — ref `pluxaelenhkdaakxdrpm` (us-east-1). 11 migraciones aplicadas. Seed sintético activo: 2,016 predicciones + 16,128 SHAP values (`origen='seed_dev'`). Realtime habilitado. Hook JWT activo. change_points: 59 filas. documents_corpus: 18 chunks. **Decisión FTI: Silver 111K queda LOCAL** — Supabase solo recibe outputs del modelo, no datos de entrenamiento.
 
 ```sql
 -- Tablas implementadas (supabase/migrations/)
@@ -126,13 +126,14 @@ match_documents(query_embedding, match_threshold, match_count, filter_upz)
 
 ## GraphRAG — sentence-transformers + Supabase pgvector + OpenRouter
 
-Los corpus de texto (F9 boletines SCJ + F10 noticias RSS + F12 Plan Desarrollo) se indexan como embeddings en Supabase pgvector:
+Los corpus de texto (F9 boletines SCJ + F10 noticias RSS) se indexan como embeddings en Supabase pgvector:
 
 ```
 INDEXACIÓN (offline, una sola vez — scripts/index_corpus.py):
-F9 PDF  → pdfplumber → texto → sentence-transformers (all-MiniLM-L6-v2) → pgvector
-F10 RSS → feedparser → texto → sentence-transformers (all-MiniLM-L6-v2) → pgvector
-F12 PDF → pdfplumber → texto → sentence-transformers (all-MiniLM-L6-v2) → pgvector
+F9 PDF  → pdfplumber → texto → all-MiniLM-L6-v2 → pgvector
+         [AVISO jun-2026: SCJ migraron al Observatorio OSCJ (ArcGIS JS)
+          — requiere Playwright o descarga manual. Demo usa SEED_DEV.]
+F10 RSS → feedparser → texto → all-MiniLM-L6-v2 → pgvector
 
 CONSULTA EN TIEMPO REAL (FastAPI — Python en Railway):
 pregunta_usuario
@@ -154,12 +155,15 @@ El módulo de change point detection corre sobre F1 DAI histórico (2018–2026)
 
 ```python
 import ruptures as rpt
-# PELT: Pruned Exact Linear Time — detecta cambios en media/varianza de la serie
-algo = rpt.Pelt(model="rbf").fit(serie_mensual_localidad)
-breakpoints = algo.predict(pen=10)
+# PELT: Pruned Exact Linear Time — detecta cambios en media de la serie anual
+algo = rpt.Pelt(model="l2", min_size=2, jump=1)
+algo.fit(signal.reshape(-1, 1))
+breakpoints = algo.predict(pen=3)  # pen=3 detecta 1-3 cambios/localidad con 9 puntos anuales
 ```
 
-Los resultados se guardan en Supabase tabla `change_points` y alimentan el Módulo 3 (Prescriptivo): si hay un cambio estructural reciente + tendencia sostenida → el diagnóstico es "problema estructural" (no pico temporal) → acción diferente.
+**Estado (11-jun-2026):** ✅ **59 breakpoints cargados** en Supabase `change_points` — `scripts/compute_change_points.py`. COVID 2020 validado como BAJA en 16 localidades. "Sin Localización" (bucket sin geocodificación) excluido. Script es idempotente (DELETE + INSERT).
+
+Los resultados alimentan el Módulo 3 (Prescriptivo): si hay un cambio estructural reciente + tendencia sostenida → el diagnóstico es "problema estructural" (no pico temporal) → acción diferente.
 
 ## Pipeline ETL y Actualización de Datos
 
