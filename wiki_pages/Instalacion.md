@@ -65,8 +65,11 @@ python scripts/seed_supabase.py --solo synth    # predicciones y SHAP seed_dev
 Para que los roles (COMANDANTE_CAI, ANALISTA_SDSCJ, etc.) viajen en el JWT:
 
 1. Supabase Dashboard → proyecto `segurodata`
-2. Authentication → Hooks
-3. Activar **Custom Access Token Hook** → función `custom_access_token_hook`
+2. Menú lateral: **Authentication → Hooks**
+3. Sección "Custom Access Token" → tipo **PostgreSQL Function**
+4. Seleccionar `public.custom_access_token_hook` → **Save**
+
+> La función ya existe en la base de datos (migración `0005`). Solo hay que habilitarla aquí.
 
 Sin este paso todos los usuarios caen a rol `CIUDADANO`.
 
@@ -111,10 +114,11 @@ pip install -r requirements.txt
 
 # Copiar y rellenar credenciales
 cp .env.example .env
-# Editar backend/.env:
+# Editar backend/.env — variables mínimas:
 #   SUPABASE_URL=https://pluxaelenhkdaakxdrpm.supabase.co
-#   SUPABASE_SERVICE_KEY=<service_role key>
-#   SUPABASE_JWT_SECRET=<JWT secret>
+#   SUPABASE_SERVICE_KEY=<sb_secret_... o legacy service_role JWT>
+#   SUPABASE_JWT_SECRET=   # dejar vacío si el proyecto usa ES256 (ver SUPABASE_JWKS_URL)
+#   SUPABASE_JWKS_URL=https://<ref>.supabase.co/auth/v1/.well-known/jwks.json
 #   OPENROUTER_API_KEY=<key de openrouter.ai>
 #   AUTH_MODE=disabled  # solo en development
 
@@ -154,8 +158,9 @@ Variables a configurar en Railway:
 | `ENV` | `production` |
 | `AUTH_MODE` | `enabled` |
 | `SUPABASE_URL` | `https://pluxaelenhkdaakxdrpm.supabase.co` |
-| `SUPABASE_SERVICE_KEY` | service_role key |
-| `SUPABASE_JWT_SECRET` | JWT secret del proyecto |
+| `SUPABASE_SERVICE_KEY` | `sb_secret_...` (nuevo) o legacy service_role JWT |
+| `SUPABASE_JWT_SECRET` | dejar vacío si el proyecto usa ES256 (JWKS) |
+| `SUPABASE_JWKS_URL` | `https://<ref>.supabase.co/auth/v1/.well-known/jwks.json` |
 | `OPENROUTER_API_KEY` | key de openrouter.ai |
 | `LLM_MODEL` | `google/gemini-flash-1.5` |
 
@@ -191,17 +196,23 @@ vercel --cwd frontend
 
 ## Variables de entorno — resumen
 
+> **Claves Supabase — dos formatos válidos hasta fin 2026:**
+> - Nuevo: `sb_publishable_...` (frontend) / `sb_secret_...` (backend)
+> - Legacy JWT: clave `anon` (frontend) / `service_role` (backend)
+> Ambos funcionan igual. El nuevo formato tiene protección extra contra uso en browser.
+
 | Variable | Componente | Dónde obtener |
 |----------|-----------|---------------|
 | `SUPABASE_URL` | Backend + scripts | Dashboard → Settings → API |
-| `SUPABASE_SERVICE_KEY` | Backend + scripts | Dashboard → Settings → API → service_role |
-| `SUPABASE_JWT_SECRET` | Backend (auth) | Dashboard → Settings → API → JWT Secret |
+| `SUPABASE_SERVICE_KEY` | Backend + scripts | Dashboard → API → **Secret key** (nuevo) o service_role JWT (legacy) |
+| `SUPABASE_JWT_SECRET` | Backend — solo si HS256 legacy | Dashboard → Settings → API → JWT Secret (dejar vacío si usa ES256) |
+| `SUPABASE_JWKS_URL` | Backend — si ES256/RS256 | `<SUPABASE_URL>/auth/v1/.well-known/jwks.json` |
 | `SUPABASE_DB_URL` | Scripts offline (seed COPY) | Dashboard → Settings → Database → Session pooler |
 | `OPENROUTER_API_KEY` | Backend (LLM) | openrouter.ai → Keys |
 | `LLM_MODEL` | Backend | `google/gemini-flash-1.5` (por defecto) |
 | `AUTH_MODE` | Backend | `disabled` solo en development |
 | `VITE_SUPABASE_URL` | Frontend build | Igual que SUPABASE_URL |
-| `VITE_SUPABASE_ANON_KEY` | Frontend (lectura pública) | Dashboard → Settings → API → anon |
+| `VITE_SUPABASE_ANON_KEY` | Frontend (lectura pública) | Dashboard → API → **Publishable key** (nuevo) o anon JWT (legacy) |
 | `VITE_API_URL` | Frontend build | URL pública de Railway |
 
 Open-Meteo, CKAN, Socrata y ArcGIS son APIs públicas sin autenticación.
