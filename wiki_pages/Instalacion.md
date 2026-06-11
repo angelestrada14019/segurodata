@@ -67,9 +67,11 @@ Para que los roles (COMANDANTE_CAI, ANALISTA_SDSCJ, etc.) viajen en el JWT:
 1. Supabase Dashboard → proyecto `segurodata`
 2. Menú lateral: **Authentication → Auth Hooks**
 3. Botón **"Add hook"** → seleccionar **"Customize Access Token (JWT) Claims hook"**
-4. Tipo: **PostgreSQL Function** → función: `public.custom_access_token_hook` → **Save**
+4. Tipo: **PostgreSQL Function** → schema: `public` → función: `custom_access_token_hook` → **Save**
+5. Verificar que aparece **ENABLED** (verde)
 
-> La función ya existe en la base de datos (migración `0005`). Solo hay que habilitarla aquí.
+> ✅ Estado actual (11-jun-2026): hook habilitado y activo.
+> La función ya existe en la base de datos (migración `0005`).
 
 Sin este paso todos los usuarios caen a rol `CIUDADANO`.
 
