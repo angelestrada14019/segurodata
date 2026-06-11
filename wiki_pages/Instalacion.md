@@ -65,9 +65,9 @@ python scripts/seed_supabase.py --solo synth    # predicciones y SHAP seed_dev
 Para que los roles (COMANDANTE_CAI, ANALISTA_SDSCJ, etc.) viajen en el JWT:
 
 1. Supabase Dashboard → proyecto `segurodata`
-2. Menú lateral: **Authentication → Hooks**
-3. Sección "Custom Access Token" → tipo **PostgreSQL Function**
-4. Seleccionar `public.custom_access_token_hook` → **Save**
+2. Menú lateral: **Authentication → Auth Hooks**
+3. Botón **"Add hook"** → seleccionar **"Customize Access Token (JWT) Claims hook"**
+4. Tipo: **PostgreSQL Function** → función: `public.custom_access_token_hook` → **Save**
 
 > La función ya existe en la base de datos (migración `0005`). Solo hay que habilitarla aquí.
 

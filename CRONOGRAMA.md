@@ -134,7 +134,7 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 
 - [x] ✅ (10-jun) Crear proyecto Supabase → habilitar PostGIS + pgvector — proyecto `segurodata` (ref `pluxaelenhkdaakxdrpm`, us-east-1), 8 migraciones en `supabase/migrations/`
 - [x] ✅ (10-jun) Schema inicial aplicado (8 tablas + RLS + hook claims + RPC match_documents) + seed sintético: 2,016 predicciones + 16,128 SHAP (`origen='seed_dev'`) + 112 UPZ + 599 cuadrantes. ⏳ Pendiente: cargar Silver 111K + geometrías reales con `scripts/seed_supabase.py` (requiere `SUPABASE_DB_URL` en .env)
-- [ ] **[Paso manual]** Habilitar Custom Access Token Hook: Dashboard → **Authentication → Hooks** → tipo "PostgreSQL Function" → seleccionar `public.custom_access_token_hook` → guardar. (La función ya existe en migración 0005)
+- [ ] **[Paso manual]** Habilitar hook JWT: Dashboard → Authentication → **Auth Hooks** → "Add hook" → **"Customize Access Token (JWT) Claims hook"** → tipo "PostgreSQL Function" → seleccionar `public.custom_access_token_hook` → Save. (La función ya existe en migración 0005)
 - [x] ✅ (11-jun) Realtime habilitado vía migración `0009_realtime.sql` (`ALTER PUBLICATION supabase_realtime ADD TABLE silver_upz_mes`). Alternativa Dashboard: Database → Publications → `supabase_realtime` → toggle ON.
 - [ ] Integrar F13 Cámaras Salvavidas SDM → spatial join → feature `n_camaras_upz`
 - [ ] Integrar F14 Alumbrado UAESP → merge directo → feature `luminarias_led_upz`
