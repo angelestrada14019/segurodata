@@ -48,16 +48,16 @@ supabase/migrations/
 
 ### 2b. Cargar datos (seed + Silver)
 
-Requiere `SUPABASE_DB_URL` en `backend/.env` (Settings → Database → Session pooler):
+Requiere solo `SUPABASE_URL` + `SUPABASE_SERVICE_KEY` en `backend/.env` (REST API — sin conexión directa a la BD):
 
 ```bash
 # Todo: Silver 111K + geometrías F2/F4 + predicciones y SHAP sintéticos
 python scripts/seed_supabase.py
 
 # O por partes:
-python scripts/seed_supabase.py --solo silver   # 111,606 filas vía COPY
-python scripts/seed_supabase.py --solo geo      # 112 UPZ + 599 cuadrantes
-python scripts/seed_supabase.py --solo synth    # predicciones y SHAP seed_dev
+python scripts/seed_supabase.py --solo silver   # 111,606 filas en batches REST
+python scripts/seed_supabase.py --solo geo      # 112 UPZ + 599 cuadrantes via RPC PostGIS
+python scripts/seed_supabase.py --solo synth    # predicciones y SHAP seed_dev via RPC
 ```
 
 ### 2c. Paso manual obligatorio — custom_access_token_hook
