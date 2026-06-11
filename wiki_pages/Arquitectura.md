@@ -259,3 +259,7 @@ CREATE POLICY "comandante_solo_su_cuadrante"
 ## Diagrama de arquitectura
 
 ![Diagrama de arquitectura de fuentes SeguroData](diagrama_arquitectura.svg)
+
+## Pipeline FTI — entrenamiento vs. inferencia
+
+![Pipeline FTI SeguroData — Training y Inference](pipeline_fti.svg)
