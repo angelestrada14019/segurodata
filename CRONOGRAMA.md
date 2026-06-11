@@ -16,7 +16,7 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 ```
 
 **Repositorio:** https://github.com/angelestrada14019/segurodata  
-**Ramas activas:** `main` · `bronze` ✅ · `silver` 🔄 · `gold` · `model` · `dashboard`
+**Ramas activas:** `main` (única rama — todas las fases se integran aquí)
 
 ---
 

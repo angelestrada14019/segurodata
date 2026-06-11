@@ -207,7 +207,7 @@ El Módulo 3 usa SHAP para identificar la causa dominante del riesgo y conecta d
 |-------|------|
 | ✅ 23 mayo | Notebook 01 completado — plan + catálogo de 12 fuentes (F1-F10 activas + F11-F12 planificadas) |
 | ✅ 26 mayo – 6 junio | **Fase 1:** EDA de las 10 fuentes → Notebook 02 ✅ |
-| ✅ 1 junio (esta sesión) | Arquitectura pivotada a React+Supabase+FastAPI · F13/F14 activadas · Wiki publicado (12 páginas) · GitHub Project #3 poblado (10 issues) · Ramas eliminadas (solo main) |
+| ✅ 10 junio | Arquitectura pivotada a React+Supabase+FastAPI · F13/F14 activadas · Wiki publicado (13 páginas + Plataforma-Ciudadana) · GitHub Project poblado (issues #11-18) · Plataforma ciudadana: ideas 1+2+3+5 comprometidas para MVP, ideas 4+6 opcionales con HUs en `docs/HU-Features-Opcionales.md`, idea 7 descartada · Pre-mortem documentado |
 | ⏳ 7 – 20 junio | **Fase 2:** XGBoost + SHAP → Notebooks 03+04 |
 | ⏳ 21 junio – 10 julio | **Fase 3:** React+deck.gl + FastAPI + GraphRAG Supabase → Notebook 05 |
 | ⏳ 11 julio – 1 agosto | **Fase 4:** Deploy Railway+Vercel + Docs + video → Notebook 06 |
@@ -244,11 +244,13 @@ El Módulo 3 usa SHAP para identificar la causa dominante del riesgo y conecta d
 | Stack Python + scikit-learn + XGBoost | Reproducible, bien documentado, compatible con CRISP-ML |
 | ~~Hawkes Process~~ → **ruptures + GraphRAG** | Hawkes descartado. ruptures (PELT) detecta cambios estructurales históricos. GraphRAG (FastAPI + pgvector + OpenRouter) explica el *por qué* con boletines SCJ + noticias |
 | SHAP pre-computado (no on-demand) | Supabase sirve SHAP values pre-calculados → sin crash de RAM en producción |
-| **React + deck.gl** para frontend | Mapa WebGL interactivo OSIRIS-style, capas toggleables, click-to-analyze por UPZ |
+| **React + deck.gl** para frontend | Mapa WebGL interactivo estilo C4 / Palantir Gotham, capas toggleables, zoom Localidades→UPZs (zoom 12), modal 5 pestañas por UPZ (Descripción · Predicción · Sugerencia · Fuentes · Chatbot) |
 | **Supabase** como backbone | PostgreSQL + PostGIS + pgvector en un solo servicio. El frontend lo consulta directamente para datos, predicciones y SHAP |
 | **FastAPI + Railway** | Backend Python unificado: GraphRAG + prescriptivo + proxy OpenRouter. Siempre activo, sin cold start, un solo deploy. Railway Plan Hobby ~$5/mes |
 | **OpenRouter** como proxy LLM | Una API key da acceso a 200+ modelos. Demo: Gemini Flash (gratis). Producción: escalable |
 | **sentence-transformers** para embeddings | all-MiniLM-L6-v2, corre local una sola vez, resultado se guarda en pgvector. Sin costo de API |
+| **Supabase Auth + RLS** para control de acceso | 4 roles: CIUDADANO · COMANDANTE_CAI · ANALISTA_SDSCJ · ADMIN. Magic link + autoprovisioning por dominio @policia.gov.co. RLS filtra predicciones por cuadrante asignado usando F4 Cuadrantes en PostGIS. SHAP ciudadano=básico/analista=completo. |
+| **Plataforma Ciudadana (ideas 1+2+3+5) comprometidas** | Auth+Roles, mapa zoom adaptativo Localidades→UPZs, modal 5 pestañas, proyección +4 semanas en Módulo 2. Ideas 4+6 opcionales (HUs en `docs/HU-Features-Opcionales.md`). Idea 7 (app nativa) descartada para el concurso. |
 | `wiki_pages/` como fuente única de docs | Editar wiki_pages/ + correr PUSH_WIKI.bat → wiki actualizado. El código solo tiene README, CLAUDE.md y CRONOGRAMA.md |
 
 ---
