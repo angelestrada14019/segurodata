@@ -160,10 +160,11 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 
 ### Track paralelo — Knowledge Graph F9/F10 (7–20 junio)
 
-- [ ] Procesar F9 PDFs boletines SCJ → pdfplumber → texto limpio
-- [ ] Procesar F10 RSS → feedparser → texto
-- [ ] LangChain splitter → Claude embeddings → cargar en Supabase pgvector
-- [ ] Verificar búsqueda semántica: query de prueba → resultados relevantes
+- [x] ✅ (10-jun) Corpus demo cargado: `scripts/index_corpus.py --seed-demo --emit-sql` → `datos/grafo/corpus_seed.sql` (10 chunks SEED_DEV con embeddings MiniLM reales) → aplicado manualmente en Supabase. `/graphrag` ya responde con citas.
+- [ ] `python src/pipeline.py --source f9` → descargar PDFs boletines SCJ → `datos/raw/boletines_scj/`
+- [ ] `python src/pipeline.py --source f10` → descargar RSS noticias
+- [ ] `python scripts/index_corpus.py` → pdfplumber + feedparser → chunks 500tk → sentence-transformers all-MiniLM-L6-v2 → Supabase pgvector (reemplaza SEED_DEV)
+- [ ] Verificar búsqueda semántica: query de prueba → resultados relevantes con fuentes reales
 
 ---
 
