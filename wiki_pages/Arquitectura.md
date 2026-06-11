@@ -145,6 +145,19 @@ pregunta_usuario
     → respuesta operacional con citas de fuentes reales
 ```
 
+### Alimentación continua del corpus (idempotencia)
+
+El corpus crece con re-ejecuciones de `index_corpus.py` sin generar duplicados:
+
+1. **Chunking**: el texto se parte en ventanas de ~1,800 caracteres (~500 tokens) con overlap de 200 caracteres, para que ningún concepto quede cortado entre chunks.
+2. **Dedup por hash**: cada chunk calcula `content_hash = SHA-256(texto)`. La tabla `documents_corpus` tiene UNIQUE sobre esa columna y el upsert usa `ON CONFLICT (content_hash) DO NOTHING` — re-ejecutar el script solo inserta contenido nuevo.
+3. **Cadencia**: F10 RSS puede correrse a diario (las noticias del día se agregan, las ya indexadas se ignoran). F9 es mensual cuando la SCJ publica boletín nuevo.
+
+```bash
+# Re-ejecutable cuantas veces se quiera — solo entra lo nuevo:
+python scripts/index_corpus.py --backend fastembed
+```
+
 **Por qué sentence-transformers:** corre local en Python sin costo de API. Genera 384 dimensiones compatibles con pgvector. Un modelo de 22MB que procesa 220 documentos en segundos.
 
 **Por qué OpenRouter:** una sola API key da acceso a 200+ modelos. `google/gemini-flash-1.5` es gratuito (1M tokens/día) y multilingüe — ideal para el chatbot en español. Si se requiere mayor calidad, se cambia la variable `LLM_MODEL` sin tocar código.
