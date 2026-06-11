@@ -77,7 +77,11 @@ URL_F8_ARCGIS = (
 )
 
 # F9: Secretaría Distrital de Seguridad — Boletines PDF mensuales
-URL_F9_SCJ_BASE = "https://scj.gov.co/cifras/estadisticas-mapas"
+# AVISO (jun-2026): el contenido migró al Observatorio OSCJ (ArcGIS Experience Builder).
+# La nueva URL carga 100% vía JavaScript — BeautifulSoup no puede scrapearlo.
+# Descarga manual o Playwright requeridos. Ver scripts/index_corpus.py --seed-demo para demo.
+URL_F9_SCJ_BASE = "https://oaiee.scj.gov.co/ObservatorioSCJ.html"
+URL_F9_SCJ_OLD = "https://scj.gov.co/cifras/boletines"  # redirige al Observatorio
 # F10: RSS feeds de noticias Bogotá (seguridad ciudadana)
 RSS_FEEDS_F10 = {
     "el_tiempo": "https://www.eltiempo.com/rss/bogota.xml",
@@ -852,8 +856,10 @@ def extract_f9_scj_boletines(
 ) -> ExtractResult:
     """
     F9 — PDFs de boletines mensuales SCJ (Secretaria Distrital de Seguridad y Convivencia).
-    Fuente: https://scj.gov.co/cifras/estadisticas-mapas
-    Estrategia: scrape lista de PDFs de la pagina → descarga solo los nuevos.
+    AVISO (jun-2026): los boletines migraron al Observatorio OSCJ que usa ArcGIS Experience
+    Builder (100% JavaScript). BeautifulSoup no puede obtener los PDFs. Se necesita Playwright
+    o descarga manual. Mientras tanto usar --seed-demo en index_corpus.py para el corpus demo.
+    Fuente actual: https://oaiee.scj.gov.co/ObservatorioSCJ.html
     Salida: datos/raw/boletines_scj/*.pdf (un PDF por boletin)
     """
     import requests
@@ -865,11 +871,12 @@ def extract_f9_scj_boletines(
 
     if dry_run:
         return ExtractResult(source, "updated", -1, -1, str(RAW_BOLETINES),
-                             "[DRY-RUN] descargaria PDFs de boletines SCJ")
+                             "[DRY-RUN] F9 requiere Playwright (ArcGIS JS). Usar --seed-demo en index_corpus.py")
 
     try:
         if verbose:
             print(f"    Accediendo a {URL_F9_SCJ_BASE}...")
+            print(f"    AVISO: el Observatorio OSCJ usa ArcGIS JS — PDF scraping no disponible sin Playwright")
         resp = requests.get(URL_F9_SCJ_BASE, timeout=30,
                             headers={"User-Agent": "Mozilla/5.0"})
         resp.raise_for_status()
@@ -889,6 +896,12 @@ def extract_f9_scj_boletines(
         # Eliminar duplicados preservando orden
         seen = set()
         pdf_links = [x for x in pdf_links if not (x in seen or seen.add(x))]
+
+        if not pdf_links:
+            msg = ("F9: 0 PDFs encontrados. El Observatorio OSCJ usa ArcGIS JS (no scrappeable "
+                   "con BS4). Descarga manual en: https://oaiee.scj.gov.co/ObservatorioSCJ.html "
+                   "Seccion: Boletines > Estudios. O usa: python scripts/index_corpus.py --seed-demo")
+            return ExtractResult(source, "error", 0, 0, str(RAW_BOLETINES), msg)
 
         if verbose:
             print(f"    Encontrados {len(pdf_links)} PDFs en la pagina SCJ")

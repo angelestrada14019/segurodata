@@ -233,49 +233,55 @@ def main() -> None:
         filas.append({
             "content": content, "content_hash": h, "source": source, "titulo": titulo,
             "fecha": fecha, "url": url, "upz_cod": upz,
-            "embedding": "[" + ",".join(str(x) for x in vec) + "]",
+            "embedding": vec,  # list[float] para REST API y emit_sql
         })
 
     if args.emit_sql:
         OUT_SQL.parent.mkdir(exist_ok=True)
 
-        def q(v):  # literal SQL seguro para este contenido controlado
+        def q(v):
             if v is None:
                 return "NULL"
             return "'" + str(v).replace("'", "''") + "'"
+
+        def fmt_vec(v):
+            vec_str = "[" + ",".join(str(x) for x in v) + "]"
+            return f"'{vec_str}'::vector"
 
         with open(OUT_SQL, "w", encoding="utf-8") as f:
             for r in filas:
                 f.write(
                     "INSERT INTO documents_corpus (content, content_hash, source, titulo, fecha, url, upz_cod, embedding) "
                     f"VALUES ({q(r['content'])}, {q(r['content_hash'])}, {q(r['source'])}, {q(r['titulo'])}, "
-                    f"{q(r['fecha'])}, {q(r['url'])}, {q(r['upz_cod'])}, '{r['embedding']}'::vector) "
+                    f"{q(r['fecha'])}, {q(r['url'])}, {q(r['upz_cod'])}, {fmt_vec(r['embedding'])}) "
                     "ON CONFLICT (content_hash) DO NOTHING;\n"
                 )
         print(f"SQL escrito en {OUT_SQL} ({len(filas)} INSERTs)")
         return
 
     try:
-        import psycopg
+        from supabase import create_client
     except ImportError:
-        sys.exit("Falta psycopg: pip install 'psycopg[binary]'  (o usa --emit-sql)")
-    db_url = os.environ.get("SUPABASE_DB_URL", "")
-    if not db_url:
-        sys.exit("Falta SUPABASE_DB_URL en .env (o usa --emit-sql)")
-    with psycopg.connect(db_url) as conn, conn.cursor() as cur:
-        for r in filas:
-            cur.execute(
-                """INSERT INTO documents_corpus
-                   (content, content_hash, source, titulo, fecha, url, upz_cod, embedding)
-                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s::vector)
-                   ON CONFLICT (content_hash) DO NOTHING""",
-                (r["content"], r["content_hash"], r["source"], r["titulo"],
-                 r["fecha"], r["url"], r["upz_cod"], r["embedding"]),
-            )
-        conn.commit()
-        cur.execute("SELECT source, count(*) FROM documents_corpus GROUP BY source")
-        for fila in cur.fetchall():
-            print(f"  documents_corpus [{fila[0]}]: {fila[1]}")
+        sys.exit("Falta supabase-py: pip install supabase")
+    supa_url = os.environ.get("SUPABASE_URL", "")
+    supa_key = os.environ.get("SUPABASE_SERVICE_KEY", "")
+    if not supa_url or not supa_key:
+        sys.exit("Faltan SUPABASE_URL / SUPABASE_SERVICE_KEY en backend/.env (o usa --emit-sql)")
+    client = create_client(supa_url, supa_key)
+
+    BATCH = 50  # vectores de 384 dims son pesados (~12 KB/fila)
+    total = len(filas)
+    for i in range(0, total, BATCH):
+        client.table("documents_corpus").upsert(
+            filas[i:i + BATCH], on_conflict="content_hash"
+        ).execute()
+        print(f"  {min(i + BATCH, total):,}/{total:,}", end="\r")
+
+    print()
+    from collections import Counter
+    counts = Counter(r["source"] for r in filas)
+    for src, cnt in sorted(counts.items()):
+        print(f"  documents_corpus [{src}]: {cnt} chunks (esta ejecución)")
     print("Indexación completa.")
 
 

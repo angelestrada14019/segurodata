@@ -133,13 +133,14 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 ### Setup Supabase + nuevas fuentes (7–10 junio) — EN PARALELO con modelo
 
 - [x] ✅ (10-jun) Crear proyecto Supabase → habilitar PostGIS + pgvector — proyecto `segurodata` (ref `pluxaelenhkdaakxdrpm`, us-east-1), 8 migraciones en `supabase/migrations/`
-- [x] ✅ (10-jun) Schema inicial aplicado (8 tablas + RLS + hook claims + RPC match_documents) + seed sintético: 2,016 predicciones + 16,128 SHAP (`origen='seed_dev'`) + 112 UPZ + 599 cuadrantes. ⏳ Pendiente: cargar Silver 111K + geometrías reales con `scripts/seed_supabase.py` (requiere `SUPABASE_DB_URL` en .env)
+- [x] ✅ (10-jun) Schema inicial aplicado (8 tablas + RLS + hook claims + RPC match_documents) + seed sintético: 2,016 predicciones + 16,128 SHAP (`origen='seed_dev'`) + 112 UPZ + 599 cuadrantes. **Decisión arquitectural (11-jun): Silver 111K queda LOCAL** — Supabase solo recibe outputs del modelo (predicciones/SHAP post NB04) + geometrías (`--solo geo`) + corpus embeddings + change_points. Silver no va a producción (patrón FTI).
+- [x] ✅ (11-jun) Migración 0011: columnas `metadata JSONB` en `predicciones` y `shap_values` para trazabilidad FTI (model_version, pipeline_run_date, features)
 - [x] ✅ (11-jun) Hook JWT habilitado: Dashboard → Authentication → **Auth Hooks** → "Add hook" → **"Customize Access Token (JWT) Claims hook"** → tipo PostgreSQL Function → `public.custom_access_token_hook` → ENABLED. Los roles (CIUDADANO/COMANDANTE_CAI/ANALISTA_SDSCJ/ADMIN) ya viajan en el JWT.
 - [x] ✅ (11-jun) Realtime habilitado vía migración `0009_realtime.sql` (`ALTER PUBLICATION supabase_realtime ADD TABLE silver_upz_mes`). Alternativa Dashboard: Database → Publications → `supabase_realtime` → toggle ON.
 - [ ] Integrar F13 Cámaras Salvavidas SDM → spatial join → feature `n_camaras_upz`
 - [ ] Integrar F14 Alumbrado UAESP → merge directo → feature `luminarias_led_upz`
 - [ ] Integrar F11 IDU Obras Viales → spatial join → feature `km_via_intervenida_upz`
-- [ ] Correr `ruptures` PELT sobre F1 DAI 2018–2026 por localidad → cargar en Supabase `change_points`
+- [x] ✅ (11-jun) `ruptures` PELT sobre F1 DAI 2018–2026: 62 breakpoints detectados (pen=3, max_bp=3), COVID 2020 BAJA validado (17 localidades). Script: `scripts/compute_change_points.py`
 - [x] ✅ (10-jun) **[Pre-mortem T7]** Tabla `cuadrantes_geom` creada con índice GIST + columna `upz_codes[]` pre-computada (599 cuadrantes con nom_cai y teléfono). ⏳ Geometrías reales se cargan con `seed_supabase.py --solo geo`
 
 ### Notebook 03 — Features (7–12 junio)
