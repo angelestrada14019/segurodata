@@ -64,29 +64,64 @@ supabase-js: acceso directo a PostgreSQL + Realtime desde React
 
 ### Backend — FastAPI en Railway (Python)
 
+> **Estado (10-jun-2026):** ✅ **Implementado y verificado** — 31 tests verdes, ruff limpio. Pendiente deploy en Railway (Fase 4).
+
 Todo el backend es Python. Un solo servicio, un solo lenguaje, un solo deploy. Railway mantiene el servidor siempre activo — sin cold start, sin warmup antes del demo.
 
-```python
-# backend/main.py — Endpoints principales
-POST /predict    → XGBoost: {upz, mes} → {nivel_riesgo, probabilidades}
-GET  /explain    → SHAP: {upz, mes} → shap_values pre-computados desde Supabase
-POST /graphrag   → {pregunta, upz_contexto} → pgvector search → OpenRouter → respuesta
-POST /prescribe  → {upz, shap_top} → tabla ontológica → OpenRouter → recomendación CAI
+#### Estructura del backend (`backend/`)
+
 ```
+backend/
+├── app/
+│   ├── main.py            ← create_app() factory + lifespan
+│   ├── config.py          ← Settings (pydantic-settings)
+│   ├── dependencies.py    ← get_supabase, get_current_user, require_roles
+│   ├── routers/           ← health, predict, explain, graphrag, prescribe, auth(/whoami)
+│   ├── services/          ← lógica de negocio + filtro por rol (D8)
+│   ├── repositories/      ← acceso a tablas/RPC Supabase
+│   ├── clients/           ← supabase_client, openrouter_client, embeddings (MiniLM)
+│   ├── core/              ← security.py (JWT HS256), cache.py (TTLCache 24h)
+│   └── data/              ← tabla_ontologica_seed.json (17 filas)
+├── tests/                 ← 31 tests, conftest con fakes y token_factory
+├── Dockerfile             ← multi-stage, torch CPU-only, MiniLM horneado
+└── railway.toml           ← healthcheckPath="/health", timeout 300
+```
+
+#### Endpoints implementados
+
+| Método | Ruta | Roles | Descripción |
+|--------|------|-------|-------------|
+| GET | `/health` | sin auth | Railway healthcheck |
+| GET | `/whoami` | todos | claims del usuario actual (pre-mortem T5) |
+| POST | `/predict` | todos auth | lookup predicción pre-computada en Supabase |
+| GET | `/explain` | todos auth | SHAP top-3 (completo solo ANALISTA/ADMIN) |
+| POST | `/graphrag` | todos auth | embed → pgvector → OpenRouter con citas |
+| POST | `/prescribe` | COMANDANTE/ANALISTA/ADMIN | tabla ontológica + LLM |
 
 La `OPENROUTER_API_KEY` se configura como variable de entorno en Railway — nunca se expone al browser. El frontend React llama este endpoint con un POST normal.
 
 ### Base de datos — Supabase
+
+> **Estado (10-jun-2026):** ✅ **Proyecto creado** — ref `pluxaelenhkdaakxdrpm` (us-east-1). 8 migraciones aplicadas. Seed sintético activo: 2,016 predicciones + 16,128 SHAP values (`origen='seed_dev'`). ⏳ Pendiente: Silver 111K filas + geometrías reales vía `scripts/seed_supabase.py`.
+
 ```sql
--- Tablas principales
-silver_upz_mes     -- 111,606 filas (importada desde Silver parquet)
-shap_values        -- SHAP pre-computados por UPZ × mes (Notebook 04)
-upz_geometrias     -- 112 polígonos PostGIS (EPSG:4326)
-change_points      -- Puntos de cambio ruptures por localidad (2018-2026)
+-- Tablas implementadas (supabase/migrations/)
+silver_upz_mes      -- 111,606 filas (carga bulk con scripts/seed_supabase.py)
+predicciones        -- niveles de riesgo pre-computados (seed_dev → notebook_04)
+shap_values         -- SHAP pre-computados por UPZ × mes × feature
+change_points       -- Puntos de cambio ruptures por localidad (2018-2026)
+documents_corpus    -- corpus GraphRAG pgvector 384 dims (HNSW m=16)
+upz_geometrias      -- 112 polígonos PostGIS (EPSG:4326)
+cuadrantes_geom     -- 599 cuadrantes + nom_cai + teléfono (índice GIST)
+user_profiles       -- roles + cuadrante_asignado + trigger autoprovision
 
 -- Extensiones habilitadas
 CREATE EXTENSION postgis;
 CREATE EXTENSION vector;  -- pgvector para embeddings GraphRAG
+
+-- RPC implementada
+match_documents(query_embedding, match_threshold, match_count, filter_upz)
+  → retrieval semántico con similitud coseno para /graphrag
 ```
 
 ## GraphRAG — sentence-transformers + Supabase pgvector + OpenRouter

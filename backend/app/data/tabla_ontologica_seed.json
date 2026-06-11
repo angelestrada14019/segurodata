@@ -1,0 +1,138 @@
+[
+  {
+    "feature": "cuadrantes_por_km2",
+    "condicion": "bajo",
+    "diagnostico": "Baja cobertura policial en la zona",
+    "tipo_intervencion": "Seguridad",
+    "entidad_responsable": "MEBOG / SIJIN",
+    "accion": "Reforzar el cuadrante y aumentar presencia del CAI en horarios pico de delito"
+  },
+  {
+    "feature": "estrato_promedio_upz",
+    "condicion": "bajo",
+    "diagnostico": "Vulnerabilidad socioeconómica estructural",
+    "tipo_intervencion": "Social",
+    "entidad_responsable": "SDIS + SDDE",
+    "accion": "Activar programa Jóvenes en Paz y oferta de empleo local en la UPZ"
+  },
+  {
+    "feature": "luminarias_led_upz",
+    "condicion": "bajo",
+    "diagnostico": "Iluminación nocturna deficiente",
+    "tipo_intervencion": "Urbanística",
+    "entidad_responsable": "UAESP",
+    "accion": "Priorizar recambio a LED en corredores con concentración nocturna de delitos"
+  },
+  {
+    "feature": "n_camaras_upz",
+    "condicion": "bajo",
+    "diagnostico": "Sin disuasión tecnológica (videovigilancia insuficiente)",
+    "tipo_intervencion": "Seguridad",
+    "entidad_responsable": "SDSCJ",
+    "accion": "Solicitar instalación de cámaras Salvavidas en puntos calientes identificados"
+  },
+  {
+    "feature": "km_via_intervenida_upz",
+    "condicion": "alto",
+    "diagnostico": "Obras viales activas generan puntos ciegos y desvíos peatonales",
+    "tipo_intervencion": "Infraestructura",
+    "entidad_responsable": "IDU + MEBOG",
+    "accion": "Coordinar plan obra-seguridad: iluminación provisional y patrullaje perimetral"
+  },
+  {
+    "feature": "n_delitos_upz_4sem",
+    "condicion": "alto",
+    "diagnostico": "Autoexcitación reciente: racha delictiva en las últimas 4 semanas",
+    "tipo_intervencion": "Operativa",
+    "entidad_responsable": "MEBOG",
+    "accion": "Patrullaje de saturación 48 horas en los segmentos con mayor reincidencia"
+  },
+  {
+    "feature": "n_delitos_upz_8sem",
+    "condicion": "alto",
+    "diagnostico": "Tendencia delictiva sostenida en los últimos 2 meses",
+    "tipo_intervencion": "Operativa",
+    "entidad_responsable": "MEBOG + SDSCJ",
+    "accion": "Plan de intervención focalizada 2 semanas con seguimiento semanal de indicadores"
+  },
+  {
+    "feature": "temperatura_c",
+    "condicion": "alto",
+    "diagnostico": "Disparador climático: mayor actividad en vía pública por temperatura alta",
+    "tipo_intervencion": "Monitoreo",
+    "entidad_responsable": "IDIGER + MEBOG",
+    "accion": "Alerta preventiva en tardes-noches calurosas y refuerzo en parques y corredores"
+  },
+  {
+    "feature": "precipitacion_mm_mes",
+    "condicion": "alto",
+    "diagnostico": "Lluvia intensa concentra población en paraderos y estaciones (hurto oportunista)",
+    "tipo_intervencion": "Monitoreo",
+    "entidad_responsable": "MEBOG + TransMilenio S.A.",
+    "accion": "Refuerzo en estaciones TM y paraderos techados durante temporada de lluvias"
+  },
+  {
+    "feature": "ratio_nuse_criminal_upz",
+    "condicion": "alto",
+    "diagnostico": "Alto subregistro: la comunidad llama al 123 pero no denuncia formalmente",
+    "tipo_intervencion": "Datos",
+    "entidad_responsable": "SDSCJ / C4",
+    "accion": "Campaña de denuncia ciudadana y jornadas móviles de recepción de denuncias"
+  },
+  {
+    "feature": "franja_dominante_mes",
+    "condicion": "madrugada",
+    "diagnostico": "Patrón delictivo nocturno dominante",
+    "tipo_intervencion": "Seguridad",
+    "entidad_responsable": "MEBOG turno nocturno",
+    "accion": "Operativo nocturno focalizado 00:00–06:00 en los ejes con actividad de madrugada"
+  },
+  {
+    "feature": "es_fin_semana",
+    "condicion": "alto",
+    "diagnostico": "Concentración de incidentes en fines de semana (riñas y lesiones)",
+    "tipo_intervencion": "Operativa",
+    "entidad_responsable": "MEBOG + Secretaría de Gobierno",
+    "accion": "Plan fin de semana: control a establecimientos nocturnos y mediación de conflictos"
+  },
+  {
+    "feature": "n_estaciones_tm",
+    "condicion": "alto",
+    "diagnostico": "Alta afluencia por estaciones TransMilenio concentra hurto a personas",
+    "tipo_intervencion": "Movilidad",
+    "entidad_responsable": "TransMilenio S.A. + MEBOG",
+    "accion": "Refuerzo policial en estaciones pico y campañas antihurto en horas valle"
+  },
+  {
+    "feature": "dist_tm_metros",
+    "condicion": "alto",
+    "diagnostico": "Zona alejada del transporte masivo: corredores peatonales largos y solitarios",
+    "tipo_intervencion": "Urbanística",
+    "entidad_responsable": "Secretaría de Movilidad + UAESP",
+    "accion": "Mejorar alimentadores y la iluminación de corredores peatonales hacia TM"
+  },
+  {
+    "feature": "tipo_delito_dominante",
+    "condicion": "hurto",
+    "diagnostico": "El hurto a personas domina el perfil delictivo de la UPZ",
+    "tipo_intervencion": "Operativa",
+    "entidad_responsable": "MEBOG / SIJIN",
+    "accion": "Operativos contra receptación y georreferenciación de puntos de venta de hurtado"
+  },
+  {
+    "feature": "n_incidentes_nuse",
+    "condicion": "alto",
+    "diagnostico": "Alta conflictividad general (llamadas 123 elevadas, no solo delito)",
+    "tipo_intervencion": "Social",
+    "entidad_responsable": "Secretaría de Gobierno + SDIS",
+    "accion": "Gestores de convivencia y mediación comunitaria en los barrios con más llamadas"
+  },
+  {
+    "feature": "mes",
+    "condicion": "diciembre",
+    "diagnostico": "Estacionalidad de fin de año: aumento de hurto y riñas en temporada navideña",
+    "tipo_intervencion": "Operativa",
+    "entidad_responsable": "MEBOG + SDSCJ",
+    "accion": "Plan Navidad: refuerzo en zonas comerciales y control de pólvora y licor"
+  }
+]

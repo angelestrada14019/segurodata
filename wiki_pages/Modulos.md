@@ -1,5 +1,11 @@
 # Los Módulos del Sistema
 
+> **Estado de implementación (10-jun-2026):**
+> - ✅ **Backend FastAPI completo** — 6 endpoints, 31 tests verdes, Dockerfile listo (deploy en Fase 4)
+> - ✅ **Supabase configurado** — 8 migraciones, seed sintético activo (`origen='seed_dev'`)
+> - ⏳ **Frontend React** — pendiente Fase 3 (21 jun)
+> - ⏳ **Modelo XGBoost** — pendiente Notebook 04 (Fase 2)
+
 La aplicación responde 5 preguntas: 4 módulos analíticos (Diagnóstico · Predicción · Prescriptivo · Chatbot causal) más una capa de participación ciudadana (autenticación, mapa interactivo con modal, alertas comunitarias — ver [[Plataforma-Ciudadana]]).
 
 ## Perfiles de Usuario

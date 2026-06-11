@@ -1,111 +1,109 @@
 ---
 name: cloud-deploy-python
-description: Deploy completo de SeguroData — FastAPI a Google Cloud Run + React a Vercel + setup Supabase.
+description: Deploy completo de SeguroData — FastAPI a Railway + React a Vercel + setup Supabase.
 ---
 
 # Cloud Deploy Python — SeguroData Bogotá
 
-Deploy del sistema completo: backend Python (FastAPI → Cloud Run) + frontend React (→ Vercel) + base de datos (Supabase).
+Deploy del sistema completo: backend Python (FastAPI → Railway) + frontend React (→ Vercel) + base de datos (Supabase).
 
 ## Arquitectura de deploy
 
 ```
-Frontend React + deck.gl  →  Vercel  (CDN global, siempre activo, gratis)
-Backend FastAPI (Python)  →  Google Cloud Run  (serverless, cold start 2-3s, gratis 2M req/mes)
-Base de datos             →  Supabase  (PostgreSQL + PostGIS + pgvector, siempre activo, gratis)
-LLM proxy                 →  OpenRouter  (server-side en Cloud Run, NUNCA en browser)
+Frontend React + deck.gl  →  Vercel   (CDN global, siempre activo, gratis)
+Backend FastAPI (Python)  →  Railway  (siempre activo, SIN cold start, ~$5/mes plan Hobby)
+Base de datos             →  Supabase (PostgreSQL + PostGIS + pgvector, proyecto `segurodata` ref pluxaelenhkdaakxdrpm)
+LLM proxy                 →  OpenRouter (server-side en Railway, NUNCA en browser)
 ```
 
-## 1. Deploy Backend — Google Cloud Run
+## 1. Deploy Backend — Railway
 
 ```bash
-# Requisito: gcloud CLI instalado y configurado
-gcloud auth login
-gcloud config set project <tu-proyecto-gcp>
+# Opción A (recomendada): GitHub integration
+# 1. railway.app → New Project → Deploy from GitHub repo
+# 2. Root Directory: backend/  (Railway detecta el Dockerfile)
+# 3. Configurar variables de entorno en el dashboard (ver abajo)
+# 4. Cada push a main redeploya automáticamente
 
-# Deploy desde el directorio del backend
-gcloud run deploy segurodata-api \
-  --source ./backend \
-  --platform managed \
-  --region us-central1 \
-  --allow-unauthenticated \
-  --memory 2Gi \
-  --timeout 60 \
-  --set-env-vars \
-    OPENROUTER_API_KEY=sk-or-...,\
-    LLM_MODEL=google/gemini-flash-1.5,\
-    SUPABASE_URL=https://xxx.supabase.co,\
-    SUPABASE_SERVICE_KEY=eyJ...
+# Opción B: CLI
+railway login
+railway link          # vincular al proyecto Railway
+cd backend
+railway up            # build + deploy del Dockerfile
 
-# URL resultante: https://segurodata-api-xxx-uc.a.run.app
+# URL resultante: https://<app>.up.railway.app
 # Guardar esta URL para el frontend como VITE_API_URL
 ```
+
+Variables de entorno en Railway (dashboard → Variables):
+```bash
+ENV=production
+SUPABASE_URL=https://pluxaelenhkdaakxdrpm.supabase.co
+SUPABASE_SERVICE_KEY=eyJ...
+SUPABASE_JWT_SECRET=...
+OPENROUTER_API_KEY=sk-or-...
+LLM_MODEL=google/gemini-flash-1.5
+LLM_MODEL_FALLBACK=anthropic/claude-haiku
+CORS_ORIGINS=https://<dominio-vercel>
+```
+
+`backend/railway.toml` define el healthcheck:
+```toml
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 300     # la primera carga del modelo de embeddings tarda
+restartPolicyType = "ON_FAILURE"
+```
+
+**No hay pre-calentamiento**: Railway mantiene el contenedor siempre activo — listo para demo sin warmup.
 
 ## 2. Deploy Frontend — Vercel
 
 ```bash
-# Opción A: CLI de Vercel
-cd frontend
-vercel --cwd frontend
-# Seleccionar framework: Vite
-# Configurar variables de entorno cuando lo pida
-
-# Opción B: desde vercel.com (recomendado)
+# Opción A: desde vercel.com (recomendado)
 # 1. Conectar repositorio GitHub en vercel.com
-# 2. Seleccionar carpeta /frontend
-# 3. Framework preset: Vite
-# 4. Agregar variables de entorno
+# 2. Seleccionar carpeta /frontend — Framework preset: Vite
+# 3. Agregar variables de entorno
+
+# Opción B: CLI
+cd frontend && vercel
 ```
 
 Variables de entorno en Vercel:
 ```
-VITE_SUPABASE_URL=https://xxx.supabase.co
+VITE_SUPABASE_URL=https://pluxaelenhkdaakxdrpm.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJ...           (clave pública — OK exponer)
-VITE_API_URL=https://segurodata-api-xxx-uc.a.run.app
+VITE_API_URL=https://<app>.up.railway.app
 ```
 
 ## 3. Setup Supabase
 
+Las migraciones viven en `supabase/migrations/*.sql` (aplicadas vía MCP Supabase o SQL Editor). Scripts de datos:
+
 ```bash
-# Desde la raíz del proyecto, con los datos generados por los notebooks:
-python scripts/setup_supabase.py    # crea tablas + índices + extensiones
-python scripts/load_silver.py       # carga silver_upz_mes.parquet (111,606 filas)
-python scripts/load_predictions.py  # carga predicciones XGBoost pre-computadas
-python scripts/load_shap.py         # carga SHAP values pre-computados (Notebook 04)
-python scripts/load_geometrias.py   # carga 112 polígonos UPZ en PostGIS
-python scripts/index_corpus.py      # genera embeddings F9/F10 → pgvector
+# .env en raíz: SUPABASE_URL, SUPABASE_SERVICE_KEY, SUPABASE_DB_URL (para COPY bulk)
+python scripts/seed_supabase.py         # silver + geometrías F2/F4 + predicciones/shap sintéticos (origen='seed_dev')
+python scripts/index_corpus.py          # embeddings F9/F10 → documents_corpus (pgvector)
+python scripts/load_model_artifacts.py  # SWITCH: borra seed_dev y carga artefactos reales de Notebooks 03/04
 ```
 
-Variables de entorno para los scripts:
-```bash
-# .env en raíz del proyecto
-SUPABASE_URL=https://xxx.supabase.co
-SUPABASE_SERVICE_KEY=eyJ...         (service key — NUNCA exponer al browser)
-```
-
-## Pre-calentamiento para el demo
-
-Cloud Run escala a cero cuando no hay tráfico. Antes del demo:
-```bash
-# 2 minutos antes de la presentación, visitar la URL para calentar:
-curl https://segurodata-api-xxx-uc.a.run.app/health
-# El cold start tarda 2-3 segundos — solo ocurre si no hubo tráfico reciente
-```
+Paso manual post-migración: habilitar `custom_access_token_hook` en Dashboard → Auth → Hooks.
 
 ## Checklist de entrega (agosto 2026)
 
-- [ ] FastAPI en Cloud Run respondiendo — URL pública activa
+- [ ] FastAPI en Railway respondiendo — URL pública activa, /health 200
 - [ ] React en Vercel — URL pública, los 4 módulos funcionando
-- [ ] Supabase — Silver table + predicciones + SHAP + pgvector cargados
+- [ ] Supabase — predicciones + SHAP reales (origen='notebook_04') + pgvector cargados
+- [ ] Hook de claims habilitado y JWT e2e verificado (pre-mortem E3)
 - [ ] Registro del proyecto en datos.gov.co (sección "Usos") — **OBLIGATORIO**
-- [ ] README actualizado con las 3 URLs (GitHub + Vercel + Cloud Run)
+- [ ] README actualizado con las 3 URLs (GitHub + Vercel + Railway)
 
 ## Costos del stack (demo/concurso)
 
-| Servicio | Costo | Límite gratuito |
-|---------|-------|----------------|
-| Google Cloud Run | $0 | 2M requests/mes + 400K GB-segundos |
-| Vercel | $0 | Bandwidth ilimitado en proyectos hobby |
+| Servicio | Costo | Límite |
+|---------|-------|--------|
+| Railway (plan Hobby) | ~$5/mes | 8 GB RAM, siempre activo, sin cold start |
+| Vercel | $0 | Bandwidth de sobra en proyectos hobby |
 | Supabase | $0 | 500 MB DB + 1 GB storage + 2 GB transfer |
 | OpenRouter | $0 | Gemini Flash: 1M tokens/día gratis |
-| **Total** | **$0** | Más que suficiente para el concurso |
+| **Total** | **~$5/mes** | Suficiente para el concurso |

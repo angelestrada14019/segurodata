@@ -1,112 +1,113 @@
 ---
 name: fastapi-ml
-description: Backend FastAPI del sistema SeguroData — endpoints /predict, /explain, /graphrag, /prescribe en Google Cloud Run.
+description: Backend FastAPI del sistema SeguroData — endpoints /predict, /explain, /graphrag, /prescribe, /whoami en Railway (siempre activo). Patrones de capas, Pydantic v2 y integración Supabase/OpenRouter.
 ---
 
 # FastAPI ML — SeguroData Bogotá
 
-El backend Python es el único servicio de la Capa 4. Corre en Google Cloud Run (serverless, cold start 2-3s).
+El backend Python es el único servicio de la Capa 4. Corre en **Railway** (siempre activo, sin cold start, ~$5/mes plan Hobby).
+
+> El contrato completo (request/response JSON, matriz endpoint×rol, decisiones D1-D12) está en la skill `backend-segurodata` — es la fuente única de verdad.
 
 ## Estructura del backend
 
 ```
 backend/
-├── main.py                  ← FastAPI app, CORS, middleware auth
-├── routers/
-│   ├── predict.py           ← POST /predict (XGBoost)
-│   ├── explain.py           ← GET /explain (SHAP pre-computados)
-│   ├── graphrag.py          ← POST /graphrag (pgvector + OpenRouter)
-│   └── prescribe.py         ← POST /prescribe (tabla ontológica + OpenRouter)
-└── requirements.txt
+├── app/
+│   ├── main.py              ← create_app() factory + lifespan + wiring
+│   ├── config.py            ← Settings (pydantic-settings)
+│   ├── dependencies.py      ← get_supabase, get_current_user, require_roles
+│   ├── exceptions.py        ← errores de dominio + handlers centralizados
+│   ├── middleware.py        ← request_id + access log con latencia
+│   ├── routers/             ← health, predict, explain, graphrag, prescribe, auth (/whoami)
+│   ├── schemas/             ← Pydantic v2 por endpoint
+│   ├── services/            ← lógica de negocio + filtro por rol (D8)
+│   ├── repositories/        ← acceso a tablas/RPC Supabase
+│   ├── clients/             ← supabase_client, openrouter_client, embeddings
+│   ├── core/                ← security.py (JWT), cache.py
+│   └── data/                ← tabla_ontologica_seed.json
+├── tests/                   ← pytest + httpx ASGITransport + token_factory
+├── Dockerfile · railway.toml · requirements.txt · .env.example
 ```
 
 ## Endpoints principales
 
 ```python
-# POST /predict — inferencia XGBoost
-{
-  "upz_cod": "044",
-  "mes": 7,
-  "anio": 2026
-}
-# Response: { "nivel_riesgo": "ALTO", "probabilidades": {"ALTO": 0.82, "MEDIO": 0.15, "BAJO": 0.03} }
+# POST /predict — LOOKUP a tabla predicciones (pre-computado; NUNCA inferencia en runtime)
+{ "upz_cod": "044", "anio": 2026, "mes": 7 }
+# → { "nivel_riesgo": "ALTO", "probabilidades": {"CRITICO":0.08,"ALTO":0.62,"MEDIO":0.24,"BAJO":0.06}, "origen": "seed_dev" }
 
-# GET /explain?upz_cod=044&mes=7&anio=2026 — SHAP desde Supabase (pre-computado)
-# Response: { "shap_values": {"cuadrantes_por_km2": -0.34, "estrato_promedio_upz": 0.21, ...} }
+# GET /explain?upz_cod=044&anio=2026&mes=7 — SHAP pre-computado desde Supabase
+# → { "shap_top3": [{"feature":"cuadrantes_por_km2","valor":-0.34}, ...] }  (+shap_completo si ANALISTA/ADMIN)
 
-# POST /graphrag — RAG sobre corpus F9/F10
-{
-  "pregunta": "¿Por qué aumentó el hurto en Kennedy en octubre 2023?",
-  "upz_contexto": "044"
-}
-# Response: { "respuesta": "...", "fuentes": ["Boletín SCJ nov-2023", "El Tiempo 15-oct-2023"] }
+# POST /graphrag — RAG sobre corpus F9/F10 (pgvector + OpenRouter)
+{ "pregunta": "¿Por qué aumentó el hurto en Kennedy?", "upz_contexto": "044" }
+# → { "respuesta": "...", "fuentes": [...], "modelo_llm": "...", "cacheado": false }
 
-# POST /prescribe — recomendación operacional
-{
-  "upz_cod": "044",
-  "shap_top": [{"feature": "cuadrantes_por_km2", "valor": -0.34}, ...]
-}
-# Response: { "recomendacion": "UPZ 44 — Américas...", "entidades": ["MEBOG", "IDU"] }
+# POST /prescribe — tabla ontológica (determinista) + redacción LLM. Roles: COMANDANTE/ANALISTA/ADMIN
+{ "upz_cod": "044", "shap_top": [{"feature": "cuadrantes_por_km2", "valor": -0.34}] }
+# → { "diagnosticos": [...], "cai": {...}, "recomendacion_llm": "..." }
+
+# GET /whoami — pre-mortem T5
+# → { "rol": "COMANDANTE_CAI", "cuadrante_asignado": null, "cuadrante_pendiente": true }
 ```
 
-## Variables de entorno (Cloud Run)
+## Variables de entorno (Railway)
 
 ```bash
 OPENROUTER_API_KEY=sk-or-...       # OpenRouter — gratis hasta 1M tokens/día
 LLM_MODEL=google/gemini-flash-1.5  # Modelo por defecto (gratis)
-SUPABASE_URL=https://xxx.supabase.co
+LLM_MODEL_FALLBACK=anthropic/claude-haiku
+SUPABASE_URL=https://pluxaelenhkdaakxdrpm.supabase.co
 SUPABASE_SERVICE_KEY=eyJ...        # Service key — NUNCA exponer al frontend
+SUPABASE_JWT_SECRET=...            # Para verificar JWTs de Supabase Auth (HS256)
+CORS_ORIGINS=https://<dominio-vercel>
+ENV=production
 ```
 
 ## Desarrollo local
 
 ```bash
 cd backend
-pip install -r requirements.txt
-uvicorn main:app --reload --port 8000
+pip install -r requirements.txt -r requirements-dev.txt
+uvicorn app.main:app --reload --port 8000
 # API docs en: http://localhost:8000/docs
+# Sin Supabase Auth configurado: ENV=development + AUTH_MODE=disabled (usuario fake ADMIN)
 ```
 
-## Deploy a Google Cloud Run
+## Deploy a Railway
 
 ```bash
-gcloud run deploy segurodata-api \
-  --source ./backend \
-  --platform managed \
-  --region us-central1 \
-  --allow-unauthenticated \
-  --set-env-vars OPENROUTER_API_KEY=sk-or-...,LLM_MODEL=google/gemini-flash-1.5,SUPABASE_URL=...
+# Opción A: GitHub integration (recomendado) — conectar repo en railway.app, root dir backend/
+# Opción B: CLI
+railway login
+railway link
+cd backend && railway up
+# Railway detecta el Dockerfile; env vars se configuran en el dashboard
 ```
 
-## Pre-calentamiento del contenedor (demo)
-
-Cloud Run escala a cero. Antes del demo en vivo:
-```bash
-# Visitar la URL 2 minutos antes para calentar el contenedor
-curl https://segurodata-api-xxx-uc.a.run.app/health
-```
+Railway es **siempre activo** — no hay cold start ni pre-calentamiento. El healthcheck (`railway.toml` → `healthcheckPath = "/health"`) valida cada deploy.
 
 ## Integración con Supabase pgvector (GraphRAG)
 
 ```python
-# El endpoint /graphrag usa sentence-transformers para embed la pregunta
-# (all-MiniLM-L6-v2 — 384 dims, corre local en el contenedor)
-from sentence_transformers import SentenceTransformer
-model = SentenceTransformer("all-MiniLM-L6-v2")
-embedding = model.encode(pregunta).tolist()
+# El endpoint /graphrag embebe la pregunta con sentence-transformers
+# (all-MiniLM-L6-v2 — 384 dims, corre local en el contenedor, horneado en la imagen Docker)
+embedding = await embeddings_client.encode(pregunta)   # run_in_executor — no bloquear event loop
 
-# Luego busca en Supabase por similaridad coseno
-result = supabase.rpc("match_documents", {
+result = await supabase.rpc("match_documents", {
     "query_embedding": embedding,
     "match_threshold": 0.7,
     "match_count": 5,
-    "filter_upz": upz_contexto
+    "filter_upz": upz_contexto,
 }).execute()
+# Si 0 resultados con filtro → reintentar sin filtro (nunca respuesta vacía)
 ```
 
 ## Notas críticas
 
-- La `OPENROUTER_API_KEY` se configura en Cloud Run — **NUNCA** en el frontend ni en el código
-- SHAP values se cargan desde Supabase (pre-computados en Notebook 04) — NUNCA calcular on-demand
-- El modelo XGBoost se serializa en `datos/modelos/xgboost_segurodata.joblib` y se carga al iniciar el backend
-- CORS: permitir solo el dominio de Vercel en producción, localhost en desarrollo
+- La `OPENROUTER_API_KEY` se configura en Railway — **NUNCA** en el frontend ni en el código
+- SHAP values y predicciones se sirven desde Supabase (pre-computados en Notebook 04) — **NUNCA** calcular on-demand ni importar xgboost/shap en backend/app/
+- **La service key bypasea RLS** → el filtro por rol/cuadrante se aplica explícito en la capa services (D8)
+- CORS: permitir solo el dominio de Vercel en producción, localhost:5173 en desarrollo
+- Datos seed: las filas sintéticas llevan `origen='seed_dev'`; el switch a artefactos reales es `scripts/load_model_artifacts.py`

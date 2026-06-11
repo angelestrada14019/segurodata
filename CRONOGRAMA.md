@@ -132,13 +132,13 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 
 ### Setup Supabase + nuevas fuentes (7–10 junio) — EN PARALELO con modelo
 
-- [ ] Crear proyecto Supabase → habilitar PostGIS + pgvector
-- [ ] Ejecutar schema inicial (`scripts/setup_supabase.py`) + cargar Silver table
+- [x] ✅ (10-jun) Crear proyecto Supabase → habilitar PostGIS + pgvector — proyecto `segurodata` (ref `pluxaelenhkdaakxdrpm`, us-east-1), 8 migraciones en `supabase/migrations/`
+- [x] ✅ (10-jun) Schema inicial aplicado (8 tablas + RLS + hook claims + RPC match_documents) + seed sintético: 2,016 predicciones + 16,128 SHAP (`origen='seed_dev'`) + 112 UPZ + 599 cuadrantes. ⏳ Pendiente: cargar Silver 111K + geometrías reales con `scripts/seed_supabase.py` (requiere `SUPABASE_DB_URL` en .env) y habilitar el hook en Dashboard → Auth → Hooks
 - [ ] Integrar F13 Cámaras Salvavidas SDM → spatial join → feature `n_camaras_upz`
 - [ ] Integrar F14 Alumbrado UAESP → merge directo → feature `luminarias_led_upz`
 - [ ] Integrar F11 IDU Obras Viales → spatial join → feature `km_via_intervenida_upz`
 - [ ] Correr `ruptures` PELT sobre F1 DAI 2018–2026 por localidad → cargar en Supabase `change_points`
-- [ ] **[Pre-mortem T7]** Cargar F4 Cuadrantes GeoJSON en Supabase PostGIS como tabla `cuadrantes_geom` con índice espacial GIST — prerequisito para spatial lookup lat/lon→cuadrante_id de Ideas 4 y 6
+- [x] ✅ (10-jun) **[Pre-mortem T7]** Tabla `cuadrantes_geom` creada con índice GIST + columna `upz_codes[]` pre-computada (599 cuadrantes con nom_cai y teléfono). ⏳ Geometrías reales se cargan con `seed_supabase.py --solo geo`
 
 ### Notebook 03 — Features (7–12 junio)
 
@@ -173,8 +173,8 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 
 ### Semana 1 — FastAPI backend + mapa base (21–27 junio)
 
-- [ ] Skeleton FastAPI en `/backend` con endpoints `/predict`, `/explain`, `/query`
-- [ ] Conectar XGBoost model + SHAP pre-computados desde Supabase
+- [x] ✅ (10-jun, adelantado) Backend FastAPI COMPLETO en `/backend`: `/predict`, `/explain`, `/graphrag`, `/prescribe`, `/whoami`, `/health` — capas routers→services→repos→clients, JWT+roles, rate limiting, 31 tests verdes, Dockerfile+railway.toml listos (ver `backend/README.md`)
+- [x] ✅ (10-jun) Predicciones + SHAP servidos desde Supabase vía lookup (seed sintético `origen='seed_dev'`; switch a artefactos reales del Notebook 04 con `scripts/load_model_artifacts.py`)
 - [ ] Skeleton React + Vite + Tailwind + supabase-js
 - [ ] deck.gl: PolygonLayer con 112 UPZs coloreadas (CRÍTICO=morado, ALTO=rojo, MEDIO=naranja, BAJO=verde) + hover tooltip
 - [ ] Slider temporal funcional → cambia colores del mapa
@@ -192,8 +192,8 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 - [ ] Módulo 3: panel CAI (nombre + dirección + turno) + indicador change point (estructural vs temporal)
 - [ ] Módulo 4: chat input → FastAPI /query → LangChain SupabaseVectorStore → OpenRouter → respuesta con citas
 - [ ] Probar 10 preguntas tipo de los 3 perfiles de usuario
-- [ ] **[Pre-mortem E3]** Test de integración JWT end-to-end: login Supabase Auth → obtener token → POST /predict con ese token → verificar que FastAPI lo decodifica y acepta antes de implementar roles completos
-- [ ] **[Pre-mortem T5]** Crear usuario de prueba COMANDANTE_CAI con cuadrante_asignado seteado → verificar que las policies RLS retornan filas (no vacío silencioso) → añadir validación en login que detecte cuadrante no asignado
+- [~] **[Pre-mortem E3]** Test JWT end-to-end IMPLEMENTADO (`backend/tests/test_jwt_e2e.py`, marker `integration`) — ⏳ correrlo una vez con credenciales reales: `python -m pytest tests/test_jwt_e2e.py -m integration -v` (requiere E2E_EMAIL/E2E_PASSWORD + SUPABASE_JWT_SECRET)
+- [~] **[Pre-mortem T5]** Backend LISTO: `/whoami` devuelve `cuadrante_pendiente=true` + filtro comandante-por-cuadrante en services (tests verdes) — ⏳ crear usuario de prueba COMANDANTE_CAI real y verificar RLS del frontend
 
 ### Deploy
 
