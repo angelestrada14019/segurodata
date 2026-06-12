@@ -1,0 +1,13 @@
+# Configuración de deploy en Railway — SeguroData API
+# Deploy: conectar el repo en railway.app con Root Directory = backend/
+# (Railway detecta este Dockerfile automáticamente)
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3

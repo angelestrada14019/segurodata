@@ -147,7 +147,7 @@
 | **Período** | 2018–presente — mensual |
 | **Registros Bronze** | N/A (texto — no filas) |
 | **Licencia** | Información pública — uso libre (entidad distrital Bogotá) |
-| **Rol en pipeline** | Corpus LLM — GraphRAG (Fase 3) — NO entra en XGBoost |
+| **Rol en pipeline** | Corpus GraphRAG → pgvector (Módulo 4 — OpenRouter) — NO entra en XGBoost |
 | **Archivo Bronze** | `datos/raw/boletines_scj/*.pdf` |
 
 ## F10 — Noticias RSS — Seguridad Bogotá (3 feeds)
@@ -165,21 +165,7 @@
 | **Rol en pipeline** | Corpus GraphRAG → sentence-transformers → Supabase pgvector |
 | **Archivo Bronze** | `datos/raw/noticias_rss.jsonl` |
 
-### F10b — El Informante Soy Yo (feed adicional verificado)
-
-| Campo | Valor |
-|-------|-------|
-| **Entidad** | elinformantesoyyo.com (periodismo investigativo ciudadano) |
-| **URL feed** | https://elinformantesoyyo.com/feed/ |
-| **Formato** | RSS 2.0 — verificado, feedparser lo lee directamente ✅ |
-| **Contenido** | Política de seguridad, operativos, grupos armados, movilidad, economía |
-| **Cobertura Bogotá** | Presente — artículos de política distrital y movilidad urbana |
-| **Período** | Continuo — artículos activos a mayo 2026 |
-| **Licencia** | Periodismo web de acceso libre — uso informativo sin restricción |
-| **Aporte al GraphRAG** | Contexto político-institucional: qué medidas tomó el gobierno, cambios de mando, operativos de seguridad — complementa F9 (datos crimen) y F10a (hechos noticiosos) |
-| **Estado** | ✅ ACTIVAR |
-
-> **¿Por qué el periodismo investigativo ciudadano aporta?** Los medios masivos cubren casos de alto impacto. El periodismo investigativo ciudadano captura el contexto político que no aparece en los boletines SCJ: cambios de comandancia, decisiones de inversión en seguridad, operativos fallidos. Exactamente lo que el chatbot necesita para responder "¿qué pasó institucionalmente cuando subió el hurto en X zona?"
+> El tercer feed (El Informante Soy Yo — elinformantesoyyo.com) aporta contexto político-institucional: cambios de comandancia, operativos de seguridad, decisiones de inversión distrital. Complementa F9 (datos crimen SCJ) y los feeds de El Tiempo/Espectador.
 
 ## F11 — IDU — Calzada y Estado Superficial
 
@@ -194,7 +180,7 @@
 | **Período** | Mensual (último: abr 2026) |
 | **Registros Bronze** | ~miles de segmentos viales |
 | **Licencia** | CC BY 4.0 |
-| **Rol en pipeline** | ⏳ PLANIFICADA Fase 2: feature km_via_intervenida_upz para XGBoost + corpus GraphRAG |
+| **Rol en pipeline** | ✅ ACTIVADA: feature `km_via_intervenida_upz` → XGBoost (Silver col +1) |
 | **Archivo Bronze** | `datos/raw/f11_idu_calzada/` (pendiente) |
 
 ## F12 — Plan de Desarrollo Bogotá 2024-2027 — "Bogotá Camina Segura"
@@ -250,7 +236,7 @@
 
 ## Variables causales identificadas — ¿Por qué ocurre el crimen?
 
-Esta tabla documenta las variables causales que explican el incremento o reducción del crimen en una UPZ, con evidencia empírica citada. Es la base del análisis "¿qué hacer?" del Módulo 3 (Recomendación) vía Claude API.
+Esta tabla documenta las variables causales que explican el incremento o reducción del crimen en una UPZ, con evidencia empírica citada. Es la base del análisis "¿qué hacer?" del Módulo 3 (Prescriptivo) vía OpenRouter.
 
 | Variable causal | Evidencia empírica | Fuente en SeguroData | Estado |
 |-----------------|-------------------|---------------------|--------|

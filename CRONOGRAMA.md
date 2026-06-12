@@ -16,7 +16,7 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 ```
 
 **Repositorio:** https://github.com/angelestrada14019/segurodata  
-**Ramas activas:** `main` · `bronze` ✅ · `silver` 🔄 · `gold` · `model` · `dashboard`
+**Ramas activas:** `main` (única rama — todas las fases se integran aquí)
 
 ---
 
@@ -132,17 +132,21 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 
 ### Setup Supabase + nuevas fuentes (7–10 junio) — EN PARALELO con modelo
 
-- [ ] Crear proyecto Supabase → habilitar PostGIS + pgvector
-- [ ] Ejecutar schema inicial (`scripts/setup_supabase.py`) + cargar Silver table
+- [x] ✅ (10-jun) Crear proyecto Supabase → habilitar PostGIS + pgvector — proyecto `segurodata` (ref `pluxaelenhkdaakxdrpm`, us-east-1), 8 migraciones en `supabase/migrations/`
+- [x] ✅ (10-jun) Schema inicial aplicado (8 tablas + RLS + hook claims + RPC match_documents) + seed sintético: 2,016 predicciones + 16,128 SHAP (`origen='seed_dev'`) + 112 UPZ + 599 cuadrantes. **Decisión arquitectural (11-jun): Silver 111K queda LOCAL** — Supabase solo recibe outputs del modelo (predicciones/SHAP post NB04) + geometrías (`--solo geo`) + corpus embeddings + change_points. Silver no va a producción (patrón FTI).
+- [x] ✅ (11-jun) Migración 0011: columnas `metadata JSONB` en `predicciones` y `shap_values` para trazabilidad FTI (model_version, pipeline_run_date, features)
+- [x] ✅ (11-jun) Hook JWT habilitado: Dashboard → Authentication → **Auth Hooks** → "Add hook" → **"Customize Access Token (JWT) Claims hook"** → tipo PostgreSQL Function → `public.custom_access_token_hook` → ENABLED. Los roles (CIUDADANO/COMANDANTE_CAI/ANALISTA_SDSCJ/ADMIN) ya viajan en el JWT.
+- [x] ✅ (11-jun) Realtime habilitado vía migración `0009_realtime.sql` (`ALTER PUBLICATION supabase_realtime ADD TABLE silver_upz_mes`). Alternativa Dashboard: Database → Publications → `supabase_realtime` → toggle ON.
 - [ ] Integrar F13 Cámaras Salvavidas SDM → spatial join → feature `n_camaras_upz`
 - [ ] Integrar F14 Alumbrado UAESP → merge directo → feature `luminarias_led_upz`
 - [ ] Integrar F11 IDU Obras Viales → spatial join → feature `km_via_intervenida_upz`
-- [ ] Correr `ruptures` PELT sobre F1 DAI 2018–2026 por localidad → cargar en Supabase `change_points`
+- [x] ✅ (11-jun) `ruptures` PELT sobre F1 DAI 2018–2026: 62 breakpoints detectados (pen=3, max_bp=3), COVID 2020 BAJA validado (17 localidades). Script: `scripts/compute_change_points.py`
+- [x] ✅ (10-jun) **[Pre-mortem T7]** Tabla `cuadrantes_geom` creada con índice GIST + columna `upz_codes[]` pre-computada (599 cuadrantes con nom_cai y teléfono). ⏳ Geometrías reales se cargan con `seed_supabase.py --solo geo`
 
 ### Notebook 03 — Features (7–12 junio)
 
 - [ ] Construir tabla maestra `datos/features/tabla_maestra_upz.parquet` con las **17 variables** (14 originales + F11/F13/F14)
-- [ ] Definir `nivel_riesgo` (Y): `GROUP BY upz_cod, anio, mes` sobre `es_crimen=True` → top 25% = ALTO, 25–60% = MEDIO, resto = BAJO (1,920 filas modelo)
+- [ ] Definir `nivel_riesgo` (Y): `GROUP BY upz_cod, anio, mes` sobre `es_crimen=True` → top 5% = CRÍTICO, 5–25% = ALTO, 25–60% = MEDIO, resto = BAJO (1,920 filas modelo)
 - [ ] Documentar tabla ontológica prescriptiva (17 filas SHAP→diagnóstico→entidad→acción) en celda 1
 - [ ] Verificar imputación de estrato faltante (69 UPZs sin dato → mediana de la localidad)
 - [ ] Normalizar features numéricas con StandardScaler → `datos/modelos/scaler.pkl`
@@ -151,7 +155,7 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 
 - [ ] Split temporal: TRAIN = ene–oct 2025, TEST = nov 2025–abr 2026 (F5 NUSE solo disponible 2025–2026)
 - [ ] Entrenar XGBoost con parámetros por defecto como baseline
-- [ ] Métricas: Precision, Recall, F1 por clase (ALTO/MEDIO/BAJO) + AUC-ROC macro
+- [ ] Métricas: Precision, Recall, F1 por clase (CRÍTICO/ALTO/MEDIO/BAJO) + AUC-ROC macro
 - [ ] Tuning básico: RandomizedSearchCV sobre `max_depth`, `n_estimators`, `learning_rate`
 - [ ] Calcular SHAP values → **pre-computar y guardar en Supabase** (NO on-demand)
 - [ ] Análisis de sesgo: comparar F1 en UPZs estrato 1-2 vs. 5-6
@@ -159,10 +163,11 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 
 ### Track paralelo — Knowledge Graph F9/F10 (7–20 junio)
 
-- [ ] Procesar F9 PDFs boletines SCJ → pdfplumber → texto limpio
-- [ ] Procesar F10 RSS → feedparser → texto
-- [ ] LangChain splitter → Claude embeddings → cargar en Supabase pgvector
-- [ ] Verificar búsqueda semántica: query de prueba → resultados relevantes
+- [x] ✅ (10-jun) Corpus demo cargado: `scripts/index_corpus.py --seed-demo --emit-sql` → `datos/grafo/corpus_seed.sql` (10 chunks SEED_DEV con embeddings MiniLM reales) → aplicado manualmente en Supabase. `/graphrag` ya responde con citas.
+- [ ] `python src/pipeline.py --source f9` → descargar PDFs boletines SCJ → `datos/raw/boletines_scj/`
+- [ ] `python src/pipeline.py --source f10` → descargar RSS noticias
+- [ ] `python scripts/index_corpus.py` → pdfplumber + feedparser → chunks 500tk → sentence-transformers all-MiniLM-L6-v2 → Supabase pgvector (reemplaza SEED_DEV)
+- [ ] Verificar búsqueda semántica: query de prueba → resultados relevantes con fuentes reales
 
 ---
 
@@ -172,10 +177,10 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 
 ### Semana 1 — FastAPI backend + mapa base (21–27 junio)
 
-- [ ] Skeleton FastAPI en `/backend` con endpoints `/predict`, `/explain`, `/query`
-- [ ] Conectar XGBoost model + SHAP pre-computados desde Supabase
+- [x] ✅ (10-jun, adelantado) Backend FastAPI COMPLETO en `/backend`: `/predict`, `/explain`, `/graphrag`, `/prescribe`, `/whoami`, `/health` — capas routers→services→repos→clients, JWT+roles, rate limiting, 31 tests verdes, Dockerfile+railway.toml listos (ver `backend/README.md`)
+- [x] ✅ (10-jun) Predicciones + SHAP servidos desde Supabase vía lookup (seed sintético `origen='seed_dev'`; switch a artefactos reales del Notebook 04 con `scripts/load_model_artifacts.py`)
 - [ ] Skeleton React + Vite + Tailwind + supabase-js
-- [ ] deck.gl: PolygonLayer con 112 UPZs coloreadas (ALTO/MEDIO/BAJO) + hover tooltip
+- [ ] deck.gl: PolygonLayer con 112 UPZs coloreadas (CRÍTICO=morado, ALTO=rojo, MEDIO=naranja, BAJO=verde) + hover tooltip
 - [ ] Slider temporal funcional → cambia colores del mapa
 
 ### Semana 2 — Módulo Diagnóstico + Predicción (28 junio – 4 julio)
@@ -183,23 +188,25 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 - [ ] Módulo 1: capas toggleables deck.gl (crimen · cámaras F13 · cuadrantes · alumbrado F14)
 - [ ] Módulo 1: Heatmap día × hora (Plotly React) + tendencia con change points marcados
 - [ ] Módulo 2: click en UPZ → FastAPI /predict → panel con nivel_riesgo + probabilidades
-- [ ] Módulo 2: mapa predictivo rojo/amarillo/verde + top-10 UPZs en riesgo ALTO
+- [ ] Módulo 2: mapa predictivo morado/rojo/naranja/verde + top-10 UPZs en riesgo CRÍTICO o ALTO
 
-### Semana 3 — Módulo Prescriptivo + Chatbot (5–10 julio)
+### Semana 3 — Módulo Prescriptivo + Chatbot + Auth (5–10 julio)
 
-- [ ] Módulo 3: tabla ontológica + SHAP top feature → diagnóstico → Claude API → recomendación operacional
+- [ ] Módulo 3: tabla ontológica + SHAP top feature → diagnóstico → OpenRouter → recomendación operacional
 - [ ] Módulo 3: panel CAI (nombre + dirección + turno) + indicador change point (estructural vs temporal)
-- [ ] Módulo 4: chat input → FastAPI /query → LangChain SupabaseVectorStore → Claude API → respuesta con citas
+- [ ] Módulo 4: chat input → FastAPI `/graphrag` → sentence-transformers embed → pgvector `match_documents` RPC → OpenRouter → respuesta con citas y número de boletín
 - [ ] Probar 10 preguntas tipo de los 3 perfiles de usuario
+- [~] **[Pre-mortem E3]** Test JWT end-to-end IMPLEMENTADO (`backend/tests/test_jwt_e2e.py`, marker `integration`) — ⏳ correrlo una vez con credenciales reales: `python -m pytest tests/test_jwt_e2e.py -m integration -v` (requiere E2E_EMAIL/E2E_PASSWORD + SUPABASE_JWT_SECRET)
+- [~] **[Pre-mortem T5]** Backend LISTO: `/whoami` devuelve `cuadrante_pendiente=true` + filtro comandante-por-cuadrante en services (tests verdes) — ⏳ crear usuario de prueba COMANDANTE_CAI real y verificar RLS del frontend
 
 ### Deploy
 
-- [ ] FastAPI → Cloud Run: `gcloud run deploy segurodata-api --source ./backend --allow-unauthenticated`
-- [ ] Configurar variables en Cloud Run: OPENROUTER_API_KEY, LLM_MODEL, SUPABASE_URL, SUPABASE_SERVICE_KEY
+- [ ] FastAPI → Railway: `railway login && railway link && cd backend && railway up`
+- [ ] Configurar variables en Railway dashboard: OPENROUTER_API_KEY, LLM_MODEL, SUPABASE_URL, SUPABASE_SERVICE_KEY
 - [ ] React → Vercel: conectar repo GitHub → `/frontend`
-- [ ] Configurar variables en Vercel: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_API_URL (URL de Cloud Run)
+- [ ] Configurar variables en Vercel: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_API_URL (URL pública Railway)
 - [ ] Verificar URL pública funciona desde móvil
-- [ ] Pre-demo: visitar URL de Cloud Run 2 minutos antes de la presentación para calentar el contenedor
+- [ ] Pre-demo: Railway está siempre activo — verificar que /health responde y Supabase conecta 5 min antes
 
 ---
 
@@ -209,12 +216,14 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 
 > ⚠️ Verificar fecha exacta de entrega/registro en datos.gov.co. Final confirmado: GovCamps primera semana de agosto 2026.
 
-- [ ] `README.md`: descripción, URL Railway + Vercel + Supabase, instrucciones instalación completas
-- [ ] Notebook 06: URLs de producción, schema Supabase, instrucciones reproducción local, decisiones de diseño
+- [ ] `README.md`: descripción, URL Railway (backend) + Vercel (frontend) + Supabase, instrucciones instalación completas
+- [ ] Notebook 06: URLs de producción (Railway + Vercel), schema Supabase, instrucciones reproducción local, decisiones de diseño
 - [ ] Video pitch de 3 minutos: problema → solución → demo (mapa + prescriptivo + chatbot)
 - [ ] Auditoría de git history para API keys antes de hacer repo público
 - [ ] Repositorio GitHub en modo público
 - [ ] Registrar en datos.gov.co → sección "Usos" con enlace al repo — **OBLIGATORIO**
+- [ ] **[Pre-mortem E2]** Escribir demo script de 10 minutos: clicks exactos, UPZs de ejemplo (Kennedy, Chapinero), datos que deben preexistir en Supabase, orden de módulos, respuestas preparadas a interrupciones del jurado, fallback a video si algo falla en vivo
+- [ ] **[Pre-mortem T3]** Pre-cargar en Supabase reportes de prueba verosímiles para el demo Waze (Ideas 4/6): usar timestamps del día anterior para que se vean como datos reales del sistema, no de prueba. Documentar en demo script que estos son datos de simulación.
 
 ---
 
@@ -225,6 +234,6 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 | GeoJSON Delito Alto Impacto no tiene columna `hora` | Media | Imputar franja horaria desde `fecha` si la hora está en el timestamp |
 | Cuadrantes dataset sin info de CAI | Media | Crear `cai_bogota.csv` manual (~80 filas) — ver Fase 1 Semana 1 |
 | Memoria insuficiente en Colab para Estratificación (FUENTE 7) | Alta | Pre-calcular en Colab Pro o descargar a Drive → cargar desde Drive |
-| Streamlit Cloud tarda en desplegar | Alta | Iniciar deploy al principio de Fase 3, no al final |
-| Claude API Key cuota agotada | Baja | Cachear respuestas generadas; limitar chatbot a 20 consultas/sesión |
+| Railway no responde en el demo (cold start imposible pero servicio caído) | Baja | Verificar `GET /health` 5 min antes de la presentación. Tener capturas de pantalla como fallback |
+| OpenRouter API Key cuota agotada | Baja | Cachear respuestas generadas; limitar chatbot a 20 consultas/sesión. Fallback: `anthropic/claude-haiku` en la variable LLM_MODEL |
 | Fecha real del concurso es agosto (GovCamps) | Media | Si se confirma, extender Fase 3 para refinar el dashboard |

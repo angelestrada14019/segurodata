@@ -27,13 +27,14 @@ copy wiki_pages\Estado-del-Arte.md       wiki_temp_push\Estado-del-Arte.md
 copy wiki_pages\Provenance.md            wiki_temp_push\Provenance.md
 copy wiki_pages\Investigacion-Fuentes.md wiki_temp_push\Investigacion-Fuentes.md
 copy wiki_pages\Reglas-Concurso.md       wiki_temp_push\Reglas-Concurso.md
+copy wiki_pages\Plataforma-Ciudadana.md  wiki_temp_push\Plataforma-Ciudadana.md
 
 REM --- Assets ---
 copy wiki_pages\diagrama_arquitectura.svg wiki_temp_push\diagrama_arquitectura.svg
 
 cd wiki_temp_push
 git add .
-git commit -m "wiki: 12 paginas + diagrama SVG arquitectura"
+git commit -m "wiki: 13 paginas + diagrama SVG arquitectura (add Plataforma-Ciudadana, estado backend)"
 git push
 
 cd ..

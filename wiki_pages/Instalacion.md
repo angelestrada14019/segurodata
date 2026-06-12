@@ -1,156 +1,227 @@
 # Guía de Instalación
 
-El proyecto tiene tres componentes: **pipeline de datos** (Python), **backend ML** (FastAPI en Google Cloud Run), y **frontend** (React). En producción: Vercel (frontend) + Supabase (BD + pgvector) + Cloud Run (backend). Todo el backend es Python.
+El proyecto tiene tres componentes: **pipeline de datos** (Python), **backend ML** (FastAPI → Railway), y **frontend** (React → Vercel). Base de datos: Supabase (PostgreSQL + PostGIS + pgvector). Proyecto Supabase: `segurodata` (ref `pluxaelenhkdaakxdrpm`, us-east-1).
 
 ---
 
 ## 1. Pipeline de datos (Python) — notebooks + ETL
 
 ```bash
-# Clonar el repositorio
 git clone https://github.com/angelestrada14019/segurodata.git
 cd segurodata
 
-# Crear entorno virtual
 python -m venv .venv
-source .venv/bin/activate      # Linux/Mac
-.venv\Scripts\activate         # Windows
+.venv\Scripts\activate        # Windows
+# source .venv/bin/activate   # Linux/Mac
 
-# Instalar dependencias de datos
 pip install -r requirements.txt
 
-# Configurar variables de entorno
-cp .env.example .env
-# Editar .env:
-#   OPENROUTER_API_KEY=sk-or-...        (Módulos 3 y 4 — gratis en openrouter.ai)
-#   SUPABASE_URL=https://xxx.supabase.co
-#   SUPABASE_ANON_KEY=eyJ...
-```
-
-### Descarga Bronze y generación Silver
-
-```bash
-python src/pipeline.py           # descarga 12 fuentes (solo lo nuevo)
+# Descargar Bronze y generar Silver
+python src/pipeline.py           # descarga 12 fuentes (incremental)
 python src/transform.py          # Bronze → Silver (111,606 × 23 cols)
 python src/pipeline.py --status  # ver estado de cada fuente
-```
-
-### En Google Colab
-
-```python
-!git clone https://github.com/angelestrada14019/segurodata.git
-%cd segurodata
-!pip install -r requirements.txt -q
-!python src/pipeline.py
-!python src/transform.py
 ```
 
 ⚠️ **F7 (estratificación, ~44K polígonos):** puede agotar RAM en Colab gratuito. Ver [[Transformacion]] para opciones.
 
 ---
 
-## 2. Indexar corpus GraphRAG (una sola vez)
+## 2. Base de datos — Supabase
 
-Genera los embeddings del corpus de texto (F9 + F10) y los carga en Supabase pgvector:
+El proyecto Supabase ya está creado (`pluxaelenhkdaakxdrpm`). Las migraciones están en `supabase/migrations/` y ya fueron aplicadas. Para replicar desde cero:
+
+### 2a. Aplicar migraciones (si partes de un proyecto nuevo)
+
+Aplicar las 8 migraciones en orden desde el MCP Supabase o desde el SQL Editor del Dashboard:
+
+```
+supabase/migrations/
+  20260610_0001_extensions.sql      ← postgis + vector
+  20260610_0002_core_tables.sql     ← silver, predicciones, shap, change_points
+  20260610_0003_geo_tables.sql      ← upz_geometrias, cuadrantes_geom (GIST)
+  20260610_0004_documents_corpus.sql← pgvector HNSW 384 dims + RPC match_documents
+  20260610_0005_auth_profiles.sql   ← user_profiles + trigger autoprovision
+  20260610_0006_rls_policies.sql    ← RLS por rol
+  20260610_0007_cuadrantes_telefono.sql
+  20260610_0008_advisor_fixes.sql
+```
+
+### 2b. Cargar datos de producción en Supabase
+
+> **Decisión FTI (11-jun-2026): Silver 111K queda LOCAL.** Supabase solo recibe outputs del modelo y datos geográficos, no datos de entrenamiento.
+
+Requiere `SUPABASE_URL` + `SUPABASE_SERVICE_KEY` en `backend/.env`:
 
 ```bash
-# Requiere que F9/F10 Bronze existan (pipeline.py --source f9 f10)
-python scripts/index_corpus.py
-# Usa sentence-transformers all-MiniLM-L6-v2 (local, sin costo de API)
-# Resultado: ~220 embeddings de 384 dims → Supabase pgvector tabla 'documents'
+# Geometrías UPZ/cuadrantes para el frontend
+python scripts/seed_supabase.py --solo geo      # 112 UPZ + 599 cuadrantes via PostGIS
+
+# Predicciones y SHAP sintéticos de demo (mientras Notebook 04 no esté listo)
+python scripts/seed_supabase.py --solo synth    # 2,016 predicciones + 16,128 SHAP seed_dev
+
+# Change points (ruptures PELT sobre F1 DAI 2018-2026)
+python scripts/compute_change_points.py         # 59 breakpoints → Supabase change_points
+
+# NO usar --solo silver: Silver permanece local para entrenamiento (patrón FTI)
+```
+
+### 2c. Paso manual obligatorio — custom_access_token_hook
+
+Para que los roles (COMANDANTE_CAI, ANALISTA_SDSCJ, etc.) viajen en el JWT:
+
+1. Supabase Dashboard → proyecto `segurodata`
+2. Menú lateral: **Authentication → Auth Hooks**
+3. Botón **"Add hook"** → seleccionar **"Customize Access Token (JWT) Claims hook"**
+4. Tipo: **PostgreSQL Function** → schema: `public` → función: `custom_access_token_hook` → **Save**
+5. Verificar que aparece **ENABLED** (verde)
+
+> ✅ Estado actual (11-jun-2026): hook habilitado y activo.
+> La función ya existe en la base de datos (migración `0005`).
+
+Sin este paso todos los usuarios caen a rol `CIUDADANO`.
+
+### 2d. Switch a artefactos reales (post Notebook 04)
+
+```bash
+python scripts/load_model_artifacts.py \
+  --predicciones datos/modelos/predicciones_xgboost.parquet \
+  --shap datos/modelos/shap_values.parquet
+# Reemplaza origen='seed_dev' → 'notebook_04' sin tocar código
 ```
 
 ---
 
-## 3. Base de datos — Supabase
+## 3. Corpus GraphRAG — indexar F9 + F10
 
-1. Crear proyecto en https://supabase.com/dashboard
-2. Habilitar extensiones:
-```sql
-CREATE EXTENSION IF NOT EXISTS postgis;
-CREATE EXTENSION IF NOT EXISTS vector;
-```
-3. Aplicar schema y cargar datos:
+Los embeddings del corpus se generan con `fastembed` (`all-MiniLM-L6-v2`, 384 dims, local, sin costo de API) y se cargan en Supabase pgvector.
+
 ```bash
-python scripts/setup_supabase.py   # crea tablas + índices
-python scripts/load_silver.py      # carga silver_upz_mes.parquet
-python scripts/load_predictions.py # carga predicciones XGBoost pre-computadas
-python scripts/load_shap.py        # carga SHAP values pre-computados
-python scripts/index_corpus.py     # carga embeddings pgvector
+# Paso 1: descargar corpus F10 RSS (F9 requiere Playwright — ver nota abajo)
+python src/pipeline.py --source f10
+
+# Paso 2: indexar → chunks 500 tokens → MiniLM → pgvector
+python scripts/index_corpus.py --seed-demo --backend fastembed   # demo + F10 real
+python scripts/index_corpus.py --backend fastembed                # solo F10 real
+
+# Sin credenciales (genera SQL para importar manualmente):
+python scripts/index_corpus.py --seed-demo --emit-sql  # genera datos/grafo/corpus_seed.sql
 ```
+
+> **Estado actual (11-jun-2026):** 18 chunks en Supabase — 12 SEED_DEV + 5 RSS_ELTIEMPO + 1 RSS_INFORMANTE. `/graphrag` es demostrable.
+
+> **F9 — boletines SCJ:** El Observatorio OSCJ migró a ArcGIS Experience Builder (`https://oaiee.scj.gov.co/ObservatorioSCJ.html`), que es 100% JavaScript. `pipeline.py --source f9` no puede scrapearlo sin Playwright. Para añadir boletines reales: descargar manualmente los PDFs desde el Observatorio (sección Boletines > Estudios), guardarlos en `datos/raw/boletines_scj/`, y re-ejecutar `index_corpus.py`.
 
 ---
 
-## 4. Backend ML — FastAPI (Google Cloud Run)
-
-El backend Python sirve el GraphRAG, el prescriptivo y la inferencia XGBoost. La `OPENROUTER_API_KEY` permanece en Cloud Run — nunca en el browser.
+## 4. Backend ML — FastAPI
 
 ### Desarrollo local
+
 ```bash
 cd backend
 pip install -r requirements.txt
-uvicorn main:app --reload --port 8000
 
-# Variables de entorno (.env en /backend):
-OPENROUTER_API_KEY=sk-or-...
-LLM_MODEL=google/gemini-flash-1.5
-SUPABASE_URL=https://xxx.supabase.co
-SUPABASE_SERVICE_KEY=eyJ...
+# Copiar y rellenar credenciales
+cp .env.example .env
+# Editar backend/.env — variables mínimas:
+#   SUPABASE_URL=https://pluxaelenhkdaakxdrpm.supabase.co
+#   SUPABASE_SERVICE_KEY=<sb_secret_... o legacy service_role JWT>
+#   SUPABASE_JWT_SECRET=   # dejar vacío si el proyecto usa ES256 (ver SUPABASE_JWKS_URL)
+#   SUPABASE_JWKS_URL=https://<ref>.supabase.co/auth/v1/.well-known/jwks.json
+#   OPENROUTER_API_KEY=<key de openrouter.ai>
+#   AUTH_MODE=disabled  # solo en development
+
+uvicorn app.main:app --reload --port 8000
+# Docs: http://localhost:8000/docs
 ```
 
-### Deploy en Google Cloud Run
+### Verificación local
+
 ```bash
-# Desde la raíz del repo
-gcloud run deploy segurodata-api \
-  --source ./backend \
-  --platform managed \
-  --region us-central1 \
-  --allow-unauthenticated \
-  --set-env-vars OPENROUTER_API_KEY=sk-or-...,LLM_MODEL=google/gemini-flash-1.5,SUPABASE_URL=...
-
-# La URL resultante va en el frontend como variable:
-# VITE_API_URL=https://segurodata-api-xxx-uc.a.run.app
+pytest tests/ -m "not integration" -v   # 31 tests — no requieren credenciales
+ruff check .                             # lint
 ```
 
-Cloud Run escala a cero y arranca en 2-3 segundos. **Para el demo en vivo:** visitar la URL de la API 2 minutos antes de la presentación. Sin cron, sin servicio externo adicional.
+Ver skill `backend-testing` para la guía completa de verificación E2E.
+
+### Deploy en Railway (Fase 4)
+
+```bash
+# Opción A — GitHub integration (recomendada):
+# railway.app → New Project → Deploy from GitHub
+# Root Directory: backend/   (Railway detecta el Dockerfile automáticamente)
+# Configurar variables de entorno en el dashboard de Railway
+
+# Opción B — CLI:
+npm install -g @railway/cli
+railway login
+cd backend
+railway link
+railway up
+```
+
+Variables a configurar en Railway:
+
+| Variable | Valor |
+|----------|-------|
+| `ENV` | `production` |
+| `AUTH_MODE` | `enabled` |
+| `SUPABASE_URL` | `https://pluxaelenhkdaakxdrpm.supabase.co` |
+| `SUPABASE_SERVICE_KEY` | `sb_secret_...` (nuevo) o legacy service_role JWT |
+| `SUPABASE_JWT_SECRET` | dejar vacío si el proyecto usa ES256 (JWKS) |
+| `SUPABASE_JWKS_URL` | `https://<ref>.supabase.co/auth/v1/.well-known/jwks.json` |
+| `OPENROUTER_API_KEY` | key de openrouter.ai |
+| `LLM_MODEL` | `google/gemini-flash-1.5` |
+
+Railway (Plan Hobby ~$5/mes) mantiene el proceso siempre activo — sin cold start, sin warmup previo al demo.
 
 ---
 
-## 5. Frontend — React + deck.gl
+## 5. Frontend — React + deck.gl (Fase 3)
 
 ```bash
 cd frontend
-npm install              # instala React, deck.gl, MapLibre, Tailwind, supabase-js
+npm install
 
 # Desarrollo local
-npm run dev              # abre en http://localhost:5173
+npm run dev       # http://localhost:5173
 
-# Variables de entorno (.env.local)
-VITE_SUPABASE_URL=https://xxx.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJ...
+# Variables de entorno (frontend/.env.local):
+VITE_SUPABASE_URL=https://pluxaelenhkdaakxdrpm.supabase.co
+VITE_SUPABASE_ANON_KEY=<anon key pública>
+VITE_API_URL=https://segurodata-api.up.railway.app
 ```
 
 ### Deploy en Vercel
 
 ```bash
 vercel --cwd frontend
-# O conectar repo GitHub en vercel.com → seleccionar carpeta /frontend
+# O conectar repo en vercel.com → Root Directory: frontend/
 ```
 
----
-
+> **Estado actual:** frontend pendiente — Fase 3 (21 jun – 10 jul 2026).
 
 ---
 
 ## Variables de entorno — resumen
 
-| Variable | Componente | Cómo obtener |
-|----------|-----------|-------------|
-| `OPENROUTER_API_KEY` | Backend FastAPI (Cloud Run) | openrouter.ai (gratis con límites) |
-| `LLM_MODEL` | Backend FastAPI (Cloud Run) | `google/gemini-flash-1.5` (por defecto, gratis) |
-| `SUPABASE_URL` | Todos | Supabase Dashboard → Settings → API |
-| `SUPABASE_ANON_KEY` | Frontend (lectura pública) | Supabase Dashboard → Settings → API |
-| `SUPABASE_SERVICE_KEY` | Scripts de carga | Supabase Dashboard → Settings → API |
-| `VITE_SUPABASE_URL` | Frontend build | Igual que SUPABASE_URL |
+> **Claves Supabase — dos formatos válidos hasta fin 2026:**
+> - Nuevo: `sb_publishable_...` (frontend) / `sb_secret_...` (backend)
+> - Legacy JWT: clave `anon` (frontend) / `service_role` (backend)
+> Ambos funcionan igual. El nuevo formato tiene protección extra contra uso en browser.
 
-Open-Meteo, CKAN, Socrata son APIs públicas sin autenticación requerida.
+| Variable | Componente | Dónde obtener |
+|----------|-----------|---------------|
+| `SUPABASE_URL` | Backend + scripts | Dashboard → Settings → API |
+| `SUPABASE_SERVICE_KEY` | Backend + scripts | Dashboard → API → **Secret key** (nuevo) o service_role JWT (legacy) |
+| `SUPABASE_JWT_SECRET` | Backend — solo si HS256 legacy | Dashboard → Settings → API → JWT Secret (dejar vacío si usa ES256) |
+| `SUPABASE_JWKS_URL` | Backend — si ES256/RS256 | `<SUPABASE_URL>/auth/v1/.well-known/jwks.json` |
+| `SUPABASE_DB_URL` | Scripts offline (seed COPY) | Dashboard → Settings → Database → Session pooler |
+| `OPENROUTER_API_KEY` | Backend (LLM) | openrouter.ai → Keys |
+| `LLM_MODEL` | Backend | `google/gemini-flash-1.5` (por defecto) |
+| `AUTH_MODE` | Backend | `disabled` solo en development |
+| `VITE_SUPABASE_URL` | Frontend build | Igual que SUPABASE_URL |
+| `VITE_SUPABASE_ANON_KEY` | Frontend (lectura pública) | Dashboard → API → **Publishable key** (nuevo) o anon JWT (legacy) |
+| `VITE_API_URL` | Frontend build | URL pública de Railway |
+
+Open-Meteo, CKAN, Socrata y ArcGIS son APIs públicas sin autenticación.

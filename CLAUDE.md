@@ -35,15 +35,15 @@ El sistema responde tres preguntas concretas:
 | Embeddings (GraphRAG) | `sentence-transformers` — `all-MiniLM-L6-v2` (local, gratis, 384 dims) |
 | LLM / GraphRAG | **OpenRouter** — `google/gemini-flash-1.5` (gratis 1M tokens/día) como primaria; `anthropic/claude-haiku` como fallback |
 | Base de datos | **Supabase** (PostgreSQL + PostGIS + pgvector) |
-| Backend ML | **FastAPI** (Python) en **Google Cloud Run** — GraphRAG + prescriptivo + proxy OpenRouter |
+| Backend ML | **FastAPI** (Python) en **Railway** — GraphRAG + prescriptivo + proxy OpenRouter |
 | Frontend / mapa | **React + Vite + deck.gl + Tailwind CSS** |
 | Deploy frontend | **Vercel** (React, CDN global, siempre activo) |
-| Deploy backend | **Google Cloud Run** (FastAPI, serverless, 2-3s cold start, free tier 2M req/mes) |
+| Deploy backend | **Railway** (FastAPI, siempre activo, sin cold start, ~$5/mes plan Hobby) |
 | Repositorio | GitHub (público, obligatorio para el concurso) |
 
-**No hay Streamlit, no hay Railway, no hay cron externo, no hay Edge Functions Deno, no hay nano-graphrag.**  
-- **Demo + producción:** un único backend Python (FastAPI en Cloud Run). El frontend llama Supabase directamente para datos y FastAPI para GraphRAG + prescriptivo.  
-- **Pre-demo:** visitar la URL de Cloud Run 2 minutos antes de la presentación para calentar el contenedor. Sin cron, sin servicio externo.
+**No hay Streamlit, no hay cron externo, no hay Edge Functions Deno, no hay nano-graphrag.**  
+- **Demo + producción:** un único backend Python (FastAPI en Railway). El frontend llama Supabase directamente para datos y FastAPI para GraphRAG + prescriptivo.  
+- **Railway es siempre activo** — no requiere calentamiento previo ni warmup antes del demo.
 
 ---
 
@@ -106,9 +106,9 @@ NUEVAS (F11, F13, F14):
   luminarias_led_upz      ← número de luminarias LED (iluminación pública UAESP)
 
 VARIABLE OBJETIVO (Y):
-  nivel_riesgo: ALTO / MEDIO / BAJO
+  nivel_riesgo: CRÍTICO / ALTO / MEDIO / BAJO
   → definido por percentiles de n_delitos agregado por upz_cod × anio × mes (solo es_crimen=True)
-  → top 25% = ALTO, 25–60% = MEDIO, resto = BAJO (1,920 filas de entrenamiento)
+  → top 5% = CRÍTICO, 5–25% = ALTO, 25–60% = MEDIO, resto = BAJO (1,920 filas de entrenamiento)
 ```
 
 ---
@@ -166,7 +166,7 @@ Los notebooks del proyecto siguen el esquema `SeguroData_0X_Nombre.ipynb`:
 - `SeguroData_03_Features.ipynb` — Construcción de las 17 variables (F11+F13+F14) + tabla prescriptiva
 - `SeguroData_04_Modelo.ipynb` — XGBoost + backtesting + SHAP pre-computado + sesgo
 - `SeguroData_05_Dashboard.ipynb` — Arquitectura React+FastAPI+Supabase + screenshots
-- `SeguroData_06_Deployment.ipynb` — Deploy Cloud Run+Vercel + registro datos.gov.co
+- `SeguroData_06_Deployment.ipynb` — Deploy Railway+Vercel + registro datos.gov.co
 
 ---
 
@@ -207,10 +207,10 @@ El Módulo 3 usa SHAP para identificar la causa dominante del riesgo y conecta d
 |-------|------|
 | ✅ 23 mayo | Notebook 01 completado — plan + catálogo de 12 fuentes (F1-F10 activas + F11-F12 planificadas) |
 | ✅ 26 mayo – 6 junio | **Fase 1:** EDA de las 10 fuentes → Notebook 02 ✅ |
-| ✅ 1 junio (esta sesión) | Arquitectura pivotada a React+Supabase+FastAPI+Cloud Run · F13/F14 activadas · Wiki publicado (12 páginas) · GitHub Project #3 poblado (10 issues) · Ramas eliminadas (solo main) |
+| ✅ 10 junio | Arquitectura pivotada a React+Supabase+FastAPI · F13/F14 activadas · Wiki publicado (13 páginas + Plataforma-Ciudadana) · GitHub Project poblado (issues #11-18) · Plataforma ciudadana: ideas 1+2+3+5 comprometidas para MVP, ideas 4+6 opcionales con HUs en `docs/HU-Features-Opcionales.md`, idea 7 descartada · Pre-mortem documentado |
 | ⏳ 7 – 20 junio | **Fase 2:** XGBoost + SHAP → Notebooks 03+04 |
 | ⏳ 21 junio – 10 julio | **Fase 3:** React+deck.gl + FastAPI + GraphRAG Supabase → Notebook 05 |
-| ⏳ 11 julio – 1 agosto | **Fase 4:** Deploy Cloud Run+Vercel + Docs + video → Notebook 06 |
+| ⏳ 11 julio – 1 agosto | **Fase 4:** Deploy Railway+Vercel + Docs + video → Notebook 06 |
 | **⚠️ Verificar** | Fecha exacta entrega/registro en datos.gov.co — posiblemente agosto (GovCamps 2026) |
 | Primera semana agosto | **Final GovCamps 2026** (sustentación oral — confirmado MinTIC) |
 
@@ -244,11 +244,13 @@ El Módulo 3 usa SHAP para identificar la causa dominante del riesgo y conecta d
 | Stack Python + scikit-learn + XGBoost | Reproducible, bien documentado, compatible con CRISP-ML |
 | ~~Hawkes Process~~ → **ruptures + GraphRAG** | Hawkes descartado. ruptures (PELT) detecta cambios estructurales históricos. GraphRAG (FastAPI + pgvector + OpenRouter) explica el *por qué* con boletines SCJ + noticias |
 | SHAP pre-computado (no on-demand) | Supabase sirve SHAP values pre-calculados → sin crash de RAM en producción |
-| **React + deck.gl** para frontend | Mapa WebGL interactivo OSIRIS-style, capas toggleables, click-to-analyze por UPZ |
+| **React + deck.gl** para frontend | Mapa WebGL interactivo estilo C4 / Palantir Gotham, capas toggleables, zoom Localidades→UPZs (zoom 12), modal 5 pestañas por UPZ (Descripción · Predicción · Sugerencia · Fuentes · Chatbot) |
 | **Supabase** como backbone | PostgreSQL + PostGIS + pgvector en un solo servicio. El frontend lo consulta directamente para datos, predicciones y SHAP |
-| **FastAPI + Google Cloud Run** | Backend Python unificado: GraphRAG + prescriptivo + proxy OpenRouter. Todo en Python, un solo deploy |
+| **FastAPI + Railway** | Backend Python unificado: GraphRAG + prescriptivo + proxy OpenRouter. Siempre activo, sin cold start, un solo deploy. Railway Plan Hobby ~$5/mes |
 | **OpenRouter** como proxy LLM | Una API key da acceso a 200+ modelos. Demo: Gemini Flash (gratis). Producción: escalable |
 | **sentence-transformers** para embeddings | all-MiniLM-L6-v2, corre local una sola vez, resultado se guarda en pgvector. Sin costo de API |
+| **Supabase Auth + RLS** para control de acceso | 4 roles: CIUDADANO · COMANDANTE_CAI · ANALISTA_SDSCJ · ADMIN. Magic link + autoprovisioning por dominio @policia.gov.co. RLS filtra predicciones por cuadrante asignado usando F4 Cuadrantes en PostGIS. SHAP ciudadano=básico/analista=completo. |
+| **Plataforma Ciudadana (ideas 1+2+3+5) comprometidas** | Auth+Roles, mapa zoom adaptativo Localidades→UPZs, modal 5 pestañas, proyección +4 semanas en Módulo 2. Ideas 4+6 opcionales (HUs en `docs/HU-Features-Opcionales.md`). Idea 7 (app nativa) descartada para el concurso. |
 | `wiki_pages/` como fuente única de docs | Editar wiki_pages/ + correr PUSH_WIKI.bat → wiki actualizado. El código solo tiene README, CLAUDE.md y CRONOGRAMA.md |
 
 ---

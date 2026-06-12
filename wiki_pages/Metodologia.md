@@ -10,7 +10,7 @@ SeguroData sigue la metodología CRISP-ML (Cross-Industry Standard Process for M
 | 1A — Bronze | src/pipeline.py | 10 fuentes descargadas, incremental | ✅ Completo |
 | 1B — Silver | src/transform.py | silver_upz_mes.parquet (111,606 × 20) | ✅ Completo |
 | 2 — Gold + Modelo | SeguroData_03 + 04 | 14 variables + XGBoost + SHAP | ⏳ Fase actual |
-| 3 — Dashboard | SeguroData_05 | Streamlit + Claude API + GraphRAG | ⏳ Jun 2026 |
+| 3 — Dashboard | SeguroData_05 | React + deck.gl + FastAPI + Supabase + GraphRAG | ⏳ Jun 2026 |
 | 4 — Entrega | SeguroData_06 | Deploy + registro datos.gov.co | ⏳ Jul 2026 |
 
 ## Validación temporal (no aleatoria)
@@ -28,7 +28,7 @@ Un split aleatorio daría resultados artificialmente buenos (data leakage tempor
 
 > **Nota:** F1 (Delito de Alto Impacto) cubre 2018–2026 a nivel localidad y se usa exclusivamente para **detección de puntos de cambio históricos** con `ruptures` — no para entrenamiento del modelo XGBoost.
 
-## Las 14 variables del modelo
+## Las 17 variables del modelo
 
 | Grupo | Variables |
 |-------|----------|
@@ -37,7 +37,8 @@ Un split aleatorio daría resultados artificialmente buenos (data leakage tempor
 | Climáticas | temperatura_c, precipitacion_mm |
 | Espaciales | estrato_promedio_upz, cuadrantes_por_km2, n_estaciones_tm, dist_tm_metros |
 | Subregistro | ratio_nuse_delitos_upz |
-| **Objetivo (Y)** | nivel_riesgo — ALTO / MEDIO / BAJO |
+| Infraestructura (F11+F13+F14) | km_via_intervenida_upz, n_camaras_upz, luminarias_led_upz |
+| **Objetivo (Y)** | nivel_riesgo — CRÍTICO / ALTO / MEDIO / BAJO |
 
 ## Detección de puntos de cambio estructural (ruptures)
 
@@ -80,3 +81,55 @@ El jurado del concurso pregunta explícitamente si el modelo discrimina por estr
 - Comparación de predicciones por estrato (1-6): ¿falsos negativos concentrados en estratos bajos?
 - SHAP interaction plots: ¿interactúa el estrato con la predicción de manera inesperada?
 - Resultado esperado: el estrato **entra como feature causal legítima**, no como proxy discriminatorio
+
+---
+
+## Notebooks y Scripts — Diferencia de rol
+
+Los scripts `.py` son código de producción; los notebooks `.ipynb` son documentación narrativa para el jurado. **No se repite código** — el notebook importa el script y muestra sus resultados.
+
+| | Scripts `.py` | Notebooks `.ipynb` |
+|---|---|---|
+| Dónde corre | Railway / local (sin UI) | Google Colab / local |
+| Propósito | Producción | Documentación CRISP-ML |
+| Outputs | Parquets, modelos serializados | Gráficas inline, tablas de resultados |
+| Ejemplos | `src/pipeline.py`, `src/transform.py` | `SeguroData_03_Features.ipynb` |
+
+**Flujo típico en un notebook:**
+```python
+# El notebook no copia el código de transformación — lo llama:
+from src.transform import build_silver
+df = build_silver()
+df.head()           # ← esto aparece como output inline en el notebook
+df.describe()       # ← estadísticas para el jurado
+```
+
+---
+
+## Plan de Notebooks 03–06
+
+Ninguno duplica el código de los scripts de producción. Cada notebook documenta una fase CRISP-ML con narrativa + outputs visuales.
+
+### Notebook 03 — Feature Engineering (7–13 Jun)
+- Importa `transform.py`, muestra la tabla Gold (17 variables) con `.head()` y `.describe()`
+- Visualiza distribución de cada variable por UPZ (histogramas + mapas choropleth)
+- Documenta el spatial join de F11/F13/F14 con resultados numéricos
+- Valida correlaciones entre features y `nivel_riesgo`
+- Primera celda: tabla ontológica de intervenciones completa (17 filas)
+
+### Notebook 04 — Modelo XGBoost (14–20 Jun) ★ el más importante para el jurado
+- Entrena XGBoost con split temporal: train = ene–oct 2025, test = nov 2025–abr 2026
+- Curvas de aprendizaje, matriz de confusión, métricas de clasificación por UPZ
+- SHAP plots: summary plot, beeswarm, waterfall para una UPZ de ejemplo
+- Análisis de sesgo por estrato socioeconómico (ver sección arriba)
+- Serializa modelo + SHAP precomputado → `datos/modelos/`
+
+### Notebook 05 — Dashboard (21 Jun – 5 Jul)
+- Documenta la arquitectura React + FastAPI + Supabase con diagrama
+- Screenshots del dashboard en producción (no contiene código frontend)
+- Ejemplos de llamadas a la API: `/predict`, `/explain`, `/graphrag`
+
+### Notebook 06 — Deployment (6–10 Jul)
+- Documenta el deploy en Railway + Vercel con comandos exactos
+- Screenshots del sistema accesible desde URL pública
+- Instrucciones paso a paso de registro en datos.gov.co

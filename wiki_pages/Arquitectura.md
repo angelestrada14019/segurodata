@@ -9,7 +9,7 @@
 │  4 páginas: Diagnóstico / Predicción / Prescriptivo / Chatbot       │
 ├─────────────────────────────────────────────────────────────────────┤
 │  CAPA 4 — BACKEND ML (Python)                                        │
-│  FastAPI (Python)  →  Google Cloud Run  (cold start 2-3s)           │
+│  FastAPI (Python)  →  Railway  (siempre activo, sin cold start)      │
 │  /predict (XGBoost) · /explain (SHAP) · /graphrag (pgvector+OpenRouter)│
 ├───────────────────────────┬─────────────────────────────────────────┤
 │  CAPA 3 — BASE DE DATOS   │  CAPA 3B — VECTOR STORE                 │
@@ -28,18 +28,6 @@
 │  Silver: datos/procesados/ ← src/transform.py  (111,606 × 23 cols)  │
 └─────────────────────────────────────────────────────────────────────┘
 ```
-
-## Stack de aplicación
-
-| Componente | Tecnología | Deploy |
-|---|---|---|
-| Frontend | React + Vite + deck.gl + Tailwind + supabase-js | Vercel (gratis, CDN) |
-| Backend ML | FastAPI (Python) — todo en Python | Google Cloud Run (free tier, 2M req/mes) |
-| Base de datos | Supabase PostgreSQL + PostGIS + pgvector | Supabase (siempre activo) |
-| LLM | OpenRouter → `google/gemini-flash-1.5` (gratis) | Variable OPENROUTER_API_KEY en Cloud Run |
-| Embeddings | sentence-transformers all-MiniLM-L6-v2 (offline) | Resultado en pgvector Supabase |
-| Keep-alive | Ninguno — Cloud Run escala a cero y arranca en 2-3s | Pre-calentar 2 min antes del demo |
-| Costo demo | ~$0 | Cloud Run free tier + OpenRouter free tier |
 
 ## Medallion Architecture (datos)
 
@@ -67,51 +55,87 @@ La tabla Silver tiene una fila por cada combinación **UPZ × mes × tipo de inc
 ### Frontend — React + deck.gl
 ```
 React 18 + Vite + Tailwind CSS
-deck.gl: PolygonLayer (UPZs coloreadas ALTO/MEDIO/BAJO)
+deck.gl: PolygonLayer (UPZs coloreadas CRÍTICO/ALTO/MEDIO/BAJO)
          ScatterplotLayer (cámaras Salvavidas F13)
          HeatmapLayer (densidad de incidentes)
 MapLibre GL JS: basemap OSM gratuito
 supabase-js: acceso directo a PostgreSQL + Realtime desde React
 ```
 
-### Backend — FastAPI en Google Cloud Run (Python)
+### Backend — FastAPI en Railway (Python)
 
-Todo el backend es Python. Un solo servicio, un solo lenguaje, un solo deploy.
+> **Estado (10-jun-2026):** ✅ **Implementado y verificado** — 31 tests verdes, ruff limpio. Pendiente deploy en Railway (Fase 4).
 
-```python
-# backend/main.py — Endpoints principales
-POST /predict    → XGBoost: {upz, mes} → {nivel_riesgo, probabilidades}
-GET  /explain    → SHAP: {upz, mes} → shap_values pre-computados desde Supabase
-POST /graphrag   → {pregunta, upz_contexto} → pgvector search → OpenRouter → respuesta
-POST /prescribe  → {upz, shap_top} → tabla ontológica → OpenRouter → recomendación CAI
+Todo el backend es Python. Un solo servicio, un solo lenguaje, un solo deploy. Railway mantiene el servidor siempre activo — sin cold start, sin warmup antes del demo.
+
+#### Estructura del backend (`backend/`)
+
+```
+backend/
+├── app/
+│   ├── main.py            ← create_app() factory + lifespan
+│   ├── config.py          ← Settings (pydantic-settings)
+│   ├── dependencies.py    ← get_supabase, get_current_user, require_roles
+│   ├── routers/           ← health, predict, explain, graphrag, prescribe, auth(/whoami)
+│   ├── services/          ← lógica de negocio + filtro por rol (D8)
+│   ├── repositories/      ← acceso a tablas/RPC Supabase
+│   ├── clients/           ← supabase_client, openrouter_client, embeddings (MiniLM)
+│   ├── core/              ← security.py (JWT HS256), cache.py (TTLCache 24h)
+│   └── data/              ← tabla_ontologica_seed.json (17 filas)
+├── tests/                 ← 31 tests, conftest con fakes y token_factory
+├── Dockerfile             ← multi-stage, torch CPU-only, MiniLM horneado
+└── railway.toml           ← healthcheckPath="/health", timeout 300
 ```
 
-La `OPENROUTER_API_KEY` se configura como variable de entorno en Cloud Run — nunca se expone al browser. El frontend React llama este endpoint con un POST normal.
+#### Endpoints implementados
+
+| Método | Ruta | Roles | Descripción |
+|--------|------|-------|-------------|
+| GET | `/health` | sin auth | Railway healthcheck |
+| GET | `/whoami` | todos | claims del usuario actual (pre-mortem T5) |
+| POST | `/predict` | todos auth | lookup predicción pre-computada en Supabase |
+| GET | `/explain` | todos auth | SHAP top-3 (completo solo ANALISTA/ADMIN) |
+| POST | `/graphrag` | todos auth | embed → pgvector → OpenRouter con citas |
+| POST | `/prescribe` | COMANDANTE/ANALISTA/ADMIN | tabla ontológica + LLM |
+
+La `OPENROUTER_API_KEY` se configura como variable de entorno en Railway — nunca se expone al browser. El frontend React llama este endpoint con un POST normal.
 
 ### Base de datos — Supabase
+
+> **Estado (11-jun-2026):** ✅ **Proyecto activo** — ref `pluxaelenhkdaakxdrpm` (us-east-1). 11 migraciones aplicadas. Seed sintético activo: 2,016 predicciones + 16,128 SHAP values (`origen='seed_dev'`). Realtime habilitado. Hook JWT activo. change_points: 59 filas. documents_corpus: 18 chunks. **Decisión FTI: Silver 111K queda LOCAL** — Supabase solo recibe outputs del modelo, no datos de entrenamiento.
+
 ```sql
--- Tablas principales
-silver_upz_mes     -- 111,606 filas (importada desde Silver parquet)
-shap_values        -- SHAP pre-computados por UPZ × mes (Notebook 04)
-upz_geometrias     -- 112 polígonos PostGIS (EPSG:4326)
-change_points      -- Puntos de cambio ruptures por localidad (2018-2026)
+-- Tablas implementadas (supabase/migrations/)
+silver_upz_mes      -- 111,606 filas (carga bulk con scripts/seed_supabase.py)
+predicciones        -- niveles de riesgo pre-computados (seed_dev → notebook_04)
+shap_values         -- SHAP pre-computados por UPZ × mes × feature
+change_points       -- Puntos de cambio ruptures por localidad (2018-2026)
+documents_corpus    -- corpus GraphRAG pgvector 384 dims (HNSW m=16)
+upz_geometrias      -- 112 polígonos PostGIS (EPSG:4326)
+cuadrantes_geom     -- 599 cuadrantes + nom_cai + teléfono (índice GIST)
+user_profiles       -- roles + cuadrante_asignado + trigger autoprovision
 
 -- Extensiones habilitadas
 CREATE EXTENSION postgis;
 CREATE EXTENSION vector;  -- pgvector para embeddings GraphRAG
+
+-- RPC implementada
+match_documents(query_embedding, match_threshold, match_count, filter_upz)
+  → retrieval semántico con similitud coseno para /graphrag
 ```
 
 ## GraphRAG — sentence-transformers + Supabase pgvector + OpenRouter
 
-Los corpus de texto (F9 boletines SCJ + F10 noticias RSS + F12 Plan Desarrollo) se indexan como embeddings en Supabase pgvector:
+Los corpus de texto (F9 boletines SCJ + F10 noticias RSS) se indexan como embeddings en Supabase pgvector:
 
 ```
 INDEXACIÓN (offline, una sola vez — scripts/index_corpus.py):
-F9 PDF  → pdfplumber → texto → sentence-transformers (all-MiniLM-L6-v2) → pgvector
-F10 RSS → feedparser → texto → sentence-transformers (all-MiniLM-L6-v2) → pgvector
-F12 PDF → pdfplumber → texto → sentence-transformers (all-MiniLM-L6-v2) → pgvector
+F9 PDF  → pdfplumber → texto → all-MiniLM-L6-v2 → pgvector
+         [AVISO jun-2026: SCJ migraron al Observatorio OSCJ (ArcGIS JS)
+          — requiere Playwright o descarga manual. Demo usa SEED_DEV.]
+F10 RSS → feedparser → texto → all-MiniLM-L6-v2 → pgvector
 
-CONSULTA EN TIEMPO REAL (FastAPI — Python en Cloud Run):
+CONSULTA EN TIEMPO REAL (FastAPI — Python en Railway):
 pregunta_usuario
     → FastAPI POST /graphrag
     → sentence-transformers embed la pregunta (Python)
@@ -119,6 +143,19 @@ pregunta_usuario
     → chunks relevantes recuperados
     → OpenRouter API (google/gemini-flash-1.5) con OPENROUTER_API_KEY server-side
     → respuesta operacional con citas de fuentes reales
+```
+
+### Alimentación continua del corpus (idempotencia)
+
+El corpus crece con re-ejecuciones de `index_corpus.py` sin generar duplicados:
+
+1. **Chunking**: el texto se parte en ventanas de ~1,800 caracteres (~500 tokens) con overlap de 200 caracteres, para que ningún concepto quede cortado entre chunks.
+2. **Dedup por hash**: cada chunk calcula `content_hash = SHA-256(texto)`. La tabla `documents_corpus` tiene UNIQUE sobre esa columna y el upsert usa `ON CONFLICT (content_hash) DO NOTHING` — re-ejecutar el script solo inserta contenido nuevo.
+3. **Cadencia**: F10 RSS puede correrse a diario (las noticias del día se agregan, las ya indexadas se ignoran). F9 es mensual cuando la SCJ publica boletín nuevo.
+
+```bash
+# Re-ejecutable cuantas veces se quiera — solo entra lo nuevo:
+python scripts/index_corpus.py --backend fastembed
 ```
 
 **Por qué sentence-transformers:** corre local en Python sin costo de API. Genera 384 dimensiones compatibles con pgvector. Un modelo de 22MB que procesa 220 documentos en segundos.
@@ -131,13 +168,111 @@ El módulo de change point detection corre sobre F1 DAI histórico (2018–2026)
 
 ```python
 import ruptures as rpt
-# PELT: Pruned Exact Linear Time — detecta cambios en media/varianza de la serie
-algo = rpt.Pelt(model="rbf").fit(serie_mensual_localidad)
-breakpoints = algo.predict(pen=10)
+# PELT: Pruned Exact Linear Time — detecta cambios en media de la serie anual
+algo = rpt.Pelt(model="l2", min_size=2, jump=1)
+algo.fit(signal.reshape(-1, 1))
+breakpoints = algo.predict(pen=3)  # pen=3 detecta 1-3 cambios/localidad con 9 puntos anuales
 ```
 
-Los resultados se guardan en Supabase tabla `change_points` y alimentan el Módulo 3 (Prescriptivo): si hay un cambio estructural reciente + tendencia sostenida → el diagnóstico es "problema estructural" (no pico temporal) → acción diferente.
+**Estado (11-jun-2026):** ✅ **59 breakpoints cargados** en Supabase `change_points` — `scripts/compute_change_points.py`. COVID 2020 validado como BAJA en 16 localidades. "Sin Localización" (bucket sin geocodificación) excluido. Script es idempotente (DELETE + INSERT).
+
+Los resultados alimentan el Módulo 3 (Prescriptivo): si hay un cambio estructural reciente + tendencia sostenida → el diagnóstico es "problema estructural" (no pico temporal) → acción diferente.
+
+## Pipeline ETL y Actualización de Datos
+
+### Flujo Bronze → Silver → Gold
+
+```
+src/pipeline.py   →  Bronze  (datos/raw/)          ← extracción incremental 12 fuentes
+src/transform.py  →  Silver  (datos/procesados/)   ← spatial joins + limpieza
+Notebook 03       →  Gold    (datos/features/)      ← 17 variables + tabla prescriptiva
+Notebook 04       →  Model   (datos/modelos/)       ← XGBoost + SHAP pre-computado
+```
+
+### Frecuencias de actualización por fuente
+
+| Fuente | Frecuencia real | Estrategia | ¿"Tiempo real"? |
+|---|---|---|---|
+| F3 — Clima Open-Meteo | Horaria | Append desde `max(time)` en parquet | ✅ Sí — API gratuita sin clave |
+| F5 — NUSE 123 | Mensual | Append desde `max_date_in_data` | ❌ Batch mensual |
+| F6 — Hurto PN | Mensual | Append desde `max(fecha_hecho)` | ❌ Batch mensual |
+| F9 — Boletines SCJ | Irregular | Append: solo PDFs nuevos no descargados | — |
+| F10 — RSS noticias | Diaria | Append: solo artículos con link nuevo | — |
+| F1 / F4 / F7 | Semestral | Full-refresh si `Last-Modified` del servidor cambió | ❌ Semestral |
+| F2 / F8 | Estático | Solo descarga inicial (rara vez cambia) | — |
+
+### Cómo activar actualizaciones
+
+**1. Manual local** (desarrollo y pre-demo):
+```bash
+python src/pipeline.py --source f3 f5 f6   # solo las incrementales rápidas
+python src/pipeline.py                      # todas las fuentes
+```
+
+**2. GitHub Action semanal** (`.github/workflows/etl-semanal.yml`):
+Actualmente **desactivado**. Para activar, descomentar en el archivo:
+```yaml
+schedule:
+  - cron: '0 6 * * 1'   # cada lunes 6 AM UTC = 1 AM Bogotá
+```
+Actualiza F3 + F5 + F6 automáticamente cada semana.
+
+**3. Pre-demo** (día de la presentación):
+Railway está siempre activo — no requiere calentamiento. Verificar 5 minutos antes que `/health` responde y que Supabase tiene datos recientes de F3 (clima).
+
+### El "tiempo real" del frontend
+
+El frontend **no hace polling**. Usa **Supabase Realtime** (WebSocket): cuando `pipeline.py` inserta filas nuevas en Supabase, el mapa de deck.gl se actualiza sin recargar la página.
+
+- **F3 clima**: puede actualizarse con datos del mismo día
+- **F5 NUSE**: mensual — llega el primer día hábil de cada mes
+- Los datos de crimen histórico son batch mensual — no existe ninguna API pública de Bogotá con crimen en tiempo real
+
+---
+
+## Autenticación y control de acceso
+
+**Supabase Auth** gestiona identidad sin agregar dependencias nuevas al stack. Free tier cubre hasta 50,000 MAU — suficiente para el concurso y un piloto real.
+
+```
+Métodos de autenticación:
+  Magic link (email) → para onboarding de oficiales por invitación
+  OAuth Google         → para ciudadanos y analistas
+
+Autoaprovisionamiento por dominio institucional (Auth Hook de Supabase):
+  @policia.gov.co   → COMANDANTE_CAI  (pendiente asignación de cuadrante por ADMIN)
+  @sdscj.gov.co     → ANALISTA_SDSCJ
+  cualquier otro    → CIUDADANO (requiere aprobación de ADMIN)
+```
+
+**Supabase RLS (Row Level Security)** controla el acceso a datos a nivel de fila en PostgreSQL — el rol se guarda en la tabla `user_profiles` y se valida en cada query sin pasar por FastAPI:
+
+```sql
+-- Comandante solo ve predicciones de las UPZs de su cuadrante
+CREATE POLICY "comandante_solo_su_cuadrante"
+  ON predicciones FOR SELECT
+  USING (upz_cod = ANY(
+    SELECT upz_cod FROM cuadrantes_geom
+    WHERE cuadrante_id = auth.jwt()->>'cuadrante_asignado'
+  ));
+```
+
+**FastAPI valida el JWT de Supabase** en requests a endpoints sensibles (`/predict`, `/prescribe`):
+
+```python
+# FastAPI extrae y verifica el token de Supabase en cada request
+# Usa la clave pública JWT de Supabase (variable SUPABASE_JWT_SECRET)
+# Extrae claims: rol, cuadrante_asignado → decide si responde o retorna 403
+```
+
+**Nota de seguridad:** el dominio `@policia.gov.co` confirma acceso al buzón institucional, no identidad del oficial. Para producción real se requeriría integración con el directorio LDAP de la MEBOG. Para el prototipo del concurso, el flujo de invitación manual por ADMIN es el mecanismo de verificación.
+
+---
 
 ## Diagrama de arquitectura
 
 ![Diagrama de arquitectura de fuentes SeguroData](diagrama_arquitectura.svg)
+
+## Pipeline FTI — entrenamiento vs. inferencia
+
+![Pipeline FTI SeguroData — Training y Inference](pipeline_fti.svg)

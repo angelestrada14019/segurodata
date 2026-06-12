@@ -2,7 +2,7 @@
 
 SeguroData está diseñado para ser replicable en cualquier ciudad colombiana con datos abiertos disponibles.
 
-## Lo que cambia (3 pasos)
+## Lo que cambia (4 pasos)
 
 ### Paso 1 — Cambiar el shapefile de UPZ
 ```python
@@ -39,7 +39,7 @@ LAT_MEDELLIN, LON_MEDELLIN = 6.244, -75.574  # Medellín
 
 - La arquitectura Medallion completa (Bronze → Silver → Gold → Model)
 - El modelo XGBoost y su estructura de 17 variables
-- El pipeline de GraphRAG (LangChain + pgvector — apuntar F9/F10 a fuentes locales)
+- El pipeline de GraphRAG (FastAPI + pgvector + OpenRouter — apuntar F9/F10 a fuentes locales)
 - La aplicación React + deck.gl y los 4 módulos
 - Los notebooks CRISP-ML (SeguroData_01 a _06)
 - El backend FastAPI (solo cambiar el modelo pkl y los parámetros de Supabase)
