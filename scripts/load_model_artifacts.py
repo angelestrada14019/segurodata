@@ -26,6 +26,7 @@ import polars as pl
 from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parents[1]
+load_dotenv(ROOT / "backend" / ".env")
 load_dotenv(ROOT / ".env")
 
 PRED_PARQUET = ROOT / "datos" / "modelos" / "predicciones.parquet"
@@ -75,6 +76,57 @@ def copy_in(conn, tabla: str, cols: list[str], df: pl.DataFrame, origen: str) ->
     conn.commit()
 
 
+SUPABASE_URL         = os.environ.get("SUPABASE_URL", "")
+SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
+
+REST_BATCH = 500  # filas por request
+
+
+def load_via_rest(pred: pl.DataFrame, shap: pl.DataFrame) -> None:
+    """Fallback: carga via REST API (supabase-py) cuando no hay SUPABASE_DB_URL."""
+    try:
+        from supabase import create_client
+    except ImportError:
+        sys.exit("Falta supabase-py: pip install supabase")
+
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        sys.exit("Faltan SUPABASE_URL / SUPABASE_SERVICE_KEY en backend/.env")
+
+    client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+
+    print("Eliminando seed_dev (REST)...")
+    client.table("predicciones").delete().eq("origen", "seed_dev").execute()
+    client.table("shap_values").delete().eq("origen", "seed_dev").execute()
+
+    pred_rows = pred.with_columns(pl.lit("notebook_04").alias("origen")).to_dicts()
+    total_pred = len(pred_rows)
+    print(f"Insertando {total_pred:,} predicciones en batches de {REST_BATCH}...")
+    for i in range(0, total_pred, REST_BATCH):
+        client.table("predicciones").upsert(
+            pred_rows[i:i + REST_BATCH],
+            on_conflict="upz_cod,anio,mes",
+        ).execute()
+        print(f"  {min(i + REST_BATCH, total_pred):,}/{total_pred:,}", end="\r")
+    print()
+
+    shap_rows = shap.with_columns(pl.lit("notebook_04").alias("origen")).to_dicts()
+    total_shap = len(shap_rows)
+    print(f"Insertando {total_shap:,} shap_values en batches de {REST_BATCH}...")
+    for i in range(0, total_shap, REST_BATCH):
+        client.table("shap_values").upsert(
+            shap_rows[i:i + REST_BATCH],
+            on_conflict="upz_cod,anio,mes,feature",
+        ).execute()
+        print(f"  {min(i + REST_BATCH, total_shap):,}/{total_shap:,}", end="\r")
+    print()
+
+    # Reporte final
+    resp_p = client.table("predicciones").select("origen", count="exact").limit(0).execute()
+    resp_s = client.table("shap_values").select("origen", count="exact").limit(0).execute()
+    print(f"predicciones [notebook_04]: {resp_p.count:,}")
+    print(f"shap_values  [notebook_04]: {resp_s.count:,}")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true")
@@ -82,27 +134,32 @@ def main() -> None:
 
     for p in (PRED_PARQUET, SHAP_PARQUET):
         if not p.exists():
-            sys.exit(f"No existe {p} — genera los artefactos en el Notebook 04 primero")
+            sys.exit(f"No existe {p} — ejecuta primero: python scripts/train_model.py")
 
     pred = validar(pl.read_parquet(PRED_PARQUET), PRED_COLS, "predicciones")
     shap = validar(pl.read_parquet(SHAP_PARQUET), SHAP_COLS, "shap_values")
 
     if args.dry_run:
-        print("dry-run OK — esquemas validos, no se toco la DB")
+        print("dry-run OK -- esquemas validos, no se toco la DB")
         return
 
-    try:
-        import psycopg
-    except ImportError:
-        sys.exit("Falta psycopg: pip install 'psycopg[binary]'")
     db_url = os.environ.get("SUPABASE_DB_URL", "")
-    if not db_url:
-        sys.exit("Falta SUPABASE_DB_URL en .env")
 
-    with psycopg.connect(db_url) as conn:
-        copy_in(conn, "predicciones", PRED_COLS, pred, "notebook_04")
-        copy_in(conn, "shap_values", SHAP_COLS, shap, "notebook_04")
-    print("Switch completado: el backend ahora sirve artefactos reales del Notebook 04.")
+    if db_url:
+        # Via psycopg (COPY rapido, preferido)
+        try:
+            import psycopg
+        except ImportError:
+            sys.exit("Falta psycopg: pip install 'psycopg[binary]'")
+        with psycopg.connect(db_url) as conn:
+            copy_in(conn, "predicciones", PRED_COLS, pred, "notebook_04")
+            copy_in(conn, "shap_values", SHAP_COLS, shap, "notebook_04")
+    else:
+        # Via REST API (sin SUPABASE_DB_URL)
+        print("[INFO] SUPABASE_DB_URL no encontrado — usando REST API (mas lento).")
+        load_via_rest(pred, shap)
+
+    print("Switch completado: el backend ahora sirve artefactos reales del modelo XGBoost.")
 
 
 if __name__ == "__main__":
