@@ -1,6 +1,6 @@
 # Fuentes de Datos
 
-SeguroData usa **12 fuentes activas** de datos abiertos + 1 planificada. Todas son públicas y gratuitas.
+SeguroData usa **13 fuentes activas** de datos abiertos + 1 planificada (F12). Todas son públicas y gratuitas.
 
 > **Regla de fuentes quirúrgicas:** Antes de proponer una fuente nueva, completar el checklist de investigación (ver sección al final). Las fuentes se agregan solo si tienen granularidad UPZ, licencia abierta, evidencia causal y esfuerzo justificado.
 

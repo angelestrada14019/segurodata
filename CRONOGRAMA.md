@@ -27,7 +27,7 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 - ✅ Descripción del problema y propuesta
 - ✅ 3 perfiles de usuario definidos (Comandante CAI, Sec. Seguridad, Ciudadano)
 - ✅ 4 módulos del sistema definidos (Diagnóstico, Predicción, Recomendación, Chatbot)
-- ✅ Catálogo de 12 fuentes (F1-F10 activas + F11/F12 planificadas) con URLs verificadas, variables y código de carga
+- ✅ Catálogo de 14 fuentes (F1-F10 activas + F11/F13/F14 activadas 10-jun + F12 planificada) con URLs verificadas, variables y código de carga
 - ✅ Arquitectura Medallón definida (Bronze/Silver/Gold/Model)
 - ✅ 14 variables del modelo XGBoost documentadas
 - ✅ Cronograma de fases con fechas
@@ -103,7 +103,7 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 
 **TABLA SILVER — unir todas las fuentes:**
 - [x] `python src/transform.py --step silver` → `datos/procesados/silver_upz_mes.parquet` ✅
-- [x] Tabla final: **111,606 filas × 20 columnas**, 120 UPZs, 86 tipos NUSE, 19 localidades, ene 2025–abr 2026
+- [x] Tabla final: **111,606 filas × 23 columnas** (20 base + F11/F13/F14), 120 UPZs, 86 tipos NUSE, 19 localidades, ene 2025–abr 2026
 
 **Visualizaciones obligatorias del EDA:**
 - [x] V1 — Mapa de calor de delitos NUSE por UPZ (Folium choropleta) → `graficas/v1_mapa_calor_upz.html`
@@ -121,7 +121,7 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 - [x] `datos/procesados/nuse_upz_mes.parquet` — incidentes NUSE agregados por UPZ × mes (todos los tipos)
 - [x] `datos/procesados/estrato_por_upz.csv` — estrato promedio ponderado por UPZ (43 UPZs cubiertas)
 - [x] `datos/procesados/features_tm_upz.csv` — n_estaciones_tm y dist_tm_metros por UPZ (112 UPZs)
-- [x] `datos/procesados/silver_upz_mes.parquet` — **tabla unida final** (**20 columnas**, 111,606 filas, input para Gold)
+- [x] `datos/procesados/silver_upz_mes.parquet` — **tabla unida final** (**23 columnas**, 111,606 filas, input para Gold)
 - [x] `SeguroData_02_EDA.ipynb` — 6 visualizaciones requeridas + 1 complementaria, ejecutable de inicio a fin
 
 ---
@@ -132,7 +132,7 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 
 ### Setup Supabase + nuevas fuentes (7–10 junio) — EN PARALELO con modelo
 
-- [x] ✅ (10-jun) Crear proyecto Supabase → habilitar PostGIS + pgvector — proyecto `segurodata` (ref `pluxaelenhkdaakxdrpm`, us-east-1), 8 migraciones en `supabase/migrations/`
+- [x] ✅ (10-jun) Crear proyecto Supabase → habilitar PostGIS + pgvector — proyecto `segurodata` (ref `pluxaelenhkdaakxdrpm`, us-east-1), **11 migraciones** en `supabase/migrations/` (0001-0011)
 - [x] ✅ (10-jun) Schema inicial aplicado (8 tablas + RLS + hook claims + RPC match_documents) + seed sintético: 2,016 predicciones + 16,128 SHAP (`origen='seed_dev'`) + 112 UPZ + 599 cuadrantes. **Decisión arquitectural (11-jun): Silver 111K queda LOCAL** — Supabase solo recibe outputs del modelo (predicciones/SHAP post NB04) + geometrías (`--solo geo`) + corpus embeddings + change_points. Silver no va a producción (patrón FTI).
 - [x] ✅ (11-jun) Migración 0011: columnas `metadata JSONB` en `predicciones` y `shap_values` para trazabilidad FTI (model_version, pipeline_run_date, features)
 - [x] ✅ (11-jun) Hook JWT habilitado: Dashboard → Authentication → **Auth Hooks** → "Add hook" → **"Customize Access Token (JWT) Claims hook"** → tipo PostgreSQL Function → `public.custom_access_token_hook` → ENABLED. Los roles (CIUDADANO/COMANDANTE_CAI/ANALISTA_SDSCJ/ADMIN) ya viajan en el JWT.

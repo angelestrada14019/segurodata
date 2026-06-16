@@ -149,7 +149,7 @@ python src/transform.py --verbose
 [OK] f5_nuse                  updated  rows= 111,606  111,606 filas | 120 UPZs | 86 tipos | 19 localidades
 [OK] f7_estrato               updated  rows=      43  43 UPZs cubiertas | estrato 1.2-5.8
 [OK] f8_transmilenio          updated  rows=     112  112 UPZs | dist media al TM: 1,240m
-[OK] silver_table             updated  rows= 111,606  111,606 filas | 20 columnas | 120 UPZs | ene2025-abr2026
+[OK] silver_table             updated  rows= 111,606  111,606 filas | 23 columnas | 120 UPZs | ene2025-abr2026
 ```
 
 ### Desde notebook / Colab
@@ -221,8 +221,11 @@ f1  ──► delitos_localidad_anio.parquet  (EDA histórico — NO entra al si
 f3  ──┐
 f4  ──┤
 f5  ──┼──► silver_table ──► datos/procesados/silver_upz_mes.parquet
-f7  ──┤                      (111,606 filas × 20 cols)
-f8  ──┘
+f7  ──┤                      (111,606 filas × 23 cols)
+f8  ──┤
+f11 ──┤  (+km_via_intervenida_upz, +n_camaras_upz, +luminarias_led_upz)
+f13 ──┤
+f14 ──┘
 
 f2 (UPZ shapefile) se usa internamente en f4, f7 y f8 pero no produce
 un archivo Silver propio — es la base de todos los spatial joins.

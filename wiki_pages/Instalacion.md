@@ -32,18 +32,21 @@ El proyecto Supabase ya está creado (`pluxaelenhkdaakxdrpm`). Las migraciones e
 
 ### 2a. Aplicar migraciones (si partes de un proyecto nuevo)
 
-Aplicar las 8 migraciones en orden desde el MCP Supabase o desde el SQL Editor del Dashboard:
+Aplicar las 11 migraciones en orden desde el MCP Supabase o desde el SQL Editor del Dashboard:
 
 ```
 supabase/migrations/
-  20260610_0001_extensions.sql      ← postgis + vector
-  20260610_0002_core_tables.sql     ← silver, predicciones, shap, change_points
-  20260610_0003_geo_tables.sql      ← upz_geometrias, cuadrantes_geom (GIST)
-  20260610_0004_documents_corpus.sql← pgvector HNSW 384 dims + RPC match_documents
-  20260610_0005_auth_profiles.sql   ← user_profiles + trigger autoprovision
-  20260610_0006_rls_policies.sql    ← RLS por rol
-  20260610_0007_cuadrantes_telefono.sql
-  20260610_0008_advisor_fixes.sql
+  20260610_0001_extensions.sql          ← postgis + vector
+  20260610_0002_core_tables.sql         ← silver, predicciones, shap, change_points
+  20260610_0003_geo_tables.sql          ← upz_geometrias, cuadrantes_geom (GIST)
+  20260610_0004_documents_corpus.sql    ← pgvector HNSW 384 dims + RPC match_documents
+  20260610_0005_auth_profiles.sql       ← user_profiles + trigger autoprovision
+  20260610_0006_rls_policies.sql        ← RLS por rol
+  20260610_0007_cuadrantes_telefono.sql ← nom_cai + teléfono
+  20260610_0008_advisor_fixes.sql       ← índices + constraints
+  20260611_0009_realtime.sql            ← Supabase Realtime (silver_upz_mes)
+  20260611_0010_seed_rpc.sql            ← RPC match_documents (pgvector cosine)
+  20260611_0011_predictions_metadata.sql← metadata JSONB (trazabilidad FTI)
 ```
 
 ### 2b. Cargar datos de producción en Supabase

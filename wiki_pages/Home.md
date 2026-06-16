@@ -26,7 +26,7 @@ El **Módulo 3 (Prescriptivo)** combina SHAP values + detección de cambios estr
 
 ## Navegación
 
-- [[Fuentes de Datos]] — 10 fuentes activas + 2 planificadas
+- [[Fuentes de Datos]] — 13 fuentes activas (F1-F8, F11, F13, F14, F9, F10) + 1 planificada (F12)
 - [[Arquitectura]] — Medallion Architecture + GraphRAG + Autenticación
 - [[Modulos]] — Los 5 módulos del sistema + matriz de acceso por rol
 - [[Plataforma-Ciudadana]] — Roles, mapa interactivo, roadmap y features ciudadanas
@@ -36,7 +36,7 @@ El **Módulo 3 (Prescriptivo)** combina SHAP values + detección de cambios estr
 
 ### Documentación técnica
 
-- [[Transformacion]] — Capa Silver: esquema 20 cols, comandos, advertencia RAM F7
+- [[Transformacion]] — Capa Silver: esquema 23 cols, comandos, advertencia RAM F7
 - [[Estado-del-Arte]] — 20+ sistemas internacionales, 18 papers, diferenciación
 - [[Provenance]] — URLs verificadas, licencias, tabla causal, cumplimiento concurso
 - [[Investigacion-Fuentes]] — Catálogo 20 fuentes, IDs descartados, snippets ETL

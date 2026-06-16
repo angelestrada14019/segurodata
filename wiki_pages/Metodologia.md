@@ -8,8 +8,8 @@ SeguroData sigue la metodología CRISP-ML (Cross-Industry Standard Process for M
 |------|-----------|-----------|--------|
 | 0 — Plan y fuentes | SeguroData_01 | Catálogo de 20 fuentes, arquitectura | ✅ Completo |
 | 1A — Bronze | src/pipeline.py | 10 fuentes descargadas, incremental | ✅ Completo |
-| 1B — Silver | src/transform.py | silver_upz_mes.parquet (111,606 × 20) | ✅ Completo |
-| 2 — Gold + Modelo | SeguroData_03 + 04 | 14 variables + XGBoost + SHAP | ⏳ Fase actual |
+| 1B — Silver | src/transform.py | silver_upz_mes.parquet (111,606 × 23) | ✅ Completo |
+| 2 — Gold + Modelo | SeguroData_03 + 04 | 17 variables + XGBoost + SHAP | ⏳ Fase actual |
 | 3 — Dashboard | SeguroData_05 | React + deck.gl + FastAPI + Supabase + GraphRAG | ⏳ Jun 2026 |
 | 4 — Entrega | SeguroData_06 | Deploy + registro datos.gov.co | ⏳ Jul 2026 |
 

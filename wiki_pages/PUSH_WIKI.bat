@@ -31,10 +31,11 @@ copy wiki_pages\Plataforma-Ciudadana.md  wiki_temp_push\Plataforma-Ciudadana.md
 
 REM --- Assets ---
 copy wiki_pages\diagrama_arquitectura.svg wiki_temp_push\diagrama_arquitectura.svg
+copy wiki_pages\pipeline_fti.svg          wiki_temp_push\pipeline_fti.svg
 
 cd wiki_temp_push
 git add .
-git commit -m "wiki: 13 paginas + diagrama SVG arquitectura (add Plataforma-Ciudadana, estado backend)"
+git commit -m "wiki: 13 paginas + SVG arquitectura + SVG pipeline FTI (actualizacion jun-2026)"
 git push
 
 cd ..

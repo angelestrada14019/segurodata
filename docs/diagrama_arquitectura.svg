@@ -245,7 +245,7 @@
   <!-- Caja OUTPUT -->
   <rect x="18" y="610" width="579" height="80" rx="6" fill="#bbf7d0" stroke="#16a34a" stroke-width="1.5"/>
   <text x="307" y="628" text-anchor="middle" font-size="10" font-weight="bold" fill="#14532d">OUTPUT</text>
-  <text x="307" y="645" text-anchor="middle" font-size="10" fill="#166534" font-weight="bold">111,606 filas × 20 cols   |   120 UPZs   |   86 tipos   |   19 localidades</text>
+  <text x="307" y="645" text-anchor="middle" font-size="10" fill="#166534" font-weight="bold">111,606 filas × 23 cols   |   120 UPZs   |   86 tipos   |   19 localidades</text>
   <line x1="26" y1="652" x2="589" y2="652" stroke="#16a34a" stroke-width="0.8" stroke-dasharray="4,2"/>
   <text x="307" y="668" text-anchor="middle" font-size="9" fill="#15803d">Llave:  upz_cod × anio × mes × tipo_crimen</text>
   <text x="307" y="682" text-anchor="middle" font-size="8.5" fill="#166534" font-style="italic">Commit: a05b93e  |  Fase 1A completada</text>

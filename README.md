@@ -15,9 +15,9 @@
 ## Arquitectura Medallion
 
 ```
-Bronze  datos/raw/          src/pipeline.py   ← extraccion incremental — 10 fuentes (F1-F8 estructuradas + F9-F10 corpus LLM)  ✅
+Bronze  datos/raw/          src/pipeline.py   ← extraccion incremental — 14 fuentes (F1-F8 + F9-F10 corpus + F11/F13/F14 nuevas)  ✅
 Silver  datos/procesados/   src/transform.py  ← limpieza, joins, agrega por UPZ   ✅
-Gold    datos/features/     Notebook 03       ← 14 variables + tabla maestra       ⏳
+Gold    datos/features/     Notebook 03       ← 17 variables + tabla maestra        ⏳
 Model   datos/modelos/      Notebook 04       ← XGBoost entrenado + SHAP values    ⏳
 ```
 
