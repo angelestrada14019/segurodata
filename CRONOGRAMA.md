@@ -175,6 +175,8 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 
 **Entregable:** `SeguroData_05_Dashboard.ipynb` + app React desplegada en Vercel
 
+> **🛠️ Tooling listo (17-jun):** el frontend lo toma otra persona. Preparado en `.claude/`: 5 skills de frontend vendorizadas (`frontend-design` de Anthropic + `react-patterns` · `tailwind-theme-builder` · `shadcn-ui` · `design-review` de jezweb, todas MIT), el agent **`frontend-builder`** que las orquesta con el contrato del proyecto (deck.gl, 4 módulos, paleta de riesgo, endpoints), y `frontend/CLAUDE.md` de arranque. Atribución en `.claude/skills/VENDORED.md`.
+
 ### Semana 1 — FastAPI backend + mapa base (21–27 junio)
 
 - [x] ✅ (10-jun, adelantado) Backend FastAPI COMPLETO en `/backend`: `/predict`, `/explain`, `/graphrag`, `/prescribe`, `/whoami`, `/health` — capas routers→services→repos→clients, JWT+roles, rate limiting, 31 tests verdes, Dockerfile+railway.toml listos (ver `backend/README.md`)

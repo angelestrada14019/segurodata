@@ -36,7 +36,7 @@ Lookup a tabla `predicciones` por PK (upz_cod, anio, mes). 404 si no existe la f
     { "feature": "luminarias_led_upz", "valor": -0.19 }
   ]
 }
-// ANALISTA_SDSCJ / ADMIN reciben además: "shap_completo": [ ...las 17 features ]
+// ANALISTA_SDSCJ / ADMIN reciben además: "shap_completo": [ ...las 18 features ]
 ```
 
 ### POST /graphrag — chatbot causal con citas

@@ -195,6 +195,8 @@ El Módulo 3 usa SHAP para identificar la causa dominante del riesgo y conecta d
 
 ## Cómo ayudar en este proyecto
 
+> **🔒 Regla inamovible — documentación:** tras CUALQUIER cambio en código, datos o arquitectura, **pregunta al usuario si desea actualizar la documentación** (`wiki_pages/`, `README.md`, `CLAUDE.md`, `CRONOGRAMA.md`) antes de cerrar la tarea. La documentación de cara al jurado se presenta como **estado final**, sin comparativas antes/después.
+
 **Cuando el usuario traiga código:** revisar con énfasis en correctitud, reproducibilidad en Colab, y eficiencia con datasets grandes. Los dos datasets más pesados: F6 Hurto PN (638K filas, solo benchmarking) y F7 Estratificación (44K polígonos de manzanas — el spatial join agota RAM en Colab gratuito).
 
 **Cuando pida análisis:** usar el contexto de Bogotá — 112 UPZs, localidades, las 12 fuentes activas (F1-F14). No generalizar.
