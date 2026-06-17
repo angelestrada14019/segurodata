@@ -18,7 +18,7 @@ pip install -r requirements.txt
 
 # Descargar Bronze y generar Silver
 python src/pipeline.py           # descarga 12 fuentes (incremental)
-python src/transform.py          # Bronze → Silver (111,606 × 23 cols)
+python src/transform.py          # Bronze → Silver (111,606 × 20 cols)
 python src/pipeline.py --status  # ver estado de cada fuente
 ```
 
@@ -59,11 +59,14 @@ Requiere `SUPABASE_URL` + `SUPABASE_SERVICE_KEY` en `backend/.env`:
 # Geometrías UPZ/cuadrantes para el frontend
 python scripts/seed_supabase.py --solo geo      # 112 UPZ + 599 cuadrantes via PostGIS
 
-# Predicciones y SHAP sintéticos de demo (mientras Notebook 04 no esté listo)
-python scripts/seed_supabase.py --solo synth    # 2,016 predicciones + 16,128 SHAP seed_dev
-
 # Change points (ruptures PELT sobre F1 DAI 2018-2026)
-python scripts/compute_change_points.py         # 59 breakpoints → Supabase change_points
+python scripts/compute_change_points.py --pen 5 --max-bp 2  # 40 breakpoints → Supabase change_points
+
+# Entrenar modelo XGBoost + pre-computar SHAP (NB03+NB04 equivalente)
+python scripts/train_model.py                   # Gold → XGBoost → SHAP (exact 0.871 · ±1 banda 100% · macro-F1 0.867)
+
+# Cargar predicciones + SHAP reales en Supabase (reemplaza seed_dev)
+python scripts/load_model_artifacts.py          # 1,918 predicciones + 34,524 SHAP (origen='notebook_04')
 
 # NO usar --solo silver: Silver permanece local para entrenamiento (patrón FTI)
 ```
@@ -83,13 +86,13 @@ Para que los roles (COMANDANTE_CAI, ANALISTA_SDSCJ, etc.) viajen en el JWT:
 
 Sin este paso todos los usuarios caen a rol `CIUDADANO`.
 
-### 2d. Switch a artefactos reales (post Notebook 04)
+### 2d. Artefactos reales — ya cargados (16-jun-2026)
+
+El modelo XGBoost fue entrenado con `scripts/train_model.py` y los artefactos reales cargados en Supabase. No se requiere seed sintético. Para re-entrenar y recargar:
 
 ```bash
-python scripts/load_model_artifacts.py \
-  --predicciones datos/modelos/predicciones_xgboost.parquet \
-  --shap datos/modelos/shap_values.parquet
-# Reemplaza origen='seed_dev' → 'notebook_04' sin tocar código
+python scripts/train_model.py           # regenera Gold + pkl + parquets
+python scripts/load_model_artifacts.py  # sube a Supabase (origen='notebook_04')
 ```
 
 ---
@@ -110,7 +113,7 @@ python scripts/index_corpus.py --backend fastembed                # solo F10 rea
 python scripts/index_corpus.py --seed-demo --emit-sql  # genera datos/grafo/corpus_seed.sql
 ```
 
-> **Estado actual (11-jun-2026):** 18 chunks en Supabase — 12 SEED_DEV + 5 RSS_ELTIEMPO + 1 RSS_INFORMANTE. `/graphrag` es demostrable.
+> **Estado actual (16-jun-2026):** 10 chunks RSS reales en Supabase (El Tiempo + El Informante; SEED_DEV eliminados). `/graphrag` responde con fuentes reales.
 
 > **F9 — boletines SCJ:** El Observatorio OSCJ migró a ArcGIS Experience Builder (`https://oaiee.scj.gov.co/ObservatorioSCJ.html`), que es 100% JavaScript. `pipeline.py --source f9` no puede scrapearlo sin Playwright. Para añadir boletines reales: descargar manualmente los PDFs desde el Observatorio (sección Boletines > Estudios), guardarlos en `datos/raw/boletines_scj/`, y re-ejecutar `index_corpus.py`.
 

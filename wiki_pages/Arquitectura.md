@@ -15,17 +15,17 @@
 │  CAPA 3 — BASE DE DATOS   │  CAPA 3B — VECTOR STORE                 │
 │  Supabase PostgreSQL       │  Supabase pgvector (384 dims)           │
 │  + PostGIS (geometrías UPZ)│  Embeddings F9/F10 corpus               │
-│  predictions (1,920 filas) │  sentence-transformers all-MiniLM-L6-v2│
+│  predictions (1,918 filas) │  sentence-transformers all-MiniLM-L6-v2│
 │  shap_values pre-computados│  (indexado una sola vez, offline)       │
 │  change_points (ruptures)  │                                         │
 ├───────────────────────────┴─────────────────────────────────────────┤
 │  CAPA 2 — MODEL / GOLD                                               │
 │  datos/modelos/  XGBoost + SHAP pre-computado + ruptures            │
-│  datos/features/ tabla_maestra_upz.parquet (17 variables)           │
+│  datos/features/ tabla_maestra_upz.parquet (18 variables)           │
 ├─────────────────────────────────────────────────────────────────────┤
 │  CAPA 1 — BRONZE / SILVER                                            │
 │  Bronze: datos/raw/    ← src/pipeline.py   (12 fuentes F1-F14)      │
-│  Silver: datos/procesados/ ← src/transform.py  (111,606 × 23 cols)  │
+│  Silver: datos/procesados/ ← src/transform.py  (111,606 × 20 cols)  │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -33,8 +33,8 @@
 
 ```
 Bronze  datos/raw/          src/pipeline.py   ← 12 fuentes, descarga incremental
-Silver  datos/procesados/   src/transform.py  ← silver_upz_mes.parquet (111,606 × 23)
-Gold    datos/features/     Notebook 03       ← 17 variables + tabla prescriptiva
+Silver  datos/procesados/   src/transform.py  ← silver_upz_mes.parquet (111,606 × 20)
+Gold    datos/features/     Notebook 03       ← 18 variables + tabla prescriptiva
 Model   datos/modelos/      Notebook 04       ← XGBoost + SHAP pre-computado
 ```
 
@@ -48,7 +48,7 @@ La tabla Silver tiene una fila por cada combinación **UPZ × mes × tipo de inc
 - **No entra al JOIN**: F1 (solo localidad), F6 (solo municipio)
 - **Base geométrica**: F2 UPZ (spatial join)
 
-**Resultado: 111,606 filas × 23 columnas, 120 UPZs, 86 tipos NUSE, 19 localidades**
+**Resultado: 111,606 filas × 20 columnas, 120 UPZs, 86 tipos NUSE, 19 localidades**
 
 ## Stack de aplicación
 
@@ -102,7 +102,7 @@ La `OPENROUTER_API_KEY` se configura como variable de entorno en Railway — nun
 
 ### Base de datos — Supabase
 
-> **Estado (11-jun-2026):** ✅ **Proyecto activo** — ref `pluxaelenhkdaakxdrpm` (us-east-1). 11 migraciones aplicadas. Seed sintético activo: 2,016 predicciones + 16,128 SHAP values (`origen='seed_dev'`). Realtime habilitado. Hook JWT activo. change_points: 59 filas. documents_corpus: 18 chunks. **Decisión FTI: Silver 111K queda LOCAL** — Supabase solo recibe outputs del modelo, no datos de entrenamiento.
+> **Estado (11-jun-2026):** ✅ **Proyecto activo** — ref `pluxaelenhkdaakxdrpm` (us-east-1). Migraciones aplicadas. **Artefactos reales del modelo** (`origen='notebook_04'`): 1,918 predicciones + 34,524 SHAP values. Realtime habilitado. Hook JWT activo. change_points: 40 filas. documents_corpus: 10 chunks RSS reales. **Decisión FTI: Silver 111K queda LOCAL** — Supabase solo recibe outputs del modelo, no datos de entrenamiento.
 
 ```sql
 -- Tablas implementadas (supabase/migrations/)
@@ -174,7 +174,7 @@ algo.fit(signal.reshape(-1, 1))
 breakpoints = algo.predict(pen=3)  # pen=3 detecta 1-3 cambios/localidad con 9 puntos anuales
 ```
 
-**Estado (11-jun-2026):** ✅ **59 breakpoints cargados** en Supabase `change_points` — `scripts/compute_change_points.py`. COVID 2020 validado como BAJA en 16 localidades. "Sin Localización" (bucket sin geocodificación) excluido. Script es idempotente (DELETE + INSERT).
+**Estado (11-jun-2026):** ✅ **40 breakpoints cargados** en Supabase `change_points` — `scripts/compute_change_points.py`. COVID 2020 validado como BAJA en 17 localidades. "Sin Localización" (bucket sin geocodificación) excluido. Script es idempotente (DELETE + INSERT).
 
 Los resultados alimentan el Módulo 3 (Prescriptivo): si hay un cambio estructural reciente + tendencia sostenida → el diagnóstico es "problema estructural" (no pico temporal) → acción diferente.
 
@@ -185,7 +185,7 @@ Los resultados alimentan el Módulo 3 (Prescriptivo): si hay un cambio estructur
 ```
 src/pipeline.py   →  Bronze  (datos/raw/)          ← extracción incremental 12 fuentes
 src/transform.py  →  Silver  (datos/procesados/)   ← spatial joins + limpieza
-Notebook 03       →  Gold    (datos/features/)      ← 17 variables + tabla prescriptiva
+Notebook 03       →  Gold    (datos/features/)      ← 18 variables + tabla prescriptiva
 Notebook 04       →  Model   (datos/modelos/)       ← XGBoost + SHAP pre-computado
 ```
 

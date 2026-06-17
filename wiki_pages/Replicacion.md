@@ -38,7 +38,7 @@ LAT_MEDELLIN, LON_MEDELLIN = 6.244, -75.574  # Medellín
 ## Lo que NO cambia
 
 - La arquitectura Medallion completa (Bronze → Silver → Gold → Model)
-- El modelo XGBoost y su estructura de 17 variables
+- El modelo XGBoost y su estructura de 18 variables
 - El pipeline de GraphRAG (FastAPI + pgvector + OpenRouter — apuntar F9/F10 a fuentes locales)
 - La aplicación React + deck.gl y los 4 módulos
 - Los notebooks CRISP-ML (SeguroData_01 a _06)

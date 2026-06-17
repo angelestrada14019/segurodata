@@ -55,3 +55,6 @@ skills-lock.json
 *.swo
 .DS_Store
 Thumbs.db
+
+# ── Artefactos temporales de herramientas ────────────────────────────────────
+.playwright-mcp/

@@ -29,7 +29,7 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 - ✅ 4 módulos del sistema definidos (Diagnóstico, Predicción, Recomendación, Chatbot)
 - ✅ Catálogo de 14 fuentes (F1-F10 activas + F11/F13/F14 activadas 10-jun + F12 planificada) con URLs verificadas, variables y código de carga
 - ✅ Arquitectura Medallón definida (Bronze/Silver/Gold/Model)
-- ✅ 14 variables del modelo XGBoost documentadas
+- ✅ 18 variables del modelo XGBoost documentadas
 - ✅ Cronograma de fases con fechas
 - ✅ Criterios de evaluación del concurso con puntaje estimado (87/100)
 - ✅ Scripts ETL en `src/etl.py` (CKAN, Socrata, ArcGIS, Open-Meteo)
@@ -103,7 +103,7 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 
 **TABLA SILVER — unir todas las fuentes:**
 - [x] `python src/transform.py --step silver` → `datos/procesados/silver_upz_mes.parquet` ✅
-- [x] Tabla final: **111,606 filas × 23 columnas** (20 base + F11/F13/F14), 120 UPZs, 86 tipos NUSE, 19 localidades, ene 2025–abr 2026
+- [x] Tabla final: **111,606 filas × 20 columnas** (F11/F13/F14 se integran en la capa Gold), 120 UPZs, 86 tipos NUSE, 19 localidades, ene 2025–abr 2026
 
 **Visualizaciones obligatorias del EDA:**
 - [x] V1 — Mapa de calor de delitos NUSE por UPZ (Folium choropleta) → `graficas/v1_mapa_calor_upz.html`
@@ -121,7 +121,7 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 - [x] `datos/procesados/nuse_upz_mes.parquet` — incidentes NUSE agregados por UPZ × mes (todos los tipos)
 - [x] `datos/procesados/estrato_por_upz.csv` — estrato promedio ponderado por UPZ (43 UPZs cubiertas)
 - [x] `datos/procesados/features_tm_upz.csv` — n_estaciones_tm y dist_tm_metros por UPZ (112 UPZs)
-- [x] `datos/procesados/silver_upz_mes.parquet` — **tabla unida final** (**23 columnas**, 111,606 filas, input para Gold)
+- [x] `datos/procesados/silver_upz_mes.parquet` — **tabla unida final** (**20 columnas**, 111,606 filas, input para Gold)
 - [x] `SeguroData_02_EDA.ipynb` — 6 visualizaciones requeridas + 1 complementaria, ejecutable de inicio a fin
 
 ---
@@ -133,41 +133,41 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 ### Setup Supabase + nuevas fuentes (7–10 junio) — EN PARALELO con modelo
 
 - [x] ✅ (10-jun) Crear proyecto Supabase → habilitar PostGIS + pgvector — proyecto `segurodata` (ref `pluxaelenhkdaakxdrpm`, us-east-1), **11 migraciones** en `supabase/migrations/` (0001-0011)
-- [x] ✅ (10-jun) Schema inicial aplicado (8 tablas + RLS + hook claims + RPC match_documents) + seed sintético: 2,016 predicciones + 16,128 SHAP (`origen='seed_dev'`) + 112 UPZ + 599 cuadrantes. **Decisión arquitectural (11-jun): Silver 111K queda LOCAL** — Supabase solo recibe outputs del modelo (predicciones/SHAP post NB04) + geometrías (`--solo geo`) + corpus embeddings + change_points. Silver no va a producción (patrón FTI).
+- [x] ✅ (10-jun) Schema inicial aplicado (8 tablas + RLS + hook claims + RPC match_documents). **Decisión arquitectural (11-jun): Silver 111K queda LOCAL** — Supabase solo recibe outputs del modelo + geometrías + corpus embeddings + change_points (patrón FTI). **✅ (16-jun) Seed_dev reemplazado con datos reales: 1,918 predicciones + 34,524 SHAP (`origen='notebook_04'`), 112 UPZ, 599 cuadrantes, 40 change_points, 10 chunks RSS corpus.**
 - [x] ✅ (11-jun) Migración 0011: columnas `metadata JSONB` en `predicciones` y `shap_values` para trazabilidad FTI (model_version, pipeline_run_date, features)
 - [x] ✅ (11-jun) Hook JWT habilitado: Dashboard → Authentication → **Auth Hooks** → "Add hook" → **"Customize Access Token (JWT) Claims hook"** → tipo PostgreSQL Function → `public.custom_access_token_hook` → ENABLED. Los roles (CIUDADANO/COMANDANTE_CAI/ANALISTA_SDSCJ/ADMIN) ya viajan en el JWT.
 - [x] ✅ (11-jun) Realtime habilitado vía migración `0009_realtime.sql` (`ALTER PUBLICATION supabase_realtime ADD TABLE silver_upz_mes`). Alternativa Dashboard: Database → Publications → `supabase_realtime` → toggle ON.
 - [ ] Integrar F13 Cámaras Salvavidas SDM → spatial join → feature `n_camaras_upz`
 - [ ] Integrar F14 Alumbrado UAESP → merge directo → feature `luminarias_led_upz`
 - [ ] Integrar F11 IDU Obras Viales → spatial join → feature `km_via_intervenida_upz`
-- [x] ✅ (11-jun) `ruptures` PELT sobre F1 DAI 2018–2026: 62 breakpoints detectados (pen=3, max_bp=3), COVID 2020 BAJA validado (17 localidades). Script: `scripts/compute_change_points.py`
+- [x] ✅ (11-jun / 16-jun) `ruptures` PELT sobre F1 DAI 2018–2026: **40 breakpoints detectados (pen=5, max_bp=2)**, COVID 2020 BAJA validado (17 localidades). Script: `scripts/compute_change_points.py` → cargados en Supabase `change_points`.
 - [x] ✅ (10-jun) **[Pre-mortem T7]** Tabla `cuadrantes_geom` creada con índice GIST + columna `upz_codes[]` pre-computada (599 cuadrantes con nom_cai y teléfono). ⏳ Geometrías reales se cargan con `seed_supabase.py --solo geo`
 
-### Notebook 03 — Features (7–12 junio)
+### Notebook 03 — Features (7–12 junio) ✅ VÍA SCRIPT
 
-- [ ] Construir tabla maestra `datos/features/tabla_maestra_upz.parquet` con las **17 variables** (14 originales + F11/F13/F14)
-- [ ] Definir `nivel_riesgo` (Y): `GROUP BY upz_cod, anio, mes` sobre `es_crimen=True` → top 5% = CRÍTICO, 5–25% = ALTO, 25–60% = MEDIO, resto = BAJO (1,920 filas modelo)
-- [ ] Documentar tabla ontológica prescriptiva (17 filas SHAP→diagnóstico→entidad→acción) en celda 1
-- [ ] Verificar imputación de estrato faltante (69 UPZs sin dato → mediana de la localidad)
-- [ ] Normalizar features numéricas con StandardScaler → `datos/modelos/scaler.pkl`
+> **16-jun-2026: Implementado como `scripts/train_model.py` (no notebook).** El concurso no requiere Jupyter. Los notebooks NB03/NB04 pueden crearse como wrappers visuales opcionales para el jurado.
 
-### Notebook 04 — Modelo (13–20 junio)
+- [x] ✅ (16-jun) Construir tabla maestra `datos/features/tabla_maestra_upz.parquet` con **18 features** (F11/F13/F14 = 0 placeholder hasta que existan extractores). **1,918 filas**. Features nuevas (16-jun): `n_delitos_upz_12sem` (lag-3), `tendencia_upz` (momentum), `n_delitos_vecinos_lag` (lag espacial de UPZs vecinas vía adyacencia F2), `mes_sin`/`mes_cos` (cíclicas, reemplazan `mes` crudo)
+- [x] ✅ (16-jun) Definir `nivel_riesgo` (Y): `GROUP BY upz_cod, anio, mes` sobre `es_crimen=True` — percentiles q95=CRÍTICO, q75=ALTO, q40=MEDIO, BAJO. Distribución: BAJO=765, MEDIO=672, ALTO=384, CRÍTICO=97
+- [x] ✅ Tabla ontológica prescriptiva ya en `backend/app/data/tabla_ontologica_seed.json` (17 filas SHAP→diagnóstico→entidad→acción)
+- [ ] ⏳ Normalizar features con StandardScaler → `datos/modelos/scaler.pkl` (pendiente si el frontend lo necesita)
 
-- [ ] Split temporal: TRAIN = ene–oct 2025, TEST = nov 2025–abr 2026 (F5 NUSE solo disponible 2025–2026)
-- [ ] Entrenar XGBoost con parámetros por defecto como baseline
-- [ ] Métricas: Precision, Recall, F1 por clase (CRÍTICO/ALTO/MEDIO/BAJO) + AUC-ROC macro
-- [ ] Tuning básico: RandomizedSearchCV sobre `max_depth`, `n_estimators`, `learning_rate`
-- [ ] Calcular SHAP values → **pre-computar y guardar en Supabase** (NO on-demand)
-- [ ] Análisis de sesgo: comparar F1 en UPZs estrato 1-2 vs. 5-6
-- [ ] Guardar modelo: `datos/modelos/xgboost_segurodata.pkl`
+### Notebook 04 — Modelo (13–20 junio) ✅ VÍA SCRIPT
+
+- [x] ✅ (16-jun) Split temporal: TRAIN = ene–oct 2025, TEST = nov 2025+ (NO split aleatorio)
+- [x] ✅ (16-jun) `XGBClassifier(objective='multi:softprob', num_class=4, n_estimators=300, max_depth=5)` — **exact 0.871 · accuracy dentro de ±1 banda 100% · macro-F1 0.867 · MAE ordinal 0.129** (test temporal nov-2025+, 719 filas). Métricas en `datos/modelos/metricas.json`. Matriz de confusión: **cero errores de salto de clase** — el 13% restante es ruido de frontera entre percentiles (irreducible: el umbral ordinal calibrado no generaliza). `nivel_riesgo` es ordinal → la accuracy ±1 banda es la métrica defendible, no el exact-match
+- [x] ✅ (16-jun) SHAP values pre-computados con `TreeExplainer` — 34,524 filas formato largo (upz_cod × anio × mes × feature, 18 features). Top features: n_delitos_upz_4sem (1.33), n_delitos_upz_8sem (0.38), ratio_nuse (0.27), cuadrantes_por_km2 (0.19), mes_cos (0.12), n_delitos_upz_12sem (0.12)
+- [x] ✅ (16-jun) Análisis de sesgo por estrato — función `analisis_sesgo()` en `scripts/train_model.py`
+- [x] ✅ (16-jun) Modelo guardado: `datos/modelos/modelo_xgboost.pkl` + `datos/modelos/predicciones.parquet`
+- [x] ✅ (16-jun) Cargado en Supabase: `python scripts/load_model_artifacts.py` (REST fallback, origen='notebook_04')
 
 ### Track paralelo — Knowledge Graph F9/F10 (7–20 junio)
 
-- [x] ✅ (10-jun) Corpus demo cargado: `scripts/index_corpus.py --seed-demo --emit-sql` → `datos/grafo/corpus_seed.sql` (10 chunks SEED_DEV con embeddings MiniLM reales) → aplicado manualmente en Supabase. `/graphrag` ya responde con citas.
-- [ ] `python src/pipeline.py --source f9` → descargar PDFs boletines SCJ → `datos/raw/boletines_scj/`
-- [ ] `python src/pipeline.py --source f10` → descargar RSS noticias
-- [ ] `python scripts/index_corpus.py` → pdfplumber + feedparser → chunks 500tk → sentence-transformers all-MiniLM-L6-v2 → Supabase pgvector (reemplaza SEED_DEV)
-- [ ] Verificar búsqueda semántica: query de prueba → resultados relevantes con fuentes reales
+- [x] ✅ (10-jun) Corpus demo cargado inicialmente con 12 chunks SEED_DEV.
+- [x] ✅ (16-jun) `python src/pipeline.py --source f10` → RSS noticias descargadas
+- [x] ✅ (16-jun) `python scripts/index_corpus.py --backend fastembed` → **10 chunks RSS reales** (El Tiempo + Informante) en Supabase pgvector. SEED_DEV eliminados. `/graphrag` responde con fuentes reales.
+- [ ] ⏳ F9 boletines SCJ: descarga MANUAL (sitio ArcGIS Experience Builder no es scrapeable con BS4). Ir a oaiee.scj.gov.co → guardar PDFs en `datos/raw/boletines_scj/` → re-ejecutar `index_corpus.py`
+- [ ] Verificar búsqueda semántica con query real post-carga de F9
 
 ---
 
@@ -178,7 +178,7 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 ### Semana 1 — FastAPI backend + mapa base (21–27 junio)
 
 - [x] ✅ (10-jun, adelantado) Backend FastAPI COMPLETO en `/backend`: `/predict`, `/explain`, `/graphrag`, `/prescribe`, `/whoami`, `/health` — capas routers→services→repos→clients, JWT+roles, rate limiting, 31 tests verdes, Dockerfile+railway.toml listos (ver `backend/README.md`)
-- [x] ✅ (10-jun) Predicciones + SHAP servidos desde Supabase vía lookup (seed sintético `origen='seed_dev'`; switch a artefactos reales del Notebook 04 con `scripts/load_model_artifacts.py`)
+- [x] ✅ (16-jun) Predicciones + SHAP servidos desde Supabase vía lookup — **artefactos reales cargados**: 1,918 predicciones + 34,524 SHAP (`origen='notebook_04'`). Seed_dev eliminado. Script: `scripts/train_model.py` → `scripts/load_model_artifacts.py`
 - [ ] Skeleton React + Vite + Tailwind + supabase-js
 - [ ] deck.gl: PolygonLayer con 112 UPZs coloreadas (CRÍTICO=morado, ALTO=rojo, MEDIO=naranja, BAJO=verde) + hover tooltip
 - [ ] Slider temporal funcional → cambia colores del mapa

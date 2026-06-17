@@ -58,7 +58,7 @@ Archivos en `datos/procesados/`:
 | `nuse_upz_mes.parquet` | f5 | ~9,600 | Incidentes NUSE totales agregados por UPZ × mes (todos los tipos) |
 | `estrato_por_upz.csv` | f7 | 43 | Estrato promedio ponderado — 43 UPZs cubiertas por el spatial join |
 | `features_tm_upz.csv` | f8 | 112 | `n_estaciones_tm` y `dist_tm_metros` por UPZ |
-| **`silver_upz_mes.parquet`** | silver | **111,606** | **Tabla final: 111,606 filas × 23 columnas** (20 base + F11/F13/F14) — llave: upz_cod × anio × mes × tipo_crimen |
+| **`silver_upz_mes.parquet`** | silver | **111,606** | **Tabla final: 111,606 filas × 20 columnas** (F11/F13/F14 se integran en la capa Gold) — llave: upz_cod × anio × mes × tipo_crimen |
 
 ---
 
@@ -91,7 +91,7 @@ La tabla `silver_upz_mes.parquet` tiene **una fila por UPZ × mes × tipo de inc
 | `n_estaciones_tm` | F8 | int | Estaciones TransMilenio dentro de la UPZ |
 | `dist_tm_metros` | F8 | float | Distancia del centroide de la UPZ al TM más cercano |
 
-> **23 columnas totales** (20 base + 3 de F11/F13/F14). Estas son **todas las variables candidatas** para el modelo. En Gold (Notebook 03) se analizará correlación, VIF y SHAP para seleccionar las 17 que entran al XGBoost.  
+> **20 columnas** (las 3 features F11/F13/F14 se añaden en la capa Gold). Estas son **todas las variables candidatas** para el modelo. En Gold (Notebook 03) se analizará correlación, VIF y SHAP para seleccionar las 18 que entran al XGBoost.  
 > F9/F10 (boletines + noticias) no aparecen en la silver — son corpus de texto para GraphRAG (Módulos 3 y 4 — OpenRouter).
 
 ---
@@ -149,7 +149,7 @@ python src/transform.py --verbose
 [OK] f5_nuse                  updated  rows= 111,606  111,606 filas | 120 UPZs | 86 tipos | 19 localidades
 [OK] f7_estrato               updated  rows=      43  43 UPZs cubiertas | estrato 1.2-5.8
 [OK] f8_transmilenio          updated  rows=     112  112 UPZs | dist media al TM: 1,240m
-[OK] silver_table             updated  rows= 111,606  111,606 filas | 23 columnas | 120 UPZs | ene2025-abr2026
+[OK] silver_table             updated  rows= 111,606  111,606 filas | 20 columnas | 120 UPZs | ene2025-abr2026
 ```
 
 ### Desde notebook / Colab
@@ -221,7 +221,7 @@ f1  ──► delitos_localidad_anio.parquet  (EDA histórico — NO entra al si
 f3  ──┐
 f4  ──┤
 f5  ──┼──► silver_table ──► datos/procesados/silver_upz_mes.parquet
-f7  ──┤                      (111,606 filas × 23 cols)
+f7  ──┤                      (111,606 filas × 20 cols)
 f8  ──┤
 f11 ──┤  (+km_via_intervenida_upz, +n_camaras_upz, +luminarias_led_upz)
 f13 ──┤

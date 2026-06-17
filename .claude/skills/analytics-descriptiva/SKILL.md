@@ -11,7 +11,7 @@ Realiza EDA sobre los datos de crimen, incidentes y contexto urbano de Bogotá a
 
 | Dataset | Ruta | Descripción |
 |---------|------|-------------|
-| Silver principal | `datos/procesados/silver_upz_mes.parquet` | 111,606 filas × 23 cols: UPZ × mes × tipo_incidente |
+| Silver principal | `datos/procesados/silver_upz_mes.parquet` | 111,606 filas × 20 cols: UPZ × mes × tipo_incidente |
 | DAI histórico | `datos/procesados/delitos_localidad_anio.parquet` | 2018–2026 por localidad (para ruptures) |
 | Clima diario | `datos/procesados/clima_diario.parquet` | temperatura_c, precipitacion_mm por día |
 | UPZ shapefile | `datos/raw/f2_upz.geojson` | 112 polígonos, base de mapas |

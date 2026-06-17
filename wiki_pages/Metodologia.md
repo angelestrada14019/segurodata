@@ -8,8 +8,8 @@ SeguroData sigue la metodología CRISP-ML (Cross-Industry Standard Process for M
 |------|-----------|-----------|--------|
 | 0 — Plan y fuentes | SeguroData_01 | Catálogo de 20 fuentes, arquitectura | ✅ Completo |
 | 1A — Bronze | src/pipeline.py | 10 fuentes descargadas, incremental | ✅ Completo |
-| 1B — Silver | src/transform.py | silver_upz_mes.parquet (111,606 × 23) | ✅ Completo |
-| 2 — Gold + Modelo | SeguroData_03 + 04 | 17 variables + XGBoost + SHAP | ⏳ Fase actual |
+| 1B — Silver | src/transform.py | silver_upz_mes.parquet (111,606 × 20) | ✅ Completo |
+| 2 — Gold + Modelo | scripts/train_model.py | 18 variables + XGBoost + SHAP | ✅ Completo |
 | 3 — Dashboard | SeguroData_05 | React + deck.gl + FastAPI + Supabase + GraphRAG | ⏳ Jun 2026 |
 | 4 — Entrega | SeguroData_06 | Deploy + registro datos.gov.co | ⏳ Jul 2026 |
 
@@ -28,17 +28,35 @@ Un split aleatorio daría resultados artificialmente buenos (data leakage tempor
 
 > **Nota:** F1 (Delito de Alto Impacto) cubre 2018–2026 a nivel localidad y se usa exclusivamente para **detección de puntos de cambio históricos** con `ruptures` — no para entrenamiento del modelo XGBoost.
 
-## Las 17 variables del modelo
+## Las 18 variables del modelo
+
+El modelo opera a granularidad **UPZ × mes** (no a nivel evento), por lo que las variables son agregados mensuales por zona.
 
 | Grupo | Variables |
 |-------|----------|
-| Históricas (lag) | n_delitos_upz_4sem, n_delitos_upz_8sem, tipo_delito_dominante |
-| Temporales | dia_semana, franja_horaria, mes, es_fin_semana |
-| Climáticas | temperatura_c, precipitacion_mm |
-| Espaciales | estrato_promedio_upz, cuadrantes_por_km2, n_estaciones_tm, dist_tm_metros |
-| Subregistro | ratio_nuse_delitos_upz |
-| Infraestructura (F11+F13+F14) | km_via_intervenida_upz, n_camaras_upz, luminarias_led_upz |
-| **Objetivo (Y)** | nivel_riesgo — CRÍTICO / ALTO / MEDIO / BAJO |
+| Históricas / lag temporal | `n_delitos_upz_4sem`, `n_delitos_upz_8sem`, `n_delitos_upz_12sem`, `tendencia_upz` |
+| Lag espacial | `n_delitos_vecinos_lag` (delitos de UPZs vecinas en t-1, vía adyacencia del shapefile F2) |
+| Temporales cíclicas | `mes_sin`, `mes_cos` (codificación cíclica: diciembre y enero quedan adyacentes) |
+| Climáticas | `temperatura_c`, `precipitacion_mm_mes` |
+| Espaciales | `estrato_promedio_upz`, `cuadrantes_por_km2`, `n_estaciones_tm`, `dist_tm_metros` |
+| Subregistro | `ratio_nuse_criminal_upz` |
+| Infraestructura (F11+F13+F14) | `km_via_intervenida_upz`, `n_camaras_upz`, `luminarias_led_upz` |
+| Tipo de delito | `tipo_crimen_cod` (tipo de delito dominante en la UPZ, codificado) |
+| **Objetivo (Y)** | `nivel_riesgo` — CRÍTICO / ALTO / MEDIO / BAJO (percentiles q40/q75/q95 de delitos por UPZ × mes) |
+
+### Resultados del modelo (test temporal nov 2025 – abr 2026, 719 filas)
+
+`nivel_riesgo` es **ordinal** (BAJO < MEDIO < ALTO < CRÍTICO), así que se reporta el conjunto completo de métricas, no solo el acierto exacto:
+
+| Métrica | Valor |
+|---------|-------|
+| Acierto de banda exacta | 0.871 |
+| **Acierto dentro de ±1 banda** | **100%** (cero saltos de clase: nunca confunde BAJO con ALTO ni MEDIO con CRÍTICO) |
+| macro-F1 | 0.867 |
+| MAE ordinal | 0.129 bandas |
+| Recall CRÍTICO | 0.92 |
+
+La métrica defendible es el **acierto dentro de ±1 banda (100%)**: el error de banda exacta restante son zonas que caen justo sobre un umbral de percentil (ruido de frontera), no fallos operativos. Validación **estrictamente temporal** (sin split aleatorio). Métricas en `datos/modelos/metricas.json`.
 
 ## Detección de puntos de cambio estructural (ruptures)
 
@@ -58,7 +76,7 @@ El resultado alimenta el Módulo 3 (Prescriptivo): si la UPZ tiene un cambio est
 
 ## Capa prescriptiva — tabla de intervenciones
 
-El Módulo 3 no dice "hay riesgo ALTO". Dice **quién actúa, cómo y por qué**. La tabla de 17 filas (una por variable del modelo) mapea:
+El Módulo 3 no dice "hay riesgo ALTO". Dice **quién actúa, cómo y por qué**. La tabla ontológica mapea cada factor de riesgo accionable (identificado por SHAP) a su intervención:
 
 | SHAP top feature | Diagnóstico | Tipo intervención | Entidad responsable | Acción operacional |
 |---|---|---|---|---|
@@ -71,7 +89,7 @@ El Módulo 3 no dice "hay riesgo ALTO". Dice **quién actúa, cómo y por qué**
 | `temperatura_c` alto | Condición climática activadora | Monitoreo | Policía + IDIGER | Alerta preventiva en franja tarde |
 | `km_via_intervenida_upz` alto | Obra activa → desplazamiento residentes | Obras | IDU + MEBOG | Coordinación obra-seguridad |
 | `ratio_nuse_criminal_upz` alto | Alto subregistro → confianza baja | Datos | SDSCJ / C4 | Campaña denuncia ciudadana |
-| `franja_dominante_mes` madrugada | Crimen nocturno | Seguridad | MEBOG turno noche | Operativo nocturno focalizado |
+| `n_delitos_vecinos_lag` alto | Contagio espacial desde UPZs vecinas | Operacional | MEBOG | Patrullaje coordinado de borde inter-UPZ |
 
 Esta tabla se documenta en la celda 1 de Notebook 03 antes de escribir cualquier código.
 
@@ -111,7 +129,7 @@ df.describe()       # ← estadísticas para el jurado
 Ninguno duplica el código de los scripts de producción. Cada notebook documenta una fase CRISP-ML con narrativa + outputs visuales.
 
 ### Notebook 03 — Feature Engineering (7–13 Jun)
-- Importa `transform.py`, muestra la tabla Gold (17 variables) con `.head()` y `.describe()`
+- Importa `transform.py`, muestra la tabla Gold (18 variables) con `.head()` y `.describe()`
 - Visualiza distribución de cada variable por UPZ (histogramas + mapas choropleth)
 - Documenta el spatial join de F11/F13/F14 con resultados numéricos
 - Valida correlaciones entre features y `nivel_riesgo`

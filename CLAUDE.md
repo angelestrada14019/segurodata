@@ -73,42 +73,55 @@ El sistema responde tres preguntas concretas:
 
 ---
 
-## Las 14 variables del modelo XGBoost
+## Las 18 variables del modelo XGBoost
+
+> Granularidad **UPZ × mes** (agregado mensual por zona, no a nivel evento). Lista real en `scripts/train_model.py` (constante `FEATURES`).
 
 ```
-HISTÓRICAS (lag):
-  n_delitos_upz_4sem      ← conteo delitos últimas 4 semanas por UPZ
-  n_delitos_upz_8sem      ← conteo delitos últimas 8 semanas por UPZ
-  tipo_delito_dominante   ← categoría de delito más frecuente en la UPZ
+HISTÓRICAS / LAG TEMPORAL:
+  n_delitos_upz_4sem      ← delitos del mes previo (lag-1) por UPZ
+  n_delitos_upz_8sem      ← delitos acumulados últimos 2 meses por UPZ
+  n_delitos_upz_12sem     ← delitos acumulados últimos 3 meses por UPZ
+  tendencia_upz           ← momentum: lag1 − lag2 (sube/baja mes a mes)
 
-TEMPORALES:
-  dia_semana              ← lunes=0 … domingo=6
-  franja_horaria          ← madrugada / mañana / tarde / noche
-  mes                     ← 1-12
-  es_fin_semana           ← binaria
+LAG ESPACIAL:
+  n_delitos_vecinos_lag   ← promedio de delitos de UPZs vecinas en t-1 (adyacencia shapefile F2)
+
+TEMPORALES CÍCLICAS:
+  mes_sin / mes_cos       ← codificación cíclica del mes (dic y ene quedan adyacentes)
 
 CLIMÁTICAS (Open-Meteo):
-  temperatura_c           ← temperatura °C hora del evento
-  precipitacion_mm        ← precipitación mm hora del evento
+  temperatura_c           ← temperatura °C promedio del mes
+  precipitacion_mm_mes    ← precipitación mm acumulada del mes
 
 ESPACIALES:
   estrato_promedio_upz    ← promedio ponderado del estrato por manzana
   cuadrantes_por_km2      ← densidad de cuadrantes policiales en la UPZ
   n_estaciones_tm         ← número de estaciones TM dentro de la UPZ
-  dist_tm_metros          ← distancia al centroide de la UPZ a TM más cercana
+  dist_tm_metros          ← distancia del centroide de la UPZ a la TM más cercana
 
 SUBREGISTRO:
-  ratio_nuse_criminal_upz ← fracción de llamadas NUSE que son crimen / total llamadas por UPZ·mes
+  ratio_nuse_criminal_upz ← fracción de llamadas NUSE que son crimen / total por UPZ·mes
 
-NUEVAS (F11, F13, F14):
+INFRAESTRUCTURA (F11, F13, F14 — placeholder=0 hasta que existan los extractores):
   km_via_intervenida_upz  ← kilómetros de vía con obra IDU activa en la UPZ
   n_camaras_upz           ← número de cámaras Salvavidas SDM en la UPZ
   luminarias_led_upz      ← número de luminarias LED (iluminación pública UAESP)
 
+TIPO DE DELITO:
+  tipo_crimen_cod         ← tipo de delito dominante en la UPZ (codificado a entero)
+
 VARIABLE OBJETIVO (Y):
   nivel_riesgo: CRÍTICO / ALTO / MEDIO / BAJO
-  → definido por percentiles de n_delitos agregado por upz_cod × anio × mes (solo es_crimen=True)
-  → top 5% = CRÍTICO, 5–25% = ALTO, 25–60% = MEDIO, resto = BAJO (1,920 filas de entrenamiento)
+  → percentiles de n_delitos por upz_cod × anio × mes (solo es_crimen=True):
+    ≥q95 = CRÍTICO · ≥q75 = ALTO · ≥q40 = MEDIO · resto = BAJO
+  → distribución: BAJO=765, MEDIO=672, ALTO=384, CRÍTICO=97 (1,918 filas)
+
+MÉTRICAS (test temporal nov 2025 – abr 2026, 719 filas — ver datos/modelos/metricas.json):
+  banda exacta 0.871 · dentro de ±1 banda 100% · macro-F1 0.867 · recall CRÍTICO 0.92
+  → nivel_riesgo es ORDINAL: la métrica defendible es el acierto dentro de ±1 banda
+    (cero saltos de clase). El error de banda exacta restante es ruido de frontera
+    entre percentiles, irreducible. NO perseguir 95% exact-match (ver memoria del proyecto).
 ```
 
 ---
@@ -121,7 +134,7 @@ proyecto/
 │   ├── raw/              ← Bronze: archivos como se descargan (generados por pipeline.py)
 │   │   └── boletines_scj/← F9: PDFs descargados de SCJ
 │   ├── procesados/       ← Silver: datos limpios y unificados (generados por transform.py)
-│   ├── features/         ← Gold: tabla maestra UPZ con las 17 variables (Notebook 03)
+│   ├── features/         ← Gold: tabla maestra UPZ con las 18 variables (scripts/train_model.py)
 │   ├── grafo/            ← GraphRAG: embeddings pgvector exportados para Supabase
 │   └── modelos/          ← Model: XGBoost + SHAP pre-computado (Notebook 04)
 ├── graficas/             ← Outputs visuales del EDA (7 gráficas V1-V7)
@@ -163,7 +176,7 @@ proyecto/
 Los notebooks del proyecto siguen el esquema `SeguroData_0X_Nombre.ipynb`:
 - `SeguroData_01_Plan_y_Fuentes.ipynb` — Plan + catálogo ✅
 - `SeguroData_02_EDA.ipynb` — Diagnóstico descriptivo + change points F1 DAI ✅
-- `SeguroData_03_Features.ipynb` — Construcción de las 17 variables (F11+F13+F14) + tabla prescriptiva
+- `SeguroData_03_Features.ipynb` — Construcción de las 18 variables (F11+F13+F14) + tabla prescriptiva
 - `SeguroData_04_Modelo.ipynb` — XGBoost + backtesting + SHAP pre-computado + sesgo
 - `SeguroData_05_Dashboard.ipynb` — Arquitectura React+FastAPI+Supabase + screenshots
 - `SeguroData_06_Deployment.ipynb` — Deploy Railway+Vercel + registro datos.gov.co

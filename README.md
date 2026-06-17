@@ -17,8 +17,8 @@
 ```
 Bronze  datos/raw/          src/pipeline.py   ← extraccion incremental — 14 fuentes (F1-F8 + F9-F10 corpus + F11/F13/F14 nuevas)  ✅
 Silver  datos/procesados/   src/transform.py  ← limpieza, joins, agrega por UPZ   ✅
-Gold    datos/features/     Notebook 03       ← 17 variables + tabla maestra        ⏳
-Model   datos/modelos/      Notebook 04       ← XGBoost entrenado + SHAP values    ⏳
+Gold    datos/features/     train_model.py    ← 18 variables + tabla maestra        ✅
+Model   datos/modelos/      train_model.py    ← XGBoost entrenado + SHAP values    ✅
 ```
 
 ---
@@ -42,7 +42,7 @@ Todas públicas y gratuitas — **~870,000 registros Bronze en total**:
 | **F11** | **Malla Vial + Obras IDU** | ~miles | Segmento vial | +1 col: `km_via_intervenida_upz` | Mensual |
 | **F13** | **Cámaras Salvavidas SDM** | ~400 | Punto (cámara) | +1 col: `n_camaras_upz` + capa deck.gl | Semestral |
 | **F14** | **Alumbrado Público UAESP** | 112 | UPZ (directo) | +1 col: `luminarias_led_upz` | Anual |
-| | **TOTAL BRONZE** | **~870,000+** | | **Silver: 111,606 × 23 cols** | |
+| | **TOTAL BRONZE** | **~870,000+** | | **Silver: 111,606 × 20 cols** | |
 
 > **¿Por qué ~870K Bronze → 111K Silver?**
 >
@@ -149,7 +149,7 @@ silver = pl.read_parquet("datos/procesados/silver_upz_mes.parquet")
 | f5 | `f5_nuse_123.parquet` | `delitos_upz_mes.parquet` + `nuse_upz_mes.parquet` | NUSE por UPZ × mes + lags (base del modelo) |
 | f7 | `f7_estratificacion.parquet` | `estrato_por_upz.csv` | Spatial join manzanas → estrato promedio UPZ ⚠️ pesado |
 | f8 | `f8_transmilenio.geojson` | `features_tm_upz.csv` | Distancia y conteo TM por UPZ |
-| silver | todos los anteriores | `silver_upz_mes.parquet` | Tabla final unida (23 columnas, 111,606 filas) |
+| silver | todos los anteriores | `silver_upz_mes.parquet` | Tabla final unida (20 columnas, 111,606 filas) |
 
 > ⚠️ El paso `f7` (estratificación) carga ~115K polígonos. En Colab gratuito puede agotar RAM — ver [Wiki — Transformacion](https://github.com/angelestrada14019/segurodata/wiki/Transformacion) para alternativas.
 
@@ -163,7 +163,7 @@ segurodata/
 │   ├── raw/              <- Bronze: archivos originales (generados por pipeline.py)
 │   │   └── boletines_scj/<- F9: PDFs boletines mensuales SCJ
 │   ├── procesados/       <- Silver: datos limpios por UPZ (generados por transform.py)
-│   ├── features/         <- Gold:   tabla maestra 17 variables (Notebook 03)
+│   ├── features/         <- Gold:   tabla maestra 18 variables (train_model.py)
 │   ├── grafo/            <- GraphRAG: embeddings pgvector — sentence-transformers (Fase 3)
 │   └── modelos/          <- Model:  XGBoost + SHAP (Notebook 04)
 ├── graficas/             <- Outputs del EDA (7 visualizaciones V1-V7)
@@ -225,8 +225,8 @@ Backend ML       Railway (FastAPI — siempre activo, sin cold start, ~$5/mes)
 |----------|------|-----------|--------|
 | `SeguroData_01_Plan_y_Fuentes.ipynb` | 0 | Plan + catálogo de 14 fuentes activas + arquitectura | ✅ |
 | `SeguroData_02_EDA.ipynb` | 1 | Análisis exploratorio + change points ruptures | ✅ |
-| `SeguroData_03_Features.ipynb` | 2 | 17 variables (F11+F13+F14 incluidas) + tabla ontológica prescriptiva + Supabase | ⏳ |
-| `SeguroData_04_Modelo.ipynb` | 2 | XGBoost + SHAP pre-computados + análisis sesgo | ⏳ |
+| `scripts/train_model.py` | 2 | 18 variables + tabla ontológica prescriptiva + Supabase | ✅ (reemplaza NB03) |
+| `scripts/train_model.py` | 2 | XGBoost + SHAP pre-computados + análisis sesgo | ✅ (reemplaza NB04) |
 | `SeguroData_05_Dashboard.ipynb` | 3 | Arquitectura React+FastAPI+Supabase + screenshots | ⏳ |
 | `SeguroData_06_Deployment.ipynb` | 4 | Deploy Vercel+Supabase + registro datos.gov.co | ⏳ |
 

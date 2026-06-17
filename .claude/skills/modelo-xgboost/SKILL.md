@@ -7,24 +7,30 @@ description: Modelo XGBoost + SHAP + ruptures para SeguroData — entrenamiento,
 
 El modelo predictivo principal. Corresponde al **Módulo 2 ("¿Qué va a pasar?")** y alimenta el Módulo 3.
 
-## Las 17 variables de entrada
+## Las 18 variables de entrada
+
+> Lista real y autoritativa en `scripts/train_model.py` (constante `FEATURES`). Granularidad UPZ × mes.
 
 ```python
 FEATURES = [
-    # Históricas (lag)
-    "n_delitos_upz_4sem", "n_delitos_upz_8sem", "tipo_delito_dominante",
-    # Temporales
-    "dia_semana", "franja_horaria", "mes", "es_fin_semana",
+    # Históricas / lag temporal
+    "n_delitos_upz_4sem", "n_delitos_upz_8sem", "n_delitos_upz_12sem", "tendencia_upz",
+    # Lag espacial (delitos de UPZs vecinas en t-1, adyacencia F2)
+    "n_delitos_vecinos_lag",
+    # Temporales cíclicas (reemplazan el `mes` crudo)
+    "mes_sin", "mes_cos",
     # Climáticas
-    "temperatura_c", "precipitacion_mm",
+    "temperatura_c", "precipitacion_mm_mes",
     # Espaciales
     "estrato_promedio_upz", "cuadrantes_por_km2", "n_estaciones_tm", "dist_tm_metros",
     # Subregistro
     "ratio_nuse_criminal_upz",
-    # Infraestructura (F11+F13+F14)
-    "km_via_intervenida_upz", "n_camaras_upz", "luminarias_led_upz"
+    # Infraestructura (F11+F13+F14 — placeholder 0 hasta tener extractores)
+    "km_via_intervenida_upz", "n_camaras_upz", "luminarias_led_upz",
+    # Tipo de delito dominante (codificado)
+    "tipo_crimen_cod",
 ]
-TARGET = "nivel_riesgo"  # ALTO / MEDIO / BAJO
+TARGET = "nivel_riesgo"  # CRÍTICO / ALTO / MEDIO / BAJO (4 clases ordinales, percentiles q40/q75/q95)
 ```
 
 ## Validación temporal — REGLA CRÍTICA
@@ -50,7 +56,7 @@ import xgboost as xgb
 from sklearn.preprocessing import LabelEncoder
 
 le = LabelEncoder()
-y_train = le.fit_transform(train[TARGET])  # BAJO=0, MEDIO=1, ALTO=2
+y_train = le.fit_transform(train[TARGET])  # BAJO=0, MEDIO=1, ALTO=2, CRÍTICO=3
 
 model = xgb.XGBClassifier(
     n_estimators=300,
@@ -103,9 +109,9 @@ shap_df.write_parquet("datos/modelos/shap_values_upz.parquet")
 from sklearn.metrics import classification_report
 
 y_pred = le.inverse_transform(model.predict(test[FEATURES].to_pandas()))
-print(classification_report(test[TARGET], y_pred, target_names=["BAJO","MEDIO","ALTO"]))
-# Reportar: precision, recall, F1 por clase + macro average
-# NUNCA solo accuracy (clases desbalanceadas)
+print(classification_report(test[TARGET], y_pred, target_names=["BAJO","MEDIO","ALTO","CRÍTICO"]))
+# Reportar: precision, recall, F1 por clase + macro average + accuracy dentro de ±1 banda
+# NUNCA solo accuracy exact-match (clases desbalanceadas + objetivo ordinal)
 ```
 
 ## Análisis de sesgo por estrato — OBLIGATORIO

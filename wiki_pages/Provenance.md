@@ -257,7 +257,7 @@ Esta tabla documenta las variables causales que explican el incremento o reducci
 
 | Criterio del concurso | Evidencia en SeguroData | Estado |
 |-----------------------|------------------------|--------|
-| ≥ 10,000 filas en dataset principal | Silver: **111,606 filas × 23 columnas** (F5 NUSE como base + F11/F13/F14) | ✅ |
+| ≥ 10,000 filas en dataset principal | Silver: **111,606 filas × 20 columnas** (F5 NUSE como base + F11/F13/F14) | ✅ |
 | Repositorio GitHub público + README completo | https://github.com/angelestrada14019/segurodata | ✅ |
 | Datos de datos.gov.co | F1, F4, F5, F6, F7, F11, F14 registrados en portal nacional | ✅ (7 de 12 fuentes) |
 | Variedad de fuentes (no solo un dataset) | 12 fuentes activas de 9 plataformas distintas | ✅ |

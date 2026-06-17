@@ -23,6 +23,7 @@ Uso:
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import pickle
 import sys
@@ -36,26 +37,38 @@ ROOT = Path(__file__).resolve().parents[1]
 load_dotenv(ROOT / "backend" / ".env")
 load_dotenv(ROOT / ".env")
 
-SILVER = ROOT / "datos" / "procesados" / "silver_upz_mes.parquet"
-GOLD   = ROOT / "datos" / "features"  / "tabla_maestra_upz.parquet"
-MODEL  = ROOT / "datos" / "modelos"   / "modelo_xgboost.pkl"
-PRED   = ROOT / "datos" / "modelos"   / "predicciones.parquet"
-SHAP_P = ROOT / "datos" / "modelos"   / "shap_values.parquet"
+SILVER  = ROOT / "datos" / "procesados" / "silver_upz_mes.parquet"
+GOLD    = ROOT / "datos" / "features"  / "tabla_maestra_upz.parquet"
+MODEL   = ROOT / "datos" / "modelos"   / "modelo_xgboost.pkl"
+PRED    = ROOT / "datos" / "modelos"   / "predicciones.parquet"
+SHAP_P  = ROOT / "datos" / "modelos"   / "shap_values.parquet"
+METRICS = ROOT / "datos" / "modelos"   / "metricas.json"
+F2_UPZ  = ROOT / "datos" / "raw"       / "f2_upz.geojson"
 
 FEATURES = [
+    # Históricas (lag temporal por UPZ)
     "n_delitos_upz_4sem",
     "n_delitos_upz_8sem",
+    "n_delitos_upz_12sem",     # NUEVO — lag acumulado 3 meses
+    "tendencia_upz",           # NUEVO — momentum mes a mes (lag1 - lag2)
+    # Lag espacial (autocorrelación entre UPZs vecinas)
+    "n_delitos_vecinos_lag",   # NUEVO — promedio de delitos de UPZs vecinas en t-1
+    # Climáticas
     "temperatura_c",
     "precipitacion_mm_mes",
+    # Espaciales / estáticas
     "estrato_promedio_upz",
     "cuadrantes_por_km2",
     "n_estaciones_tm",
     "dist_tm_metros",
     "ratio_nuse_criminal_upz",
+    # Infraestructura (F11/F13/F14 — placeholder 0 hasta tener extractores)
     "km_via_intervenida_upz",
     "n_camaras_upz",
     "luminarias_led_upz",
-    "mes",
+    # Temporales cíclicas (reemplazan el `mes` crudo: dic y ene son adyacentes)
+    "mes_sin",                 # NUEVO
+    "mes_cos",                 # NUEVO
     "tipo_crimen_cod",
 ]
 
@@ -65,6 +78,85 @@ LABEL_INV   = {v: k for k, v in LABEL_MAP.items()}
 # Split temporal: TRAIN = ene-oct 2025, TEST = nov 2025 en adelante
 TRAIN_ANIO_MAX = 2025
 TRAIN_MES_MAX  = 10
+
+
+# ---------------------------------------------------------------------------
+# FEATURE ENGINEERING (lag temporal extendido + lag espacial)
+# ---------------------------------------------------------------------------
+
+def _build_upz_adjacency() -> dict:
+    """Adyacencia de UPZs por contigüidad ('touches') desde el shapefile F2.
+
+    Devuelve {upz_cod: [vecinos]}. Si F2 no existe, devuelve dict vacío
+    (el lag espacial cae a 0 sin romper el pipeline).
+    """
+    if not F2_UPZ.exists():
+        return {}
+    import geopandas as gpd
+
+    gdf = gpd.read_file(F2_UPZ)
+    code_col = "CODIGO_UPZ" if "CODIGO_UPZ" in gdf.columns else gdf.columns[0]
+    gdf = gdf.to_crs("EPSG:3116")
+    codes = gdf[code_col].astype(str).str.strip().tolist()
+    adj: dict = {}
+    for i, geom in enumerate(gdf.geometry):
+        touch = gdf.geometry.touches(geom)
+        adj[codes[i]] = [codes[j] for j in range(len(gdf)) if touch.iloc[j] and j != i]
+    return adj
+
+
+def _add_engineered_features(gold: pl.DataFrame, verbose: bool = False) -> pl.DataFrame:
+    """Añade lag-3, tendencia (momentum), cíclicas de mes y lag espacial.
+
+    Opera sobre la tabla agregada por UPZ x mes — requiere que ya existan
+    n_delitos_total, n_delitos_upz_4sem y n_delitos_upz_8sem.
+    """
+    # índice mensual global para ordenar la serie por UPZ (maneja 2025-12 -> 2026-01)
+    gold = gold.with_columns((pl.col("anio") * 12 + pl.col("mes")).alias("_t"))
+    gold = gold.sort(["upz_cod", "_t"])
+
+    gold = gold.with_columns([
+        # lag acumulado 3 meses previos (familia 4sem/8sem/12sem)
+        (pl.col("n_delitos_total").shift(1).over("upz_cod").fill_null(0)
+         + pl.col("n_delitos_total").shift(2).over("upz_cod").fill_null(0)
+         + pl.col("n_delitos_total").shift(3).over("upz_cod").fill_null(0)
+         ).alias("n_delitos_upz_12sem"),
+        # momentum: lag1 - lag2 = 4sem - (8sem - 4sem) = 2*4sem - 8sem
+        (2 * pl.col("n_delitos_upz_4sem") - pl.col("n_delitos_upz_8sem"))
+        .alias("tendencia_upz"),
+        # codificación cíclica del mes (dic y ene quedan adyacentes)
+        (2 * np.pi * pl.col("mes") / 12).sin().alias("mes_sin"),
+        (2 * np.pi * pl.col("mes") / 12).cos().alias("mes_cos"),
+    ])
+
+    # ---- lag espacial: promedio de delitos de UPZs vecinas en t-1 ----
+    adj = _build_upz_adjacency()
+    if adj:
+        pdf = gold.select([
+            "upz_cod",
+            pl.col("_t").alias("t"),
+            "n_delitos_total",
+        ]).to_pandas()
+        pdf["upz_cod"] = pdf["upz_cod"].astype(str).str.strip()
+        lookup = {(row.upz_cod, int(row.t)): float(row.n_delitos_total)
+                  for row in pdf.itertuples(index=False)}
+        vals = []
+        for row in pdf.itertuples(index=False):
+            vecinos = adj.get(row.upz_cod, [])
+            prev = [lookup.get((v, int(row.t) - 1)) for v in vecinos]
+            prev = [x for x in prev if x is not None]
+            vals.append(float(np.mean(prev)) if prev else 0.0)
+        gold = gold.with_columns(pl.Series("n_delitos_vecinos_lag", vals))
+        if verbose:
+            cob = sum(1 for v in vals if v > 0) / len(vals) * 100
+            print(f"[Features] lag espacial: {len(adj)} UPZs con adyacencia | "
+                  f"{cob:.0f}% filas con vecino-lag > 0")
+    else:
+        gold = gold.with_columns(pl.lit(0.0).alias("n_delitos_vecinos_lag"))
+        if verbose:
+            print("[Features] F2 no disponible — n_delitos_vecinos_lag = 0")
+
+    return gold.drop("_t")
 
 
 # ---------------------------------------------------------------------------
@@ -151,9 +243,13 @@ def build_gold(verbose: bool = False) -> pl.DataFrame:
           .alias("nivel_riesgo")
     )
 
+    # ---- features de ingeniería: lag-3, tendencia, cíclicas, lag espacial ----
+    gold = _add_engineered_features(gold, verbose=verbose)
+
     if verbose:
         dist = gold["nivel_riesgo"].value_counts().sort("nivel_riesgo")
-        print(f"[Gold] {len(gold):,} filas | nivel_riesgo: {dist.to_dicts()}")
+        print(f"[Gold] {len(gold):,} filas | {len(gold.columns)} cols | "
+              f"nivel_riesgo: {dist.to_dicts()}")
         print(f"  q40={q40:.0f} | q75={q75:.0f} | q95={q95:.0f}")
 
     GOLD.parent.mkdir(exist_ok=True)
@@ -175,7 +271,12 @@ def train_xgboost(gold: pl.DataFrame, verbose: bool = False):
     except ImportError:
         sys.exit("Falta xgboost: pip install xgboost")
 
-    from sklearn.metrics import accuracy_score, classification_report
+    from sklearn.metrics import (
+        accuracy_score,
+        classification_report,
+        confusion_matrix,
+        f1_score,
+    )
 
     df = gold.to_pandas()
 
@@ -188,6 +289,9 @@ def train_xgboost(gold: pl.DataFrame, verbose: bool = False):
     df["n_estaciones_tm"]      = df["n_estaciones_tm"].fillna(0)
     df["n_delitos_upz_4sem"]   = df["n_delitos_upz_4sem"].fillna(0)
     df["n_delitos_upz_8sem"]   = df["n_delitos_upz_8sem"].fillna(0)
+    df["n_delitos_upz_12sem"]  = df["n_delitos_upz_12sem"].fillna(0)
+    df["tendencia_upz"]        = df["tendencia_upz"].fillna(0)
+    df["n_delitos_vecinos_lag"] = df["n_delitos_vecinos_lag"].fillna(0)
     df["tipo_crimen_cod"]      = df["tipo_crimen_cod"].fillna(0)
 
     df["y"] = df["nivel_riesgo"].map(LABEL_MAP).astype(int)
@@ -233,24 +337,66 @@ def train_xgboost(gold: pl.DataFrame, verbose: bool = False):
         verbose=False,
     )
 
-    preds_test = model.predict(X_test)
-    acc = accuracy_score(y_test, preds_test)
+    preds_test  = model.predict(X_test)
+    y_test_arr  = y_test.to_numpy()
+    acc         = accuracy_score(y_test, preds_test)
+
+    # ---- métricas ordinales (nivel_riesgo es BAJO<MEDIO<ALTO<CRITICO) ----
+    # Accuracy dentro de ±1 banda: una predicción a una banda de distancia NO es
+    # un fallo operativo (los cortes q40/q75/q95 son arbitrarios). MAE ordinal
+    # mide "qué tan lejos" cae el error en unidades de banda.
+    within1   = float((np.abs(preds_test - y_test_arr) <= 1).mean())
+    mae_ord   = float(np.abs(preds_test - y_test_arr).mean())
+    macro_f1  = float(f1_score(y_test, preds_test, average="macro"))
+    cm        = confusion_matrix(y_test, preds_test, labels=[0, 1, 2, 3]).tolist()
+    report    = classification_report(
+        y_test, preds_test, labels=[0, 1, 2, 3],
+        target_names=["BAJO", "MEDIO", "ALTO", "CRITICO"],
+        output_dict=True, zero_division=0,
+    )
+
+    metricas = {
+        "accuracy_exact":         round(acc, 4),
+        "accuracy_within_1_band": round(within1, 4),
+        "mae_ordinal":            round(mae_ord, 4),
+        "macro_f1":               round(macro_f1, 4),
+        "confusion_matrix":       cm,
+        "confusion_labels":       ["BAJO", "MEDIO", "ALTO", "CRITICO"],
+        "per_class": {
+            k: {kk: round(vv, 4) for kk, vv in v.items()}
+            for k, v in report.items()
+            if k in ("BAJO", "MEDIO", "ALTO", "CRITICO")
+        },
+        "n_train":        int(len(X_train)),
+        "n_test":         int(len(X_test)),
+        "best_iteration": int(getattr(model, "best_iteration", 0) or 0),
+        "n_features":     len(FEATURES),
+        "split":          f"TRAIN<=2025-{TRAIN_MES_MAX:02d}, TEST=2025-{TRAIN_MES_MAX + 1:02d}+",
+    }
+    METRICS.parent.mkdir(exist_ok=True)
+    METRICS.write_text(json.dumps(metricas, indent=2, ensure_ascii=False), encoding="utf-8")
+
+    print(f"[Modelo] exact={acc:.3f} | dentro de ±1 banda={within1:.3f} | "
+          f"macro-F1={macro_f1:.3f} | MAE ordinal={mae_ord:.3f}")
 
     if verbose:
-        print(f"[Modelo] Accuracy temporal: {acc:.3f}")
         print(classification_report(
-            y_test, preds_test,
-            target_names=["BAJO", "MEDIO", "ALTO", "CRITICO"],
+            y_test, preds_test, labels=[0, 1, 2, 3],
+            target_names=["BAJO", "MEDIO", "ALTO", "CRITICO"], zero_division=0,
         ))
+        print("[Matriz de confusión] filas=real, cols=pred (BAJO/MEDIO/ALTO/CRITICO):")
+        for fila in cm:
+            print(f"    {fila}")
         fi = dict(zip(FEATURES, model.feature_importances_))
         top = sorted(fi.items(), key=lambda x: x[1], reverse=True)
-        print("[SHAP importancia por feature (xgb.feature_importances_):]")
+        print("[Importancia por feature (xgb.feature_importances_):]")
         for f, imp in top:
             bar = "#" * int(imp * 60)
             print(f"  {f:35s} {imp:.4f} {bar}")
     else:
-        print(f"[Modelo] Accuracy temporal: {acc:.3f} | best_iteration={model.best_iteration}")
+        print(f"[Modelo] best_iteration={model.best_iteration}")
 
+    print(f"[OK] Métricas guardadas: {METRICS}")
     MODEL.parent.mkdir(exist_ok=True)
     with open(MODEL, "wb") as fp:
         pickle.dump(model, fp)

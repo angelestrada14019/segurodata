@@ -24,7 +24,7 @@ Estas fuentes alimentan la tabla Silver y el modelo predictivo.
 | **F13** | **Cámaras Salvavidas SDM** | **SDM** | ~400 puntos | **+n_camaras_upz + capa deck.gl** | ❌ ArcGIS Hub |
 | **F14** | **Alumbrado Público UAESP** | **UAESP** | 112 filas | **+luminarias_led_upz (granularidad nativa UPZ)** | ✅ |
 
-**Total Bronze: ~870,000+ registros → Silver: 111,606 filas × 23 columnas**
+**Total Bronze: ~870,000+ registros → Silver: 111,606 filas × 20 columnas**
 
 ---
 

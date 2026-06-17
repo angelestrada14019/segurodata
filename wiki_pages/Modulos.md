@@ -1,12 +1,12 @@
 # Los Módulos del Sistema
 
-> **Estado de implementación (11-jun-2026):**
+> **Estado de implementación (16-jun-2026):**
 > - ✅ **Backend FastAPI completo** — 6 endpoints, 31 tests verdes, Dockerfile listo (deploy en Fase 4)
-> - ✅ **Supabase configurado** — 11 migraciones, seed sintético activo (`origen='seed_dev'`), Realtime ON, hook JWT ON
-> - ✅ **change_points**: 59 breakpoints ruptures PELT cargados (F1 DAI 2018-2026), COVID 2020 validado
-> - ✅ **Corpus GraphRAG**: 18 chunks en pgvector (12 SEED_DEV + 5 El Tiempo + 1 El Informante)
+> - ✅ **Modelo XGBoost** — entrenado vía `scripts/train_model.py` con 18 variables. Test temporal (nov 2025 – abr 2026): acierto dentro de ±1 banda 100%, macro-F1 0.867
+> - ✅ **Supabase configurado** — migraciones + RLS + hook JWT + Realtime ON. **Artefactos reales del modelo cargados** (`origen='notebook_04'`): 1,918 predicciones + 34,524 SHAP
+> - ✅ **change_points**: 40 breakpoints ruptures PELT cargados (F1 DAI 2018-2026), COVID 2020 validado
+> - ✅ **Corpus GraphRAG**: 10 chunks RSS reales en pgvector (El Tiempo + El Informante; SEED_DEV eliminados)
 > - ⏳ **Frontend React** — pendiente Fase 3 (21 jun)
-> - ⏳ **Modelo XGBoost** — pendiente Notebook 04 (Fase 2)
 
 La aplicación responde 5 preguntas: 4 módulos analíticos (Diagnóstico · Predicción · Prescriptivo · Chatbot causal) más una capa de participación ciudadana (autenticación, mapa interactivo con modal, alertas comunitarias — ver [[Plataforma-Ciudadana]]).
 
@@ -53,7 +53,7 @@ Cuatro perfiles acceden a módulos distintos según su necesidad operacional:
 **Usuarios:** Comandante de CAI, planeación policial  
 **Tecnología:** XGBoost + SHAP + FastAPI (Railway) + Supabase
 
-> **¿Qué predice exactamente?** XGBoost predice el nivel de riesgo del **próximo mes**, no el estado actual. Las features de entrada (n_delitos de las últimas 4 y 8 semanas, cobertura policial, clima, franja horaria, estrato) describen el presente — el modelo aprendió qué nivel de riesgo sigue a cada combinación de esas condiciones. El output categórico (CRÍTICO/ALTO/MEDIO/BAJO) es la predicción del período siguiente. Ejemplo: si Kennedy tuvo 43 hurtos en las últimas 4 semanas con baja cobertura de cuadrantes y es temporada de diciembre → el modelo predice ALTO para enero con 82% de probabilidad.
+> **¿Qué predice exactamente?** XGBoost predice el nivel de riesgo del **próximo mes**, no el estado actual. Las features de entrada (n_delitos de las últimas 4, 8 y 12 semanas, tendencia reciente, delitos en UPZs vecinas, cobertura policial, clima, estacionalidad, estrato) describen el presente — el modelo aprendió qué nivel de riesgo sigue a cada combinación de esas condiciones. El output categórico (CRÍTICO/ALTO/MEDIO/BAJO) es la predicción del período siguiente. Ejemplo: si Kennedy tuvo 43 hurtos en las últimas 4 semanas con baja cobertura de cuadrantes y es temporada de diciembre → el modelo predice ALTO para enero con 82% de probabilidad.
 
 - **Predicción por UPZ**: seleccionar UPZ + mes → FastAPI `/predict` → nivel de riesgo CRÍTICO/ALTO/MEDIO/BAJO + probabilidades de cada clase
 - **Mapa predictivo**: todas las 112 UPZs coloreadas rojo/naranja/amarillo/verde para el mes seleccionado

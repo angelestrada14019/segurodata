@@ -17,7 +17,7 @@ CREATE EXTENSION IF NOT EXISTS vector;     -- pgvector para embeddings GraphRAG
 ## Tablas del sistema
 
 ### `silver_upz_mes` — datos del pipeline (cargada desde Silver parquet)
-Las 23 columnas de `datos/procesados/silver_upz_mes.parquet` (upz_cod, anio, mes, tipo_crimen, es_crimen, lags, clima, estrato, cuadrantes, TM, F11/F13/F14...). Índice compuesto `(upz_cod, anio, mes)`. Carga bulk con psycopg COPY (`scripts/seed_supabase.py`).
+Las 20 columnas de `datos/procesados/silver_upz_mes.parquet` (upz_cod, anio, mes, tipo_crimen, es_crimen, lags, clima, estrato, cuadrantes, TM, F11/F13/F14...). Índice compuesto `(upz_cod, anio, mes)`. Carga bulk con psycopg COPY (`scripts/seed_supabase.py`).
 
 ### `predicciones` — niveles de riesgo pre-computados (servidos por POST /predict)
 ```sql

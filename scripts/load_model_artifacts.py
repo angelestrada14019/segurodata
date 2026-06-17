@@ -65,7 +65,10 @@ def copy_in(conn, tabla: str, cols: list[str], df: pl.DataFrame, origen: str) ->
     buf.seek(0)
     buf.readline()
     with conn.cursor() as cur:
-        cur.execute(f"DELETE FROM {tabla} WHERE origen = 'seed_dev'")
+        # Borra TODO artefacto previo (seed_dev y notebook_04), no solo seed_dev:
+        # si el set de features cambia entre versiones, el upsert dejaría filas
+        # obsoletas huérfanas (p. ej. la feature 'mes' tras pasar a mes_sin/mes_cos).
+        cur.execute(f"DELETE FROM {tabla} WHERE origen IN ('seed_dev', 'notebook_04')")
         with cur.copy(
             f"COPY {tabla} ({', '.join(cols + ['origen'])}) FROM STDIN WITH (FORMAT csv)"
         ) as copy:
@@ -94,9 +97,12 @@ def load_via_rest(pred: pl.DataFrame, shap: pl.DataFrame) -> None:
 
     client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
-    print("Eliminando seed_dev (REST)...")
-    client.table("predicciones").delete().eq("origen", "seed_dev").execute()
-    client.table("shap_values").delete().eq("origen", "seed_dev").execute()
+    # Borra TODO artefacto previo (seed_dev y notebook_04), no solo seed_dev: el upsert
+    # por PK no elimina features obsoletas si el set cambia entre versiones del modelo
+    # (p. ej. la feature 'mes' quedaba huérfana tras pasar a mes_sin/mes_cos).
+    print("Eliminando artefactos previos (seed_dev + notebook_04)...")
+    client.table("predicciones").delete().in_("origen", ["seed_dev", "notebook_04"]).execute()
+    client.table("shap_values").delete().in_("origen", ["seed_dev", "notebook_04"]).execute()
 
     pred_rows = pred.with_columns(pl.lit("notebook_04").alias("origen")).to_dicts()
     total_pred = len(pred_rows)

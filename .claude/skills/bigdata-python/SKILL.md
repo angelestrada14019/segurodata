@@ -14,7 +14,7 @@ Guía para trabajar eficientemente con los datasets del proyecto, especialmente 
 | F5 NUSE (Bronze) | 128,314 | ~50 MB | Fuente principal — Polars nativo |
 | F6 Hurto PN (Bronze) | 638,569 | ~200 MB | Solo benchmarking — cargar por chunks |
 | F7 Estratificación (Bronze) | 44,260 polígonos | ~100 MB | **Pesado** — spatial join consume 4-5 GB RAM |
-| Silver final | 111,606 × 23 cols | ~80 MB | Resultado del pipeline — Polars |
+| Silver final | 111,606 × 20 cols | ~80 MB | Resultado del pipeline — Polars |
 | F3 Clima horario | 56,112 filas | ~15 MB | Ligero |
 
 ## Polars vs Pandas — reglas del proyecto
@@ -109,6 +109,6 @@ print(f"RAM disponible: {psutil.virtual_memory().available / 1e9:.1f} GB")
 python src/pipeline.py --status          # estado de las 14 fuentes
 python src/pipeline.py                   # descargar todo (solo lo nuevo)
 python src/transform.py --dry-run        # ver qué haría sin ejecutar
-python src/transform.py                  # Bronze → Silver (111,606 × 23 cols)
+python src/transform.py                  # Bronze → Silver (111,606 × 20 cols)
 python src/transform.py --step f7 --force  # forzar recálculo estratificación
 ```

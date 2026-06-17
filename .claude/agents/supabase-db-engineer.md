@@ -22,4 +22,4 @@ Lee primero las skills `.claude/skills/supabase-segurodata/SKILL.md` (esquema co
 
 ## Verificación
 
-Tras aplicar migraciones, valida con `execute_sql`: conteos esperados (predicciones=1,920 seed, upz_geometrias=112), `SELECT match_documents(array_fill(0,ARRAY[384])::vector, 0.5, 1)` no falla, y `pg_database_size(current_database())` < 400MB.
+Tras aplicar migraciones, valida con `execute_sql`: conteos esperados (predicciones=1,918, upz_geometrias=112), `SELECT match_documents(array_fill(0,ARRAY[384])::vector, 0.5, 1)` no falla, y `pg_database_size(current_database())` < 400MB.

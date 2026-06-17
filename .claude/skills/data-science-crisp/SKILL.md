@@ -13,7 +13,7 @@ El proyecto sigue CRISP-ML (Cross-Industry Standard Process for Machine Learning
 |----------|--------------|-----------|--------|
 | `SeguroData_01_Plan_y_Fuentes.ipynb` | Business Understanding | Catálogo 14 fuentes, arquitectura, diferenciador | ✅ |
 | `SeguroData_02_EDA.ipynb` | Data Understanding | EDA + change points ruptures F1 DAI | ✅ |
-| `SeguroData_03_Features.ipynb` | Data Preparation | 17 variables, tabla ontológica prescriptiva, Supabase | ⏳ |
+| `scripts/train_model.py` | Data Preparation | 18 variables, tabla ontológica prescriptiva, Supabase | ✅ |
 | `SeguroData_04_Modelo.ipynb` | Modeling + Evaluation | XGBoost + SHAP pre-computados + análisis sesgo | ⏳ |
 | `SeguroData_05_Dashboard.ipynb` | Deployment (desc.) | Arquitectura React+FastAPI+Supabase + screenshots | ⏳ |
 | `SeguroData_06_Deployment.ipynb` | Deployment (impl.) | Deploy Vercel+Cloud Run + registro datos.gov.co | ⏳ |
@@ -59,16 +59,18 @@ p40 = crimenes_agg["n_delitos"].quantile(0.40)
 # top 25% → ALTO, 25–60% → MEDIO, resto → BAJO
 ```
 
-## Las 17 variables del modelo (Notebook 03)
+## Las 18 variables del modelo (scripts/train_model.py)
 
 ```
-HISTÓRICAS (lag):    n_delitos_upz_4sem, n_delitos_upz_8sem, tipo_delito_dominante
-TEMPORALES:          dia_semana, franja_horaria, mes, es_fin_semana
-CLIMÁTICAS:          temperatura_c, precipitacion_mm
+HISTÓRICAS / LAG:    n_delitos_upz_4sem, n_delitos_upz_8sem, n_delitos_upz_12sem, tendencia_upz
+LAG ESPACIAL:        n_delitos_vecinos_lag
+TEMPORALES CÍCLICAS: mes_sin, mes_cos
+CLIMÁTICAS:          temperatura_c, precipitacion_mm_mes
 ESPACIALES:          estrato_promedio_upz, cuadrantes_por_km2, n_estaciones_tm, dist_tm_metros
 SUBREGISTRO:         ratio_nuse_criminal_upz
 INFRAESTRUCTURA:     km_via_intervenida_upz, n_camaras_upz, luminarias_led_upz
-OBJETIVO (Y):        nivel_riesgo (ALTO/MEDIO/BAJO)
+TIPO DELITO:         tipo_crimen_cod
+OBJETIVO (Y):        nivel_riesgo (CRÍTICO/ALTO/MEDIO/BAJO — ordinal, percentiles q40/q75/q95)
 ```
 
 ## Análisis de sesgo por estrato — OBLIGATORIO en Notebook 04
@@ -86,7 +88,7 @@ El jurado siempre pregunta esto. Incluir:
 from sklearn.metrics import classification_report, confusion_matrix
 
 # NUNCA reportar solo accuracy — las clases están desbalanceadas
-print(classification_report(y_test, y_pred, target_names=["BAJO","MEDIO","ALTO"]))
+print(classification_report(y_test, y_pred, target_names=["BAJO","MEDIO","ALTO","CRÍTICO"]))
 # Reportar: precision, recall, F1 por clase + macro average
 ```
 
@@ -105,8 +107,8 @@ breakpoints = algo.predict(pen=10)
 
 **Notebook 03 (Features):**
 - [ ] Tabla ontológica prescriptiva (17 filas) — documentar ANTES del código
-- [ ] 17 variables definidas con justificación causal
-- [ ] Silver 23 cols cargado → Gold con variable objetivo agregada
+- [ ] 18 variables definidas con justificación causal
+- [ ] Silver 20 cols cargado → Gold con variable objetivo agregada
 - [ ] `tabla_ontologica.json` generado y guardado en `datos/modelos/`
 
 **Notebook 04 (Modelo):**

@@ -36,7 +36,7 @@ El **Módulo 3 (Prescriptivo)** combina SHAP values + detección de cambios estr
 
 ### Documentación técnica
 
-- [[Transformacion]] — Capa Silver: esquema 23 cols, comandos, advertencia RAM F7
+- [[Transformacion]] — Capa Silver: esquema 20 cols, comandos, advertencia RAM F7
 - [[Estado-del-Arte]] — 20+ sistemas internacionales, 18 papers, diferenciación
 - [[Provenance]] — URLs verificadas, licencias, tabla causal, cumplimiento concurso
 - [[Investigacion-Fuentes]] — Catálogo 20 fuentes, IDs descartados, snippets ETL
