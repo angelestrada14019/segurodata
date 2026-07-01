@@ -56,6 +56,30 @@
     "accion": "Plan de intervención focalizada 2 semanas con seguimiento semanal de indicadores"
   },
   {
+    "feature": "n_delitos_upz_12sem",
+    "condicion": "alto",
+    "diagnostico": "Patrón delictivo crónico sostenido durante los últimos 3 meses",
+    "tipo_intervencion": "Estructural",
+    "entidad_responsable": "SDSCJ + MEBOG",
+    "accion": "Escalar a mesa de seguridad zonal — la saturación de patrullaje ya no basta, requiere plan estructural"
+  },
+  {
+    "feature": "tendencia_upz",
+    "condicion": "alto",
+    "diagnostico": "Tendencia de crecimiento acelerado mes a mes — la UPZ puede escalar de nivel de riesgo pronto",
+    "tipo_intervencion": "Alerta temprana",
+    "entidad_responsable": "SDSCJ",
+    "accion": "Monitoreo semanal reforzado antes de que la UPZ escale a la siguiente banda de riesgo"
+  },
+  {
+    "feature": "n_delitos_vecinos_lag",
+    "condicion": "alto",
+    "diagnostico": "Contagio espacial: las UPZs vecinas concentran actividad delictiva",
+    "tipo_intervencion": "Operacional",
+    "entidad_responsable": "MEBOG",
+    "accion": "Patrullaje coordinado de borde inter-UPZ"
+  },
+  {
     "feature": "temperatura_c",
     "condicion": "alto",
     "diagnostico": "Disparador climático: mayor actividad en vía pública por temperatura alta",
@@ -80,22 +104,6 @@
     "accion": "Campaña de denuncia ciudadana y jornadas móviles de recepción de denuncias"
   },
   {
-    "feature": "franja_dominante_mes",
-    "condicion": "madrugada",
-    "diagnostico": "Patrón delictivo nocturno dominante",
-    "tipo_intervencion": "Seguridad",
-    "entidad_responsable": "MEBOG turno nocturno",
-    "accion": "Operativo nocturno focalizado 00:00–06:00 en los ejes con actividad de madrugada"
-  },
-  {
-    "feature": "es_fin_semana",
-    "condicion": "alto",
-    "diagnostico": "Concentración de incidentes en fines de semana (riñas y lesiones)",
-    "tipo_intervencion": "Operativa",
-    "entidad_responsable": "MEBOG + Secretaría de Gobierno",
-    "accion": "Plan fin de semana: control a establecimientos nocturnos y mediación de conflictos"
-  },
-  {
     "feature": "n_estaciones_tm",
     "condicion": "alto",
     "diagnostico": "Alta afluencia por estaciones TransMilenio concentra hurto a personas",
@@ -112,27 +120,19 @@
     "accion": "Mejorar alimentadores y la iluminación de corredores peatonales hacia TM"
   },
   {
-    "feature": "tipo_delito_dominante",
-    "condicion": "hurto",
-    "diagnostico": "El hurto a personas domina el perfil delictivo de la UPZ",
-    "tipo_intervencion": "Operativa",
-    "entidad_responsable": "MEBOG / SIJIN",
-    "accion": "Operativos contra receptación y georreferenciación de puntos de venta de hurtado"
-  },
-  {
-    "feature": "n_incidentes_nuse",
+    "feature": "mes_sin",
     "condicion": "alto",
-    "diagnostico": "Alta conflictividad general (llamadas 123 elevadas, no solo delito)",
-    "tipo_intervencion": "Social",
-    "entidad_responsable": "Secretaría de Gobierno + SDIS",
-    "accion": "Gestores de convivencia y mediación comunitaria en los barrios con más llamadas"
+    "diagnostico": "Estacionalidad del mes: la época del año está asociada históricamente con mayor riesgo",
+    "tipo_intervencion": "Monitoreo",
+    "entidad_responsable": "SDSCJ",
+    "accion": "Revisar el histórico de ese mes calendario y activar el plan estacional correspondiente (ej. Plan Navidad)"
   },
   {
-    "feature": "mes",
-    "condicion": "diciembre",
-    "diagnostico": "Estacionalidad de fin de año: aumento de hurto y riñas en temporada navideña",
-    "tipo_intervencion": "Operativa",
-    "entidad_responsable": "MEBOG + SDSCJ",
-    "accion": "Plan Navidad: refuerzo en zonas comerciales y control de pólvora y licor"
+    "feature": "mes_cos",
+    "condicion": "alto",
+    "diagnostico": "Estacionalidad del mes: la época del año está asociada históricamente con mayor riesgo",
+    "tipo_intervencion": "Monitoreo",
+    "entidad_responsable": "SDSCJ",
+    "accion": "Revisar el histórico de ese mes calendario y activar el plan estacional correspondiente (ej. Plan Navidad)"
   }
 ]

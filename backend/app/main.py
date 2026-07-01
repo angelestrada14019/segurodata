@@ -24,7 +24,7 @@ from app.limits import limiter
 from app.logging_config import setup_logging
 from app.middleware import RequestContextMiddleware
 from app.repositories.ontology_repo import OntologyRepo
-from app.routers import auth, explain, graphrag, health, predict, prescribe
+from app.routers import admin, auth, explain, graphrag, health, predict, prescribe
 
 logger = structlog.get_logger("main")
 
@@ -77,6 +77,7 @@ def create_app() -> FastAPI:
     app.include_router(explain.router)
     app.include_router(graphrag.router)
     app.include_router(prescribe.router)
+    app.include_router(admin.router)
     return app
 
 

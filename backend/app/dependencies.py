@@ -15,6 +15,8 @@ from app.repositories.documents_repo import DocumentsRepo
 from app.repositories.ontology_repo import OntologyRepo
 from app.repositories.predictions_repo import PredictionsRepo
 from app.repositories.shap_repo import ShapRepo
+from app.repositories.user_profiles_repo import UserProfilesRepo
+from app.services.admin_service import AdminService
 from app.services.explain_service import ExplainService
 from app.services.graphrag_service import GraphRAGService
 from app.services.prediction_service import PredictionService
@@ -66,6 +68,10 @@ def get_documents_repo(client=Depends(get_supabase)) -> DocumentsRepo:
     return DocumentsRepo(client)
 
 
+def get_user_profiles_repo(client=Depends(get_supabase)) -> UserProfilesRepo:
+    return UserProfilesRepo(client)
+
+
 # ── Services ────────────────────────────────────────────────────────────────
 
 
@@ -98,6 +104,13 @@ def get_prescribe_service(
     openrouter: OpenRouterClient = Depends(get_openrouter),
 ) -> PrescribeService:
     return PrescribeService(ontology, cuadrantes, openrouter)
+
+
+def get_admin_service(
+    user_profiles: UserProfilesRepo = Depends(get_user_profiles_repo),
+    cuadrantes: CuadrantesRepo = Depends(get_cuadrantes_repo),
+) -> AdminService:
+    return AdminService(user_profiles, cuadrantes)
 
 
 # ── Auth ────────────────────────────────────────────────────────────────────

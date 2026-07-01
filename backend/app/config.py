@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     embeddings_model: str = "sentence-transformers/all-MiniLM-L6-v2"
 
     cors_origins: str = "http://localhost:5173"
-    tabla_ontologica_path: str = ""  # override del JSON bundleado (Notebook 03)
+    tabla_ontologica_path: str = ""  # override del JSON bundleado (backend/app/data/)
 
     rate_limit_default: str = "60/minute"
     rate_limit_llm: str = "10/minute"

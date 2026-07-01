@@ -106,6 +106,19 @@ class FakeCuadrantesRepo:
         return None
 
 
+class FakeUserProfilesRepo:
+    def __init__(self):
+        self.perfiles = {
+            "user-comandante": {"rol": "COMANDANTE_CAI", "cuadrante_asignado": None},
+        }
+
+    async def asignar_cuadrante(self, user_id, cuadrante_id):
+        if user_id not in self.perfiles:
+            return False
+        self.perfiles[user_id]["cuadrante_asignado"] = cuadrante_id
+        return True
+
+
 class FakeDocumentsRepo:
     def __init__(self):
         self.llamadas = []
@@ -141,6 +154,7 @@ def fakes():
         "predictions": FakePredictionsRepo(),
         "shap": FakeShapRepo(),
         "cuadrantes": FakeCuadrantesRepo(),
+        "user_profiles": FakeUserProfilesRepo(),
         "documents": FakeDocumentsRepo(),
         "embeddings": FakeEmbeddings(),
         "openrouter": FakeOpenRouter(),
@@ -156,6 +170,9 @@ def app(fakes):
     ]
     application.dependency_overrides[dependencies.get_shap_repo] = lambda: fakes["shap"]
     application.dependency_overrides[dependencies.get_cuadrantes_repo] = lambda: fakes["cuadrantes"]
+    application.dependency_overrides[dependencies.get_user_profiles_repo] = lambda: fakes[
+        "user_profiles"
+    ]
     application.dependency_overrides[dependencies.get_documents_repo] = lambda: fakes["documents"]
     application.dependency_overrides[dependencies.get_embeddings] = lambda: fakes["embeddings"]
     application.dependency_overrides[dependencies.get_openrouter] = lambda: fakes["openrouter"]
