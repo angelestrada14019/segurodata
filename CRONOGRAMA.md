@@ -130,6 +130,15 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 
 **Entregables:** `SeguroData_03_Features.ipynb` + `SeguroData_04_Modelo.ipynb`
 
+> **🔀 Rama `features_model` (17-jun):** revisada e integrada selectivamente a `main` (commit
+> `63abe85`). Se tomó: NB01/NB02 actualizados (catálogo + celda `ruptures` V8 en EDA, corregida a
+> 18 variables reales). Se descartó: `SeguroData_03_Features.ipynb` y `SeguroData_04_Modelo.ipynb`
+> (redefinían `nivel_riesgo` con umbrales absolutos en vez de percentiles, y entrenaban su propio
+> XGBoost sin importar `scripts/train_model.py`), y un generador de **datos sintéticos aleatorios**
+> para F11/F13/F14 en `transform.py` (presentaba ruido como si fuera infraestructura real). La
+> rama remota se conserva sin borrar. `scripts/train_model.py` sigue siendo la única fuente de
+> verdad del modelo.
+
 ### Setup Supabase + nuevas fuentes (7–10 junio) — EN PARALELO con modelo
 
 - [x] ✅ (10-jun) Crear proyecto Supabase → habilitar PostGIS + pgvector — proyecto `segurodata` (ref `pluxaelenhkdaakxdrpm`, us-east-1), **11 migraciones** en `supabase/migrations/` (0001-0011)
