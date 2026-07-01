@@ -81,7 +81,7 @@ Para que los roles (COMANDANTE_CAI, ANALISTA_SDSCJ, etc.) viajen en el JWT:
 4. Tipo: **PostgreSQL Function** → schema: `public` → función: `custom_access_token_hook` → **Save**
 5. Verificar que aparece **ENABLED** (verde)
 
-> ✅ Estado actual (11-jun-2026): hook habilitado y activo.
+> ✅ Estado actual (30-jun-2026): hook habilitado y activo.
 > La función ya existe en la base de datos (migración `0005`).
 
 Sin este paso todos los usuarios caen a rol `CIUDADANO`.
@@ -113,7 +113,7 @@ python scripts/index_corpus.py --backend fastembed                # solo F10 rea
 python scripts/index_corpus.py --seed-demo --emit-sql  # genera datos/grafo/corpus_seed.sql
 ```
 
-> **Estado actual (16-jun-2026):** 10 chunks RSS reales en Supabase (El Tiempo + El Informante; SEED_DEV eliminados). `/graphrag` responde con fuentes reales.
+> **Estado actual (30-jun-2026):** 10 chunks RSS reales en Supabase (El Tiempo + El Informante; SEED_DEV eliminados). `/graphrag` responde con fuentes reales.
 
 > **F9 — boletines SCJ:** El Observatorio OSCJ migró a ArcGIS Experience Builder (`https://oaiee.scj.gov.co/ObservatorioSCJ.html`), que es 100% JavaScript. `pipeline.py --source f9` no puede scrapearlo sin Playwright. Para añadir boletines reales: descargar manualmente los PDFs desde el Observatorio (sección Boletines > Estudios), guardarlos en `datos/raw/boletines_scj/`, y re-ejecutar `index_corpus.py`.
 

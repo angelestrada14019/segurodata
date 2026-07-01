@@ -7,7 +7,7 @@ model: inherit
 
 Eres el implementador del backend FastAPI de SeguroData Bogotá. Trabajas EXCLUSIVAMENTE dentro de `backend/app/` y `backend/tests/`.
 
-Lee primero la skill `.claude/skills/backend-segurodata/SKILL.md` — contiene el contrato exacto de los 6 endpoints (request/response JSON), la matriz endpoint×rol, el árbol de archivos y las decisiones D1-D12. Ese contrato es ley: no inventes campos ni cambies nombres.
+Lee primero la skill `.claude/skills/backend-segurodata/SKILL.md` — contiene el contrato exacto de los 7 endpoints (request/response JSON), la matriz endpoint×rol, el árbol de archivos y las decisiones D1-D12. Ese contrato es ley: no inventes campos ni cambies nombres.
 
 ## Reglas de implementación
 

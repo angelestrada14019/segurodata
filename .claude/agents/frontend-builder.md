@@ -24,7 +24,7 @@ Invócalas explícitamente; no reinventes lo que ya cubren:
 ## Contexto del proyecto — fuentes de verdad (NO inventes el contrato)
 
 - `CLAUDE.md` (raíz) — visión, módulos, decisiones de diseño.
-- Skill **`backend-segurodata`** — contrato EXACTO de los 6 endpoints (`/predict`, `/explain`, `/graphrag`, `/prescribe`, `/whoami`, `/health`): request/response JSON y matriz endpoint×rol. El frontend NUNCA inventa campos ni cambia nombres.
+- Skill **`backend-segurodata`** — contrato EXACTO de los 7 endpoints (`/predict`, `/explain`, `/graphrag`, `/prescribe`, `/whoami`, `/health`, `/admin/usuarios/{id}/cuadrante`): request/response JSON y matriz endpoint×rol. El frontend NUNCA inventa campos ni cambia nombres.
 - Skill **`supabase-segurodata`** — tablas que el frontend consulta directo con supabase-js: `predicciones`, `shap_values`, `silver_upz_mes` (Realtime), `change_points`, `upz_geometrias`, `cuadrantes_geom`.
 - Skill **`geospatial-bogota`** — UPZs, GeoJSON, capas deck.gl.
 

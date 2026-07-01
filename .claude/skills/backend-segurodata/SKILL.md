@@ -7,7 +7,7 @@ description: Contrato completo del backend FastAPI de SeguroData — endpoints, 
 
 Backend FastAPI en Railway (siempre activo). Supabase = datos + auth + pgvector. OpenRouter = proxy LLM. Proyecto Supabase: `segurodata` (ref `pluxaelenhkdaakxdrpm`, us-east-1).
 
-## Los 6 endpoints
+## Los 7 endpoints
 
 ### POST /predict — nivel de riesgo por UPZ×mes (lookup, NO inferencia)
 
@@ -89,6 +89,18 @@ Mapeo feature→diagnóstico→entidad es DETERMINISTA (tabla ontológica 17 fil
 { "status": "ok", "version": "0.1.0", "env": "production" }
 ```
 
+### PATCH /admin/usuarios/{user_id}/cuadrante — asignar cuadrante (solo ADMIN, pre-mortem T5)
+
+```json
+// Request
+{ "cuadrante_id": "E12C02013" }
+// Response 200
+{ "user_id": "c6967b12-...", "cuadrante_asignado": "E12C02013" }
+```
+404 si `cuadrante_id` no existe en `cuadrantes_geom` o si `user_id` no existe en `user_profiles`.
+Antes de este endpoint, `cuadrante_asignado` solo se podía tocar por SQL/Dashboard manual — cierra
+el flujo de `/whoami.cuadrante_pendiente` de punta a punta.
+
 ## Matriz endpoint × rol
 
 | Endpoint | Sin token | CIUDADANO | COMANDANTE_CAI | ANALISTA_SDSCJ | ADMIN |
@@ -99,13 +111,17 @@ Mapeo feature→diagnóstico→entidad es DETERMINISTA (tabla ontológica 17 fil
 | POST /graphrag | 401 | ✅ | ✅ | ✅ | ✅ |
 | POST /prescribe | 401 | **403** | ✅ | ✅ | ✅ |
 | GET /whoami | 401 | ✅ | ✅ | ✅ | ✅ |
+| PATCH /admin/usuarios/{id}/cuadrante | 401 | 403 | 403 | 403 | ✅ |
 
 Rate limits (slowapi, por IP): /graphrag y /prescribe **10/min**; demás autenticados 60/min; /health sin límite.
 
 ## JWT y claims
 
-- Supabase Auth firma HS256 con `SUPABASE_JWT_SECRET`; audience `authenticated`.
-- Claims custom inyectados por `public.custom_access_token_hook`: `rol` (CIUDADANO|COMANDANTE_CAI|ANALISTA_SDSCJ|ADMIN) y `cuadrante_asignado` (str|null).
+- El proyecto real firma con **ES256/JWKS** (verificado en vivo, pre-mortem E3: `SUPABASE_JWKS_URL` →
+  `<url>/auth/v1/.well-known/jwks.json`). `decode_supabase_jwt` soporta ambas ramas — ES256/RS256 vía
+  `SUPABASE_JWKS_URL` (escape hatch real, usar esta), o HS256 legacy vía `SUPABASE_JWT_SECRET` (solo
+  para tests unitarios con secret falso, ver `backend/tests/conftest.py`); audience `authenticated`.
+- Claims custom inyectados por `public.custom_access_token_hook`: `rol` (CIUDADANO|COMANDANTE_CAI|ANALISTA_SDSCJ|ADMIN) y `cuadrante_asignado` (str|null). El hook NO filtra por `user_profiles.aprobado` — inyecta el `rol` tal cual esté en la fila.
 - El hook se habilita manualmente: Dashboard → Auth → Hooks → Custom Access Token.
 - Dev local: `AUTH_MODE=disabled` inyecta usuario fake ADMIN — SOLO si `ENV=development` (guard en config).
 
@@ -131,14 +147,15 @@ Rate limits (slowapi, por IP): /graphrag y /prescribe **10/min**; demás autenti
 ```
 backend/app/
 ├── main.py config.py dependencies.py exceptions.py middleware.py logging_config.py
-├── routers/    health predict explain graphrag prescribe auth
-├── schemas/    common predict explain graphrag prescribe auth
-├── services/   prediction_service explain_service graphrag_service prescribe_service
-├── repositories/ predictions_repo shap_repo documents_repo cuadrantes_repo ontology_repo
+├── routers/    health predict explain graphrag prescribe auth admin
+├── schemas/    common predict explain graphrag prescribe auth admin
+├── services/   prediction_service explain_service graphrag_service prescribe_service admin_service
+├── repositories/ predictions_repo shap_repo documents_repo cuadrantes_repo ontology_repo user_profiles_repo
 ├── clients/    supabase_client openrouter_client embeddings
 ├── core/       security.py cache.py
 └── data/       tabla_ontologica_seed.json
-backend/tests/  conftest + test por router + test_jwt_e2e (integration) + test_whoami (T5)
+backend/tests/  conftest + test por router + test_admin + test_jwt_e2e (integration, verde con
+                credenciales reales) + test_whoami (T5, verificado también en vivo)
 ```
 
 ## Env vars (backend/.env.example)
@@ -148,13 +165,19 @@ ENV=development                      # development | production
 AUTH_MODE=enabled                    # disabled solo permitido si ENV=development
 SUPABASE_URL=https://pluxaelenhkdaakxdrpm.supabase.co
 SUPABASE_SERVICE_KEY=                # service_role — NUNCA al frontend
-SUPABASE_JWT_SECRET=                 # Dashboard → Settings → API → JWT Secret
-SUPABASE_JWKS_URL=                   # opcional, solo si el proyecto usa llaves asimétricas
+SUPABASE_JWT_SECRET=                 # dejar vacío si el proyecto usa ES256 (ver SUPABASE_JWKS_URL)
+SUPABASE_JWKS_URL=                   # <SUPABASE_URL>/auth/v1/.well-known/jwks.json — proyecto real usa ES256
 SUPABASE_DB_URL=                     # solo scripts offline (COPY bulk), no el backend
 OPENROUTER_API_KEY=
 LLM_MODEL=google/gemini-flash-1.5
 LLM_MODEL_FALLBACK=anthropic/claude-haiku
+LLM_MAX_TOKENS=600
+LLM_CACHE_TTL_SECONDS=86400
+LLM_CACHE_MAXSIZE=256
+EMBEDDINGS_MODEL=sentence-transformers/all-MiniLM-L6-v2
 CORS_ORIGINS=http://localhost:5173   # prod: dominio Vercel exacto, sin *
+RATE_LIMIT_DEFAULT=60/minute
+RATE_LIMIT_LLM=10/minute             # /graphrag y /prescribe
 TABLA_ONTOLOGICA_PATH=               # opcional: override del JSON bundleado
 ```
 

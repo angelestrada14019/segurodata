@@ -85,7 +85,7 @@ df_hurto = socrata_query("4rxi-8m8d",
 | Tablas estáticas pequeñas | `.csv` | Legible, versionable en git |
 | Datos geoespaciales | `.geojson` | Compatible geopandas + Supabase PostGIS |
 | Modelos entrenados | `.joblib` | XGBoost serializado, ligero |
-| SHAP values | `.parquet` | 112 UPZs × 17 features × 16 meses = ~30K filas |
+| SHAP values | `.parquet` | 1,918 filas Gold × 18 features = 34,524 filas |
 
 ## Optimización memoria en notebooks
 

@@ -102,7 +102,7 @@ La `OPENROUTER_API_KEY` se configura como variable de entorno en Railway — nun
 
 ### Base de datos — Supabase
 
-> **Estado (11-jun-2026):** ✅ **Proyecto activo** — ref `pluxaelenhkdaakxdrpm` (us-east-1). Migraciones aplicadas. **Artefactos reales del modelo** (`origen='notebook_04'`): 1,918 predicciones + 34,524 SHAP values. Realtime habilitado. Hook JWT activo. change_points: 40 filas. documents_corpus: 10 chunks RSS reales. **Decisión FTI: Silver 111K queda LOCAL** — Supabase solo recibe outputs del modelo, no datos de entrenamiento.
+> **Estado (30-jun-2026):** ✅ **Proyecto activo** — ref `pluxaelenhkdaakxdrpm` (us-east-1). Migraciones aplicadas. **Artefactos reales del modelo** (`origen='notebook_04'`): 1,918 predicciones + 34,524 SHAP values. Realtime habilitado. Hook JWT activo. change_points: 40 filas. documents_corpus: 10 chunks RSS reales. **Decisión FTI: Silver 111K queda LOCAL** — Supabase solo recibe outputs del modelo, no datos de entrenamiento.
 
 ```sql
 -- Tablas implementadas (supabase/migrations/)
@@ -174,7 +174,7 @@ algo.fit(signal.reshape(-1, 1))
 breakpoints = algo.predict(pen=3)  # pen=3 detecta 1-3 cambios/localidad con 9 puntos anuales
 ```
 
-**Estado (11-jun-2026):** ✅ **40 breakpoints cargados** en Supabase `change_points` — `scripts/compute_change_points.py`. COVID 2020 validado como BAJA en 17 localidades. "Sin Localización" (bucket sin geocodificación) excluido. Script es idempotente (DELETE + INSERT).
+**Estado (30-jun-2026):** ✅ **40 breakpoints cargados** en Supabase `change_points` — `scripts/compute_change_points.py`. COVID 2020 validado como BAJA en 17 localidades. "Sin Localización" (bucket sin geocodificación) excluido. Script es idempotente (DELETE + INSERT).
 
 Los resultados alimentan el Módulo 3 (Prescriptivo): si hay un cambio estructural reciente + tendencia sostenida → el diagnóstico es "problema estructural" (no pico temporal) → acción diferente.
 

@@ -1,7 +1,7 @@
 # Los Módulos del Sistema
 
 > **Estado de implementación (16-jun-2026):**
-> - ✅ **Backend FastAPI completo** — 6 endpoints, 31 tests verdes, Dockerfile listo (deploy en Fase 4)
+> - ✅ **Backend FastAPI completo** — 7 endpoints, 36 tests verdes (incl. E3 JWT end-to-end y T5 verificados en vivo contra Supabase real), Dockerfile listo (deploy en Fase 4)
 > - ✅ **Modelo XGBoost** — entrenado vía `scripts/train_model.py` con 18 variables. Test temporal (nov 2025 – abr 2026): acierto dentro de ±1 banda 100%, macro-F1 0.867
 > - ✅ **Supabase configurado** — migraciones + RLS + hook JWT + Realtime ON. **Artefactos reales del modelo cargados** (`origen='notebook_04'`): 1,918 predicciones + 34,524 SHAP
 > - ✅ **change_points**: 40 breakpoints ruptures PELT cargados (F1 DAI 2018-2026), COVID 2020 validado

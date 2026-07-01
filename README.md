@@ -241,6 +241,6 @@ El wiki incluye: catálogo de 20 fuentes · estado del arte internacional · gu�
 | Código | Ubicación | Para qué |
 |--------|----------|---------|
 | Conectores ETL | `src/etl.py` | CKAN, Socrata, ArcGIS, Open-Meteo de bajo nivel |
-| Pipeline Bronze | `src/pipeline.py` | Extracción incremental de las 10 fuentes |
+| Pipeline Bronze | `src/pipeline.py` | Extracción incremental de las 14 fuentes |
 | Pipeline Silver | `src/transform.py` | Limpieza, joins espaciales, tabla silver |
 | Excel fuentes validadas | `docs/fuentes_validadas.xlsx` | Metadatos, URLs, estado de cada fuente |

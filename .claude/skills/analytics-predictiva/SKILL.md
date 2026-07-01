@@ -11,7 +11,7 @@ Cubre todo el ciclo de predicción: desde la tabla Silver hasta las probabilidad
 
 ```
 Silver (111,606 filas)
-  → Gold: tabla maestra con 17 features + nivel_riesgo (Notebook 03)
+  → Gold: tabla maestra con 18 features + nivel_riesgo (scripts/train_model.py)
   → Entrenamiento XGBoost — TRAIN: ene–oct 2025 (Notebook 04)
   → SHAP pre-computados → Supabase tabla shap_values
   → FastAPI /predict → {upz_cod, mes} → {nivel_riesgo, probabilidades}

@@ -207,8 +207,8 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 - [ ] Módulo 3: panel CAI (nombre + dirección + turno) + indicador change point (estructural vs temporal)
 - [ ] Módulo 4: chat input → FastAPI `/graphrag` → sentence-transformers embed → pgvector `match_documents` RPC → OpenRouter → respuesta con citas y número de boletín
 - [ ] Probar 10 preguntas tipo de los 3 perfiles de usuario
-- [~] **[Pre-mortem E3]** Test JWT end-to-end IMPLEMENTADO (`backend/tests/test_jwt_e2e.py`, marker `integration`) — ⏳ correrlo una vez con credenciales reales: `python -m pytest tests/test_jwt_e2e.py -m integration -v` (requiere E2E_EMAIL/E2E_PASSWORD + SUPABASE_JWT_SECRET)
-- [~] **[Pre-mortem T5]** Backend LISTO: `/whoami` devuelve `cuadrante_pendiente=true` + filtro comandante-por-cuadrante en services (tests verdes) — ⏳ crear usuario de prueba COMANDANTE_CAI real y verificar RLS del frontend
+- [x] ✅ **[Pre-mortem E3]** (01-jul) JWT end-to-end verificado contra Supabase real: `pytest tests/test_jwt_e2e.py -m integration -v` → PASSED. El proyecto firma con **ES256/JWKS** (no HS256) — el test fue corregido para construir su propia app con `SUPABASE_JWKS_URL` real en vez de reusar el fixture `client` (HS256 de test), que habría dado un 401 falso.
+- [x] ✅ **[Pre-mortem T5]** (01-jul) Cerrado de punta a punta contra Supabase real: `/whoami` devolvió `cuadrante_pendiente: true` con usuario COMANDANTE_CAI sin cuadrante, y `false` tras asignar cuadrante. Nuevo endpoint `PATCH /admin/usuarios/{user_id}/cuadrante` (rol ADMIN) cierra el hueco que antes requería SQL/Dashboard manual — 5 tests nuevos en `test_admin.py`. RLS del frontend queda pendiente para cuando exista el frontend (Fase 3).
 
 ### Deploy
 
