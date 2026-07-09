@@ -184,15 +184,16 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 
 **Entregable:** `SeguroData_05_Dashboard.ipynb` + app React desplegada en Vercel
 
-> **🛠️ Tooling listo (17-jun):** el frontend lo toma otra persona. Preparado en `.claude/`: 5 skills de frontend vendorizadas (`frontend-design` de Anthropic + `react-patterns` · `tailwind-theme-builder` · `shadcn-ui` · `design-review` de jezweb, todas MIT), el agent **`frontend-builder`** que las orquesta con el contrato del proyecto (deck.gl, 4 módulos, paleta de riesgo, endpoints), y `frontend/CLAUDE.md` de arranque. Atribución en `.claude/skills/VENDORED.md`.
+> **🛠️ Tooling (17-jun):** 5 skills de frontend vendorizadas (`frontend-design` de Anthropic + `react-patterns` · `tailwind-theme-builder` · `shadcn-ui` · `design-review` de jezweb, todas MIT), el agent **`frontend-builder`** que las orquesta con el contrato del proyecto (deck.gl, 4 módulos, paleta de riesgo, endpoints), y `frontend/CLAUDE.md` de arranque. Atribución en `.claude/skills/VENDORED.md`. La Fase 3 se está construyendo por sprints delegados a `frontend-builder`, verificados por el orquestador antes de continuar (mismo patrón que `fastapi-builder` en el backend).
 
 ### Semana 1 — FastAPI backend + mapa base (21–27 junio)
 
-- [x] ✅ (10-jun, adelantado) Backend FastAPI COMPLETO en `/backend`: `/predict`, `/explain`, `/graphrag`, `/prescribe`, `/whoami`, `/health` — capas routers→services→repos→clients, JWT+roles, rate limiting, 31 tests verdes, Dockerfile+railway.toml listos (ver `backend/README.md`)
+- [x] ✅ (10-jun, adelantado) Backend FastAPI COMPLETO en `/backend`: `/predict`, `/explain`, `/graphrag`, `/prescribe`, `/whoami`, `/health`, `/admin/usuarios/{id}/cuadrante` (7 endpoints) — capas routers→services→repos→clients, JWT+roles, rate limiting, 36 tests verdes, Dockerfile+railway.toml listos (ver `backend/README.md`)
 - [x] ✅ (16-jun) Predicciones + SHAP servidos desde Supabase vía lookup — **artefactos reales cargados**: 1,918 predicciones + 34,524 SHAP (`origen='notebook_04'`). Seed_dev eliminado. Script: `scripts/train_model.py` → `scripts/load_model_artifacts.py`
-- [ ] Skeleton React + Vite + Tailwind + supabase-js
-- [ ] deck.gl: PolygonLayer con 112 UPZs coloreadas (CRÍTICO=morado, ALTO=rojo, MEDIO=naranja, BAJO=verde) + hover tooltip
-- [ ] Slider temporal funcional → cambia colores del mapa
+- [x] ✅ (01-jul) **Migración `20260701_0012_geojson_rpc.sql`**: 3 RPCs GeoJSON (`upz_geojson`/`localidades_geojson` en SECURITY DEFINER con filtro de rol/cuadrante explícito — mismo patrón D8 del backend, necesario porque la RLS de `predicciones` es solo `authenticated` y no cubre el mapa público sin login; `cuadrantes_geojson` en SECURITY INVOKER simple). Verificado en vivo: `anon` ve 112/112 UPZ con riesgo (mapa público funciona), comandante de prueba ve solo 2/112 de su cuadrante — restricción de seguridad confirmada empíricamente, no solo en teoría.
+- [x] ✅ (01-jul) **Sprint 1 (`frontend-builder`)**: Skeleton React 19 + Vite + Tailwind v4 + shadcn/ui + TanStack Query + supabase-js + react-router-dom + deck.gl. Mapa con `GeoJsonLayer` (NO `PolygonLayer` — `upz_geometrias.geom` es `MultiPolygon`) de las 112 UPZs coloreadas (paleta fija en `lib/colores-riesgo.ts`: CRÍTICO=morado, ALTO=rojo, MEDIO=naranja, BAJO=verde) + zoom adaptativo Localidades↔UPZs + leyenda con `aria-label`. Auth: `/login` magic link + `ProtectedRoute` con la matriz de roles correcta (CIUDADANO **sin** acceso a `/prediccion`, verificado contra `wiki_pages/Modulos.md`). `npm run build` y `npm run lint` verdes (exit code 0 confirmado directamente, no solo el reporte del agente — un intento anterior murió a mitad de camino por corte de sesión y dejó el build roto por una dependencia de shadcn faltante, corregido a mano).
+- [ ] ⏳ **Pendiente antes de cerrar Sprint 1**: verificación visual en navegador (`npm run dev`) — nunca se confirmó que el mapa pinta colores reales end-to-end, se cruzó una caída temporal de Supabase justo antes de ese paso.
+- [ ] Slider temporal funcional → cambia colores del mapa (Sprint 2)
 
 ### Semana 2 — Módulo Diagnóstico + Predicción (28 junio – 4 julio)
 

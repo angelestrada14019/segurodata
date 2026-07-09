@@ -1,12 +1,12 @@
 # Los Módulos del Sistema
 
-> **Estado de implementación (16-jun-2026):**
+> **Estado de implementación (01-jul-2026):**
 > - ✅ **Backend FastAPI completo** — 7 endpoints, 36 tests verdes (incl. E3 JWT end-to-end y T5 verificados en vivo contra Supabase real), Dockerfile listo (deploy en Fase 4)
 > - ✅ **Modelo XGBoost** — entrenado vía `scripts/train_model.py` con 18 variables. Test temporal (nov 2025 – abr 2026): acierto dentro de ±1 banda 100%, macro-F1 0.867
-> - ✅ **Supabase configurado** — migraciones + RLS + hook JWT + Realtime ON. **Artefactos reales del modelo cargados** (`origen='notebook_04'`): 1,918 predicciones + 34,524 SHAP
+> - ✅ **Supabase configurado** — migraciones + RLS + hook JWT + Realtime ON. **Artefactos reales del modelo cargados** (`origen='notebook_04'`): 1,918 predicciones + 34,524 SHAP + RPCs GeoJSON para el mapa
 > - ✅ **change_points**: 40 breakpoints ruptures PELT cargados (F1 DAI 2018-2026), COVID 2020 validado
 > - ✅ **Corpus GraphRAG**: 10 chunks RSS reales en pgvector (El Tiempo + El Informante; SEED_DEV eliminados)
-> - ⏳ **Frontend React** — pendiente Fase 3 (21 jun)
+> - 🟡 **Frontend React** — Sprint 1 de 3 (Fase 3): scaffold + auth + mapa deck.gl de las 112 UPZs, build/lint verdes, verificación visual pendiente. Módulos 2-4 aún no construidos.
 
 La aplicación responde 5 preguntas: 4 módulos analíticos (Diagnóstico · Predicción · Prescriptivo · Chatbot causal) más una capa de participación ciudadana (autenticación, mapa interactivo con modal, alertas comunitarias — ver [[Plataforma-Ciudadana]]).
 

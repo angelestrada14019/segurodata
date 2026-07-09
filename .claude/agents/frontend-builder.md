@@ -38,9 +38,9 @@ Invócalas explícitamente; no reinventes lo que ya cubren:
 
 ## El mapa (deck.gl) — lo que ninguna skill genérica sabe
 
-- `PolygonLayer` con las 112 UPZs desde `upz_geometrias`.
-- **Paleta de riesgo: CRÍTICO=morado · ALTO=rojo · MEDIO=naranja · BAJO=verde.**
-- **Zoom adaptativo**: Localidades (zoom<12) → UPZs (zoom≥12) con `CompositeLayer`.
+- `GeoJsonLayer` (NO `PolygonLayer`) con las 112 UPZs — `upz_geometrias.geom` es `geometry(MultiPolygon, 4326)`, verificado en `supabase/migrations/20260610_0003_geo_tables.sql`. Consume directo el GeoJSON de las RPCs `upz_geojson`/`localidades_geojson`/`cuadrantes_geojson` (`supabase/migrations/20260701_0012_geojson_rpc.sql`) — supabase-js no parsea WKB, por eso existen esas RPCs.
+- **Paleta de riesgo: CRÍTICO=morado · ALTO=rojo · MEDIO=naranja · BAJO=verde.** Única fuente de verdad: `src/lib/colores-riesgo.ts`.
+- **Zoom adaptativo**: Localidades (zoom<12) → UPZs (zoom≥12). NO uses una clase `CompositeLayer` custom — un hook simple que deriva el nivel de `viewState.zoom` y monta la capa correspondiente vía `useMemo` es más simple y logra lo mismo.
 - Hover tooltip · slider temporal · capas toggleables (crimen · cámaras F13 · cuadrantes · alumbrado F14 · TM).
 - **Modal de 5 pestañas** por UPZ: Descripción · Predicción · Sugerencia · Fuentes · Chatbot.
 
