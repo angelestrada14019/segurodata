@@ -123,9 +123,18 @@ jobs:
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: python scripts/load_model_artifacts.py
 
-      - name: Commitear datos y artefactos actualizados
+      - name: Commitear metricas actualizadas
+        # SOLO metricas.json -- es la UNICA excepcion deliberada dentro de
+        # datos/ que se versiona (ver .gitignore, P1.2). Bronze/Silver/Gold
+        # (datos/raw|procesados|features/*) siguen gitignored a proposito
+        # (filosofia FTI del proyecto: "los datos no se suben al repo, se
+        # generan localmente") -- listarlos aqui hace que git-auto-commit
+        # falle con "pathspec did not match any files" (exit 128) porque
+        # git rechaza un `add` sobre un pathspec que solo matchea archivos
+        # ignorados. Bug real encontrado en el primer run end-to-end
+        # (29101919310) de este workflow.
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "data: pipeline automatico ${{ github.run_id }} — fuentes ${{ github.event.inputs.sources || 'f3 f5 f6' }}"
-          file_pattern: "datos/raw/*.parquet datos/raw/.pipeline_state.json datos/procesados/*.parquet datos/procesados/.transform_state.json datos/features/*.parquet datos/modelos/metricas.json"
+          commit_message: "data: metricas actualizadas — pipeline automatico ${{ github.run_id }}"
+          file_pattern: "datos/modelos/metricas.json"
           commit_author: "github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
