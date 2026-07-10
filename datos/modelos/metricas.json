@@ -2,31 +2,31 @@
   "accuracy_exact": 0.8707,
   "accuracy_within_1_band": 1.0,
   "mae_ordinal": 0.1293,
-  "macro_f1": 0.8666,
+  "macro_f1": 0.8611,
   "confusion_matrix": [
     [
-      267,
-      20,
+      268,
+      22,
       0,
       0
     ],
     [
       14,
-      204,
-      28,
+      206,
+      26,
       0
     ],
     [
       0,
-      23,
-      121,
-      5
+      21,
+      119,
+      7
     ],
     [
       0,
       0,
       3,
-      34
+      33
     ]
   ],
   "confusion_labels": [
@@ -37,33 +37,33 @@
   ],
   "per_class": {
     "BAJO": {
-      "precision": 0.9502,
-      "recall": 0.9303,
-      "f1-score": 0.9401,
-      "support": 287.0
+      "precision": 0.9504,
+      "recall": 0.9241,
+      "f1-score": 0.9371,
+      "support": 290.0
     },
     "MEDIO": {
-      "precision": 0.8259,
-      "recall": 0.8293,
-      "f1-score": 0.8276,
+      "precision": 0.8273,
+      "recall": 0.8374,
+      "f1-score": 0.8323,
       "support": 246.0
     },
     "ALTO": {
-      "precision": 0.7961,
-      "recall": 0.8121,
-      "f1-score": 0.804,
-      "support": 149.0
+      "precision": 0.8041,
+      "recall": 0.8095,
+      "f1-score": 0.8068,
+      "support": 147.0
     },
     "CRITICO": {
-      "precision": 0.8718,
-      "recall": 0.9189,
-      "f1-score": 0.8947,
-      "support": 37.0
+      "precision": 0.825,
+      "recall": 0.9167,
+      "f1-score": 0.8684,
+      "support": 36.0
     }
   },
-  "n_train": 1199,
+  "n_train": 1319,
   "n_test": 719,
-  "best_iteration": 102,
+  "best_iteration": 91,
   "n_features": 18,
-  "split": "TRAIN<=2025-10, TEST=2025-11+"
+  "split": "TRAIN<=2025-11, TEST=2025-12+"
 }
