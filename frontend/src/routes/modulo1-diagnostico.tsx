@@ -17,7 +17,7 @@ export function ModuloDiagnosticoPage() {
           Nivel de riesgo actual por UPZ. Acceso público de solo lectura.
         </p>
       </div>
-      <div className="relative min-h-[600px] flex-1">
+      <div className="relative flex min-h-[600px] flex-1">
         <ErrorBoundary>
           <MapaRiesgo />
         </ErrorBoundary>

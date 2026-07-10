@@ -19,7 +19,7 @@ function PulseBlock({ className }: { className?: string }) {
 export function MapaSkeleton() {
   return (
     <div
-      className="relative h-full w-full overflow-hidden bg-card"
+      className="relative w-full overflow-hidden bg-card"
       role="status"
       aria-label="Cargando mapa de riesgo"
     >
