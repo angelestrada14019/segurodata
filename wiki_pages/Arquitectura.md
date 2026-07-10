@@ -5,12 +5,14 @@
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │  CAPA 5 — FRONTEND                                                   │
-│  React + Vite + deck.gl + Tailwind CSS  →  Vercel (CDN, siempre ON) │
-│  4 páginas: Diagnóstico / Predicción / Prescriptivo / Chatbot       │
+│  React + Vite + deck.gl + Tailwind CSS → Vercel (CDN, siempre ON)   │
+│  https://segurodata-frontend.vercel.app                             │
+│  4 módulos + modal 5 pestañas + Panel Admin                         │
 ├─────────────────────────────────────────────────────────────────────┤
 │  CAPA 4 — BACKEND ML (Python)                                        │
-│  FastAPI (Python)  →  Railway  (siempre activo, sin cold start)      │
-│  /predict (XGBoost) · /explain (SHAP) · /graphrag (pgvector+OpenRouter)│
+│  FastAPI (Python) → Railway (siempre activo, sin cold start)         │
+│  https://segurodata-api-production.up.railway.app                   │
+│  /predict (lookup) · /explain (SHAP) · /graphrag (pgvector+OpenRouter)│
 ├───────────────────────────┬─────────────────────────────────────────┤
 │  CAPA 3 — BASE DE DATOS   │  CAPA 3B — VECTOR STORE                 │
 │  Supabase PostgreSQL       │  Supabase pgvector (384 dims)           │
@@ -54,17 +56,19 @@ La tabla Silver tiene una fila por cada combinación **UPZ × mes × tipo de inc
 
 ### Frontend — React + deck.gl
 ```
-React 18 + Vite + Tailwind CSS
-deck.gl: PolygonLayer (UPZs coloreadas CRÍTICO/ALTO/MEDIO/BAJO)
-         ScatterplotLayer (cámaras Salvavidas F13)
-         HeatmapLayer (densidad de incidentes)
-MapLibre GL JS: basemap OSM gratuito
+React 19 + Vite + Tailwind v4 + shadcn/ui + TanStack Query
+deck.gl: GeoJsonLayer (UPZs/localidades/cuadrantes coloreados CRÍTICO/ALTO/MEDIO/BAJO —
+         upz_geometrias.geom es MultiPolygon, no PolygonLayer; supabase-js no parsea WKB,
+         por eso las RPCs upz_geojson/localidades_geojson/cuadrantes_geojson devuelven
+         GeoJSON ya construido)
+MapLibre GL JS: basemap CARTO dark, gratuito
 supabase-js: acceso directo a PostgreSQL + Realtime desde React
 ```
 
 ### Backend — FastAPI en Railway (Python)
 
-> **Estado (10-jun-2026):** ✅ **Implementado y verificado** — 31 tests verdes, ruff limpio. Pendiente deploy en Railway (Fase 4).
+> **Estado:** ✅ **Implementado, verificado y desplegado** — 36 tests verdes, ruff limpio.
+> **https://segurodata-api-production.up.railway.app** — `GET /health` responde `{"status":"ok"}`.
 
 Todo el backend es Python. Un solo servicio, un solo lenguaje, un solo deploy. Railway mantiene el servidor siempre activo — sin cold start, sin warmup antes del demo.
 

@@ -223,9 +223,9 @@ El Módulo 3 usa SHAP para identificar la causa dominante del riesgo y conecta d
 | ✅ 23 mayo | Notebook 01 completado — plan + catálogo de 12 fuentes (F1-F10 activas + F11-F12 planificadas) |
 | ✅ 26 mayo – 6 junio | **Fase 1:** EDA de las 10 fuentes → Notebook 02 ✅ |
 | ✅ 10 junio | Arquitectura pivotada a React+Supabase+FastAPI · F13/F14 activadas · Wiki publicado (13 páginas + Plataforma-Ciudadana) · GitHub Project poblado (issues #11-18) · Plataforma ciudadana: ideas 1+2+3+5 comprometidas para MVP, ideas 4+6 opcionales con HUs en `docs/HU-Features-Opcionales.md`, idea 7 descartada · Pre-mortem documentado |
-| ⏳ 7 – 20 junio | **Fase 2:** XGBoost + SHAP → Notebooks 03+04 |
-| ⏳ 21 junio – 10 julio | **Fase 3:** React+deck.gl + FastAPI + GraphRAG Supabase → Notebook 05 |
-| ⏳ 11 julio – 1 agosto | **Fase 4:** Deploy Railway+Vercel + Docs + video → Notebook 06 |
+| ✅ 7 – 20 junio | **Fase 2:** XGBoost + SHAP → Notebooks 03+04 (vía script `train_model.py`) |
+| ✅ 21 junio – 10 julio | **Fase 3:** React+deck.gl + FastAPI + GraphRAG Supabase — 4 módulos + modal de 5 pestañas + Panel Admin + deploy Railway/Vercel, todo en producción → Notebook 05 (⏳ wrapper visual opcional) |
+| ⏳ 11 julio – 1 agosto | **Fase 4:** Docs + video + registro datos.gov.co → Notebook 06 (deploy ya completado en Fase 3) |
 | **⚠️ Verificar** | Fecha exacta entrega/registro en datos.gov.co — posiblemente agosto (GovCamps 2026) |
 | Primera semana agosto | **Final GovCamps 2026** (sustentación oral — confirmado MinTIC) |
 

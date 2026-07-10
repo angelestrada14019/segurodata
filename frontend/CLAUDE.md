@@ -4,6 +4,15 @@
 > Lee también el `CLAUDE.md` de la raíz (visión, módulos, decisiones) y las skills `backend-segurodata`
 > (contrato de la API) y `supabase-segurodata` (tablas).
 
+## Estado: en producción
+
+- **Frontend:** https://segurodata-frontend.vercel.app
+- **Backend:** https://segurodata-api-production.up.railway.app
+
+Los 4 módulos + modal de 5 pestañas + Panel Admin están construidos y desplegados. Pendiente,
+deliberadamente fuera de alcance por ahora: heatmap día×hora (Plotly) y el backfill del mapeo
+UPZ→Localidad de Bogotá (sin eso, la capa de rupturas estructurales no tiene con qué hacer join).
+
 ## Stack
 
 **React + Vite + Tailwind v4 + deck.gl + supabase-js** → deploy en **Vercel**. Dashboard dark por
@@ -49,9 +58,14 @@ Lectura adicional (no vendorizada): [wilwaldon/Claude-Code-Frontend-Design-Toolk
 
 ## El mapa (deck.gl)
 
-`PolygonLayer` con 112 UPZs · paleta **CRÍTICO=morado · ALTO=rojo · MEDIO=naranja · BAJO=verde** ·
-zoom adaptativo Localidades(zoom<12)→UPZs(zoom≥12) · hover · slider temporal · capas toggleables ·
-modal de 5 pestañas por UPZ (Descripción · Predicción · Sugerencia · Fuentes · Chatbot).
+`GeoJsonLayer` (NO `PolygonLayer` — `upz_geometrias.geom` es `MultiPolygon`, supabase-js no parsea
+WKB, por eso las RPCs `upz_geojson`/`localidades_geojson`/`cuadrantes_geojson` devuelven GeoJSON ya
+construido) con 112 UPZs · paleta **CRÍTICO=morado · ALTO=rojo · MEDIO=naranja · BAJO=verde** ·
+zoom adaptativo Localidades(zoom<12)→UPZs(zoom≥12) · hover · slider temporal (navega meses
+históricos de `predicciones`) · panel de capas toggleables (Cuadrantes y Cambios estructurales
+reales; Cámaras F13/Alumbrado F14/TransMilenio marcadas "Pendiente de datos", sin geometría
+inventada) · modal de 5 pestañas por UPZ (Descripción · Predicción · Sugerencia · Fuentes ·
+Chatbot), compartido como punto de entrada desde Módulo 1 y Módulo 2.
 
 ## Regla de documentación (INAMOVIBLE)
 

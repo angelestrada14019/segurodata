@@ -1,12 +1,13 @@
 # Los Módulos del Sistema
 
-> **Estado de implementación (01-jul-2026):**
-> - ✅ **Backend FastAPI completo** — 7 endpoints, 36 tests verdes (incl. E3 JWT end-to-end y T5 verificados en vivo contra Supabase real), Dockerfile listo (deploy en Fase 4)
-> - ✅ **Modelo XGBoost** — entrenado vía `scripts/train_model.py` con 18 variables. Test temporal (nov 2025 – abr 2026): acierto dentro de ±1 banda 100%, macro-F1 0.867
-> - ✅ **Supabase configurado** — migraciones + RLS + hook JWT + Realtime ON. **Artefactos reales del modelo cargados** (`origen='notebook_04'`): 1,918 predicciones + 34,524 SHAP + RPCs GeoJSON para el mapa
-> - ✅ **change_points**: 40 breakpoints ruptures PELT cargados (F1 DAI 2018-2026), COVID 2020 validado
-> - ✅ **Corpus GraphRAG**: 10 chunks RSS reales en pgvector (El Tiempo + El Informante; SEED_DEV eliminados)
-> - 🟡 **Frontend React** — Sprint 1 de 3 (Fase 3): scaffold + auth + mapa deck.gl de las 112 UPZs, build/lint verdes, verificación visual pendiente. Módulos 2-4 aún no construidos.
+> **Estado: en producción.**
+> - **Frontend:** https://segurodata-frontend.vercel.app · **Backend:** https://segurodata-api-production.up.railway.app
+> - **Backend FastAPI completo** — 7 endpoints, 36 tests verdes (incl. E3 JWT end-to-end y T5 verificados en vivo contra Supabase real)
+> - **Modelo XGBoost** — entrenado vía `scripts/train_model.py` con 18 variables. Test temporal (nov 2025 – abr 2026): acierto dentro de ±1 banda 100%, macro-F1 0.867
+> - **Supabase** — migraciones + RLS + hook JWT + Realtime ON. Artefactos reales del modelo (`origen='notebook_04'`): 1,918 predicciones + 34,524 SHAP + RPCs GeoJSON para el mapa
+> - **change_points**: 40 breakpoints ruptures PELT cargados (F1 DAI 2018-2026), COVID 2020 validado
+> - **Corpus GraphRAG**: 10 chunks RSS reales en pgvector (El Tiempo + El Informante)
+> - **Frontend React** — 4 módulos + modal de 5 pestañas + Panel Admin construidos y verificados con datos reales. Pendiente: heatmap día×hora (Plotly, menor prioridad) y el backfill del mapeo oficial UPZ→Localidad de Bogotá (sin eso, la capa de rupturas estructurales no tiene con qué cruzar).
 
 La aplicación responde 5 preguntas: 4 módulos analíticos (Diagnóstico · Predicción · Prescriptivo · Chatbot causal) más una capa de participación ciudadana (autenticación, mapa interactivo con modal, alertas comunitarias — ver [[Plataforma-Ciudadana]]).
 
@@ -33,18 +34,17 @@ Cuatro perfiles acceden a módulos distintos según su necesidad operacional:
 **Tecnología:** React + deck.gl + Supabase Realtime
 
 - **Mapa WebGL interactivo**: choropleth de Bogotá, 112 UPZs coloreadas por nivel de riesgo actual. Hover muestra estadísticas de la UPZ. Click activa el panel de detalle.
-- **Zoom adaptativo**: vista ciudad completa → 20 Localidades (zoom < 12) → 112 UPZs (zoom ≥ 12), transición automática con deck.gl `CompositeLayer`. El jurado ve primero la ciudad entera, luego el detalle de zona.
+- **Zoom adaptativo**: vista ciudad completa → 20 Localidades (zoom < 12) → 112 UPZs (zoom ≥ 12), transición automática según el nivel de zoom. El jurado ve primero la ciudad entera, luego el detalle de zona.
 - **Modal de análisis por zona (5 pestañas)**: clic en cualquier UPZ abre un panel lateral contextualizado en esa zona:
   - 📊 **Descripción** — serie histórica NUSE, top 3 tipos de incidente, tendencia últimas 8 semanas
   - 🔮 **Predicción** — nivel de riesgo XGBoost del próximo mes + probabilidades + proyección +4 semanas
   - 💡 **Sugerencia** — diagnóstico causal SHAP + recomendación prescriptiva + CAI responsable
-  - 📚 **Fuentes** — qué datasets de datos abiertos informan esta UPZ (trazabilidad visible)
+  - 📚 **Fuentes** — boletines SCJ y noticias citados por la pestaña Chatbot en esa sesión (vacío hasta que se hace una pregunta)
   - 💬 **Chatbot** — pregunta libre contextualizada en la UPZ seleccionada
-- **Capas toggleables**: crimen por tipo · cámaras Salvavidas SDM · densidad cuadrantes · alumbrado público · estaciones TransMilenio
-- **Slider temporal**: reproducir la evolución del crimen mes a mes (2025–2026)
-- **Heatmap**: densidad de incidentes NUSE por franja horaria y día de la semana
-- **Tendencia con change points**: serie histórica 2018–2026 (F1 DAI) con marcadores en los puntos de ruptura detectados por `ruptures`
-- **Realtime**: cuando llegan datos nuevos del NUSE (mensual), Supabase Realtime actualiza el mapa sin recargar la página
+- **Capas toggleables**: densidad de cuadrantes de Policía y cambios estructurales (`ruptures`) ya reales; cámaras Salvavidas SDM, alumbrado público y estaciones TransMilenio quedan marcadas "Pendiente de datos" — el modelo las trae en placeholder hasta que existan extractores reales, el mapa nunca inventa geometría
+- **Slider temporal**: navega los meses históricos de `predicciones`, recolorea el mapa
+- **Tendencia con change points**: marcadores en el mapa para las UPZs con un punto de ruptura reciente (`ruptures` sobre F1 DAI 2018–2026)
+- **Realtime**: suscripción a inserciones nuevas en `silver_upz_mes` — notifica con un aviso en pantalla cuando llega un dato nuevo para la UPZ que se está viendo
 
 ---
 

@@ -10,7 +10,7 @@
 
 ```
 MAYO                        JUNIO                          JULIO
-Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
+Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ✅ | Fase 4 ⏳
 25 May    | 26–27 May  | 27M–6Jun   |  7–20 Jun | 21J–10Jul | 11–13 Jul
 [Plan]    | [Bronze]   | [Silver+EDA]| [Modelo]  | [Dashboard+IA] | [Docs]
 ```
@@ -180,9 +180,9 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 
 ---
 
-## Fase 3 ⏳ — React + FastAPI + GraphRAG (21 junio – 10 julio 2026)
+## Fase 3 ✅ — React + FastAPI + GraphRAG (21 junio – 10 julio 2026)
 
-**Entregable:** `SeguroData_05_Dashboard.ipynb` + app React desplegada en Vercel
+**Entregable:** `SeguroData_05_Dashboard.ipynb` (⏳ pendiente, wrapper visual opcional) + app React desplegada en Vercel ✅
 
 > **🛠️ Tooling (17-jun):** 5 skills de frontend vendorizadas (`frontend-design` de Anthropic + `react-patterns` · `tailwind-theme-builder` · `shadcn-ui` · `design-review` de jezweb, todas MIT), el agent **`frontend-builder`** que las orquesta con el contrato del proyecto (deck.gl, 4 módulos, paleta de riesgo, endpoints), y `frontend/CLAUDE.md` de arranque. Atribución en `.claude/skills/VENDORED.md`. La Fase 3 se está construyendo por sprints delegados a `frontend-builder`, verificados por el orquestador antes de continuar (mismo patrón que `fastapi-builder` en el backend).
 
@@ -191,33 +191,35 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ⏳ | Fase 4 ⏳
 - [x] ✅ (10-jun, adelantado) Backend FastAPI COMPLETO en `/backend`: `/predict`, `/explain`, `/graphrag`, `/prescribe`, `/whoami`, `/health`, `/admin/usuarios/{id}/cuadrante` (7 endpoints) — capas routers→services→repos→clients, JWT+roles, rate limiting, 36 tests verdes, Dockerfile+railway.toml listos (ver `backend/README.md`)
 - [x] ✅ (16-jun) Predicciones + SHAP servidos desde Supabase vía lookup — **artefactos reales cargados**: 1,918 predicciones + 34,524 SHAP (`origen='notebook_04'`). Seed_dev eliminado. Script: `scripts/train_model.py` → `scripts/load_model_artifacts.py`
 - [x] ✅ (01-jul) **Migración `20260701_0012_geojson_rpc.sql`**: 3 RPCs GeoJSON (`upz_geojson`/`localidades_geojson` en SECURITY DEFINER con filtro de rol/cuadrante explícito — mismo patrón D8 del backend, necesario porque la RLS de `predicciones` es solo `authenticated` y no cubre el mapa público sin login; `cuadrantes_geojson` en SECURITY INVOKER simple). Verificado en vivo: `anon` ve 112/112 UPZ con riesgo (mapa público funciona), comandante de prueba ve solo 2/112 de su cuadrante — restricción de seguridad confirmada empíricamente, no solo en teoría.
-- [x] ✅ (01-jul) **Sprint 1 (`frontend-builder`)**: Skeleton React 19 + Vite + Tailwind v4 + shadcn/ui + TanStack Query + supabase-js + react-router-dom + deck.gl. Mapa con `GeoJsonLayer` (NO `PolygonLayer` — `upz_geometrias.geom` es `MultiPolygon`) de las 112 UPZs coloreadas (paleta fija en `lib/colores-riesgo.ts`: CRÍTICO=morado, ALTO=rojo, MEDIO=naranja, BAJO=verde) + zoom adaptativo Localidades↔UPZs + leyenda con `aria-label`. Auth: `/login` magic link + `ProtectedRoute` con la matriz de roles correcta (CIUDADANO **sin** acceso a `/prediccion`, verificado contra `wiki_pages/Modulos.md`). `npm run build` y `npm run lint` verdes (exit code 0 confirmado directamente, no solo el reporte del agente — un intento anterior murió a mitad de camino por corte de sesión y dejó el build roto por una dependencia de shadcn faltante, corregido a mano).
-- [ ] ⏳ **Pendiente antes de cerrar Sprint 1**: verificación visual en navegador (`npm run dev`) — nunca se confirmó que el mapa pinta colores reales end-to-end, se cruzó una caída temporal de Supabase justo antes de ese paso.
-- [ ] Slider temporal funcional → cambia colores del mapa (Sprint 2)
+- [x] ✅ (01-jul) **Sprint 1 (`frontend-builder`)**: Skeleton React 19 + Vite + Tailwind v4 + shadcn/ui + TanStack Query + supabase-js + react-router-dom + deck.gl. Mapa con `GeoJsonLayer` (NO `PolygonLayer` — `upz_geometrias.geom` es `MultiPolygon`) de las 112 UPZs coloreadas (paleta fija en `lib/colores-riesgo.ts`: CRÍTICO=morado, ALTO=rojo, MEDIO=naranja, BAJO=verde) + zoom adaptativo Localidades↔UPZs + leyenda con `aria-label`. Auth: `/login` magic link + `ProtectedRoute` con la matriz de roles correcta (CIUDADANO **sin** acceso a `/prediccion`, verificado contra `wiki_pages/Modulos.md`).
+- [x] ✅ (09-jul) **Verificación visual en navegador**: confirmada end-to-end. Encontró y cerró 2 bugs bloqueantes que la verificación pendiente nunca había atrapado — (1) RLS de `predicciones` es `TO authenticated` únicamente, así que un visitante anónimo (el caso público de `/diagnostico`) recibía período `NULL` y eso disparaba un bug de duplicación de filas en `upz_geojson`/`localidades_geojson` que excedía el `statement_timeout` de 3s del rol `anon` — resuelto con la RPC `periodo_mas_reciente` (migración `0013`); (2) el contenedor del mapa tenía `height:0` real (`min-height` sin `height` no es "definido" para que un hijo con `height:100%` lo herede) — resuelto cambiando el mecanismo a `flex`+`align-items:stretch`. De paso se encontró que `upz_geometrias.cod_localidad`/`nom_localidad` están `NULL` en las 112 filas (el pipeline F2 nunca trajo el código de localidad) — la vista agregada por localidades caía a 1 sola feature fusionada; migración `0014` la corrige cayendo a agrupar por UPZ individual cuando no hay localidad real.
+- [x] ✅ (09-jul) Slider temporal funcional → navega meses históricos de `predicciones`, recolorea el mapa.
 
-### Semana 2 — Módulo Diagnóstico + Predicción (28 junio – 4 julio)
+### Semana 2 — Módulo Diagnóstico + Predicción (28 junio – 4 julio) ✅
 
-- [ ] Módulo 1: capas toggleables deck.gl (crimen · cámaras F13 · cuadrantes · alumbrado F14)
-- [ ] Módulo 1: Heatmap día × hora (Plotly React) + tendencia con change points marcados
-- [ ] Módulo 2: click en UPZ → FastAPI /predict → panel con nivel_riesgo + probabilidades
-- [ ] Módulo 2: mapa predictivo morado/rojo/naranja/verde + top-10 UPZs en riesgo CRÍTICO o ALTO
+- [x] ✅ Módulo 1: capas toggleables deck.gl — Cuadrantes de Policía y Cambios estructurales reales; Cámaras F13, Alumbrado F14 y Estaciones TransMilenio quedan marcadas "Pendiente de datos" (placeholder=0 en el modelo, sin geometría inventada, hasta que existan extractores reales)
+- [ ] Módulo 1: Heatmap día × hora (Plotly React) — **diferido**, dependencia nueva pesada de menor prioridad frente al resto del alcance
+- [x] ✅ Módulo 1: tendencia con change points marcados — capa de rupturas estructurales (`change_points`) sobre el mapa; hoy resuelve 0 marcadores visibles porque el join necesita `cod_localidad` (ver bug de arriba) — el matching ya está implementado y normalizado, solo falta el backfill del mapeo UPZ→Localidad
+- [x] ✅ Módulo 2: click en UPZ (mapa o Top-10) → modal de 5 pestañas → pestaña Predicción → `/predict`+`/explain` → nivel_riesgo + probabilidades + SHAP top-3
+- [x] ✅ Módulo 2: mapa predictivo (reusa el mismo `GeoJsonLayer`/paleta de Módulo 1 — mismo dato, mismo lookup por PK) + Top-10 UPZs ordenado CRÍTICO→BAJO
 
-### Semana 3 — Módulo Prescriptivo + Chatbot + Auth (5–10 julio)
+### Semana 3 — Módulo Prescriptivo + Chatbot + Auth (5–10 julio) ✅
 
-- [ ] Módulo 3: tabla ontológica + SHAP top feature → diagnóstico → OpenRouter → recomendación operacional
-- [ ] Módulo 3: panel CAI (nombre + dirección + turno) + indicador change point (estructural vs temporal)
-- [ ] Módulo 4: chat input → FastAPI `/graphrag` → sentence-transformers embed → pgvector `match_documents` RPC → OpenRouter → respuesta con citas y número de boletín
-- [ ] Probar 10 preguntas tipo de los 3 perfiles de usuario
+- [x] ✅ Módulo 3: tabla ontológica + SHAP top feature → diagnóstico → OpenRouter → recomendación operacional — verificado en vivo con UPZ real (034, ALTO): recomendación LLM con 3 causas específicas y acción por entidad
+- [x] ✅ Módulo 3: panel CAI (nombre + cuadrante + teléfono) + indicador de change point (estructural vs temporal) — página standalone `/prescriptivo` con selector de UPZ, comparte componentes con la pestaña Sugerencia del modal
+- [x] ✅ Módulo 4: chat input → FastAPI `/graphrag` → sentence-transformers embed → pgvector `match_documents` RPC → OpenRouter → respuesta con citas y número de boletín — disponible en el modal (contextualizado a la UPZ) y standalone en `/chatbot`
+- [ ] Probar 10 preguntas tipo de los 3 perfiles de usuario — **pendiente la batería formal completa**; el flujo end-to-end ya se probó con preguntas reales contra el backend real
 - [x] ✅ **[Pre-mortem E3]** (01-jul) JWT end-to-end verificado contra Supabase real: `pytest tests/test_jwt_e2e.py -m integration -v` → PASSED. El proyecto firma con **ES256/JWKS** (no HS256) — el test fue corregido para construir su propia app con `SUPABASE_JWKS_URL` real en vez de reusar el fixture `client` (HS256 de test), que habría dado un 401 falso.
-- [x] ✅ **[Pre-mortem T5]** (01-jul) Cerrado de punta a punta contra Supabase real: `/whoami` devolvió `cuadrante_pendiente: true` con usuario COMANDANTE_CAI sin cuadrante, y `false` tras asignar cuadrante. Nuevo endpoint `PATCH /admin/usuarios/{user_id}/cuadrante` (rol ADMIN) cierra el hueco que antes requería SQL/Dashboard manual — 5 tests nuevos en `test_admin.py`. RLS del frontend queda pendiente para cuando exista el frontend (Fase 3).
+- [x] ✅ **[Pre-mortem T5]** (01-jul, cerrado 09-jul en frontend) Backend cerrado de punta a punta contra Supabase real: `/whoami` devolvió `cuadrante_pendiente: true` con usuario COMANDANTE_CAI sin cuadrante, y `false` tras asignar cuadrante. Endpoint `PATCH /admin/usuarios/{user_id}/cuadrante` (rol ADMIN). En el frontend: `ProtectedRoute` redirige a `/cuadrante-pendiente` cuando corresponde, y el Panel Admin (`/admin/usuarios`, 100% Supabase directo vía RLS `admin_lee_perfiles`/`perfil_propio_o_admin`, sin endpoint nuevo) permite asignar el cuadrante desde la UI.
+- [x] ✅ (09-jul) **Modal de 5 pestañas** (Descripción · Predicción · Sugerencia · Fuentes · Chatbot) — pieza central que unifica Módulos 2/3/4 por UPZ, se abre al hacer click en el mapa; componentes de la pestaña Sugerencia compartidos con la página standalone de Módulo 3, componentes de Chatbot compartidos con Módulo 4.
+- [x] ✅ (09-jul) **Panel Admin** (`/admin/usuarios`, rol ADMIN) — lista de usuarios (`user_profiles` vía Supabase directo) + asignación de cuadrante a comandantes.
 
-### Deploy
+### Deploy ✅
 
-- [ ] FastAPI → Railway: `railway login && railway link && cd backend && railway up`
-- [ ] Configurar variables en Railway dashboard: OPENROUTER_API_KEY, LLM_MODEL, SUPABASE_URL, SUPABASE_SERVICE_KEY
-- [ ] React → Vercel: conectar repo GitHub → `/frontend`
-- [ ] Configurar variables en Vercel: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_API_URL (URL pública Railway)
-- [ ] Verificar URL pública funciona desde móvil
+- [x] ✅ (09-jul) FastAPI → Railway: proyecto `segurodata-api`, deploy vía CLI (`railway up`), variables de entorno configuradas (Supabase service key + JWKS, OpenRouter, CORS). `GET /health` → `{"status":"ok","env":"production"}` verificado en vivo.
+- [x] ✅ (09-jul) React → Vercel: proyecto `segurodata-frontend`, deploy vía CLI (`vercel --prod`), variables `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY`/`VITE_API_URL` configuradas apuntando al Railway real. CORS verificado con preflight real (`access-control-allow-origin` correcto).
+- [x] ✅ URLs públicas: **https://segurodata-frontend.vercel.app** (frontend) · **https://segurodata-api-production.up.railway.app** (backend)
+- [ ] Verificar URL pública funciona desde móvil — pendiente de una pasada manual real (se verificó el bundle/CORS/health por HTTP, no un click-through interactivo en un teléfono)
 - [ ] Pre-demo: Railway está siempre activo — verificar que /health responde y Supabase conecta 5 min antes
 
 ---

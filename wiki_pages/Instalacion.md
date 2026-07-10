@@ -150,7 +150,9 @@ ruff check .                             # lint
 
 Ver skill `backend-testing` para la guía completa de verificación E2E.
 
-### Deploy en Railway (Fase 4)
+### Deploy en Railway — ✅ desplegado
+
+**https://segurodata-api-production.up.railway.app** — `GET /health` responde 200.
 
 ```bash
 # Opción A — GitHub integration (recomendada):
@@ -195,17 +197,22 @@ npm run dev       # http://localhost:5173
 # Variables de entorno (frontend/.env.local):
 VITE_SUPABASE_URL=https://pluxaelenhkdaakxdrpm.supabase.co
 VITE_SUPABASE_ANON_KEY=<anon key pública>
-VITE_API_URL=https://segurodata-api.up.railway.app
+VITE_API_URL=https://segurodata-api-production.up.railway.app
 ```
 
-### Deploy en Vercel
+### Deploy en Vercel — ✅ desplegado
 
 ```bash
-vercel --cwd frontend
-# O conectar repo en vercel.com → Root Directory: frontend/
+cd frontend
+vercel link --project segurodata-frontend
+vercel env add VITE_SUPABASE_URL production --value "..."
+vercel env add VITE_SUPABASE_ANON_KEY production --value "..."
+vercel env add VITE_API_URL production --value "https://segurodata-api-production.up.railway.app"
+vercel --prod
 ```
 
-> **Estado actual:** frontend pendiente — Fase 3 (21 jun – 10 jul 2026).
+> **Estado actual:** **https://segurodata-frontend.vercel.app** — 4 módulos + modal de 5 pestañas +
+> Panel Admin en producción, apuntando al backend real de Railway. CORS verificado.
 
 ---
 

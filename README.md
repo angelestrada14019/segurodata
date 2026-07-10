@@ -12,6 +12,19 @@
 
 ---
 
+## Producción
+
+| Componente | URL |
+|---|---|
+| **Frontend** (React + deck.gl) | https://segurodata-frontend.vercel.app |
+| **Backend** (FastAPI) | https://segurodata-api-production.up.railway.app |
+| **Docs API** | https://segurodata-api-production.up.railway.app/docs |
+
+Los 4 módulos (Diagnóstico · Predicción · Prescriptivo · Chatbot causal) + Panel Admin están
+desplegados y funcionando con datos reales.
+
+---
+
 ## Arquitectura Medallion
 
 ```

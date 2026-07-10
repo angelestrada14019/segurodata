@@ -4,7 +4,13 @@
 
 **Concurso:** Datos al Ecosistema 2026 — MinTIC · Reto #2 Seguridad Ciudadana · Nivel Medio  
 **Repositorio:** https://github.com/angelestrada14019/segurodata  
-**Estado:** Bronze + Silver + EDA completados — En progreso Fase 2 (Gold + Modelo + Supabase)
+**Estado:** Sistema completo en producción — pipeline de datos, modelo XGBoost y los 4 módulos
+desplegados con datos reales.
+
+| Componente | URL |
+|---|---|
+| Frontend | https://segurodata-frontend.vercel.app |
+| Backend | https://segurodata-api-production.up.railway.app |
 
 ---
 
