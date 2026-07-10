@@ -20,6 +20,15 @@ export const queryKeys = {
   },
 
   // Sprint 2
+  /**
+   * Período (anio, mes) más reciente resuelto vía RPC `periodo_mas_reciente`
+   * (ver `lib/periodo-predicciones.ts`). Solo lo consume `use-diagnostico-upz.ts`
+   * — `use-upz-geometrias.ts`/`use-localidades-geometrias.ts` resuelven el
+   * período DENTRO de su propio queryFn (no como query separada) porque ahí
+   * solo alimenta una única llamada; aquí alimenta dos (`usePredict` +
+   * `useExplain`), así que se cachea aparte para no resolverlo dos veces.
+   */
+  periodoVigente: ["periodo-vigente"] as const,
   predict: (upzCod: string, anio: number, mes: number) =>
     ["predict", upzCod, anio, mes] as const,
   explain: (upzCod: string, anio: number, mes: number) =>
