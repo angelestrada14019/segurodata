@@ -222,6 +222,29 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ✅ | Fase 4 ⏳
 - [ ] Verificar URL pública funciona desde móvil — pendiente de una pasada manual real (se verificó el bundle/CORS/health por HTTP, no un click-through interactivo en un teléfono)
 - [ ] Pre-demo: Railway está siempre activo — verificar que /health responde y Supabase conecta 5 min antes
 
+### Hardening post-deploy (10 julio) ✅
+
+La verificación en vivo del frontend (09-jul) encontró dos gaps reales de datos/pipeline, no
+cubiertos por el alcance original de Fase 3. Ambos cerrados:
+
+- [x] ✅ **Backfill de localidad**: `upz_geometrias.cod_localidad`/`nom_localidad` estaban NULL en
+  las 112 filas (F2/IDECA nunca trajo ese atributo — confirmado contra el servicio ArcGIS real). El
+  mapeo ya existía en Silver vía F5 (NUSE) y no se propagaba a Supabase. Extraído a
+  `src/geo_utils.py` (compartido con `transform.py`), migración `0015` extiende
+  `upsert_upz_geom`. Backfill corrido: 112/112 UPZ con localidad, 19 localidades reales en el mapa
+  (antes: 1 sola feature fusionada). La capa "Cambios estructurales" pasó de 0 a 224 UPZs con match.
+- [x] ✅ **Quality-gate + pipeline de reentrenamiento automatizado**: `load_model_artifacts.py`
+  comparaba cero métricas antes de sobreescribir predicciones/SHAP en producción — una regresión de
+  modelo se hubiera cargado en silencio. Ahora `validar_metricas()` bloquea la carga si
+  macro-F1/accuracy±1banda caen bajo el umbral (override con `--force`). `metricas.json` se
+  versiona en git (historial real de performance). Split temporal de `train_model.py` dejó de ser
+  una fecha fija (`TRAIN_ANIO_MAX=2025`) y ahora se recalcula cada corrida (últimos 6 meses = test).
+  `.github/workflows/etl-semanal.yml` extendido con la cadena completa
+  pipeline→transform→train→load, probado de punta a punta en CI real (run `29102721092`, 100%
+  verde) — el split dinámico se ajustó solo a datos más frescos (TRAIN≤nov-2025, antes oct-2025) y
+  el quality-gate pasó limpio. **El `schedule` semanal sigue comentado a propósito — no activar
+  antes de la sustentación oral.**
+
 ---
 
 ## Fase 4 ⏳ — Documentación, Video y Entrega (11 julio – 1 agosto 2026)

@@ -213,13 +213,34 @@ python src/pipeline.py --source f3 f5 f6   # solo las incrementales rápidas
 python src/pipeline.py                      # todas las fuentes
 ```
 
-**2. GitHub Action semanal** (`.github/workflows/etl-semanal.yml`):
-Actualmente **desactivado**. Para activar, descomentar en el archivo:
+**2. GitHub Action** (`.github/workflows/etl-semanal.yml`) — pipeline completo, probado en CI real:
+
+```
+pipeline.py (F3/F5/F6, F6 best-effort) → transform.py (Silver) →
+train_model.py (split temporal DINÁMICO, últimos 6 meses = test) →
+load_model_artifacts.py (BLOQUEADO por quality-gate de metricas.json) →
+commit de metricas.json de vuelta al repo (historial versionado)
+```
+
+El quality-gate (`scripts/load_model_artifacts.py::validar_metricas()`) compara macro-F1 y
+accuracy±1banda contra umbrales mínimos **antes** de tocar Supabase — si el modelo nuevo es peor,
+el job falla solo y la base de datos en producción no se toca. El split temporal ya no es una fecha
+fija: se recalcula en cada corrida a partir del último período real disponible.
+
+El `schedule` semanal sigue **desactivado a propósito**:
 ```yaml
 schedule:
   - cron: '0 6 * * 1'   # cada lunes 6 AM UTC = 1 AM Bogotá
 ```
-Actualiza F3 + F5 + F6 automáticamente cada semana.
+Recomendación del equipo: no activarlo antes de la sustentación oral — un reentrenamiento
+automático cayendo en medio de la ventana de demo es justo el riesgo que motivó el quality-gate.
+Se puede disparar manualmente en cualquier momento desde GitHub Actions → "Run workflow".
+
+**Requisitos para correr el workflow** (GitHub → Settings → Secrets and variables → Actions):
+`SUPABASE_URL`, `SUPABASE_SERVICE_KEY` (mismos valores que `backend/.env`), `SOCRATA_APP_TOKEN`
+(opcional — solo afecta F6, que no alimenta el modelo). Además, Settings → Actions → General →
+Workflow permissions debe estar en **"Read and write permissions"** para que el paso final pueda
+commitear `metricas.json` de vuelta al repo.
 
 **3. Pre-demo** (día de la presentación):
 Railway está siempre activo — no requiere calentamiento. Verificar 5 minutos antes que `/health` responde y que Supabase tiene datos recientes de F3 (clima).

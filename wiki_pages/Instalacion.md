@@ -216,6 +216,36 @@ vercel --prod
 
 ---
 
+## 6. GitHub Actions — pipeline de reentrenamiento (opcional, ya probado en CI real)
+
+`.github/workflows/etl-semanal.yml` corre la cadena completa (descarga → Silver → reentrena →
+quality-gate → carga a Supabase) bajo demanda. El `schedule` semanal queda **desactivado a
+propósito** — no lo actives antes de la sustentación oral.
+
+**1. Configurar secrets** (GitHub → repo → Settings → Secrets and variables → Actions → New
+repository secret):
+
+| Secret | Valor |
+|---|---|
+| `SUPABASE_URL` | mismo valor que `backend/.env` |
+| `SUPABASE_SERVICE_KEY` | mismo valor que `backend/.env` (service key, nunca la anon) |
+| `SOCRATA_APP_TOKEN` | opcional — solo afecta la descarga de F6 (Hurto PN), que no alimenta el modelo |
+
+**2. Habilitar permiso de escritura** (GitHub → repo → Settings → Actions → General → Workflow
+permissions): marcar **"Read and write permissions"** y guardar. Sin esto, el paso final (commit
+de `metricas.json` de vuelta al repo) falla con 403 — el `GITHUB_TOKEN` automático es de solo
+lectura por defecto.
+
+**3. Disparar manualmente**: GitHub → Actions → "Pipeline de datos y reentrenamiento" → "Run
+workflow". El input `retrain` (default `true`) controla si corre solo el ETL de datos crudos
+(`false`) o la cadena completa incluyendo reentrenamiento (`true`).
+
+```bash
+gh workflow run etl-semanal.yml   # o desde la UI de GitHub Actions
+```
+
+---
+
 ## Variables de entorno — resumen
 
 > **Claves Supabase — dos formatos válidos hasta fin 2026:**
@@ -225,8 +255,9 @@ vercel --prod
 
 | Variable | Componente | Dónde obtener |
 |----------|-----------|---------------|
-| `SUPABASE_URL` | Backend + scripts | Dashboard → Settings → API |
-| `SUPABASE_SERVICE_KEY` | Backend + scripts | Dashboard → API → **Secret key** (nuevo) o service_role JWT (legacy) |
+| `SUPABASE_URL` | Backend + scripts + GitHub Actions | Dashboard → Settings → API |
+| `SUPABASE_SERVICE_KEY` | Backend + scripts + GitHub Actions | Dashboard → API → **Secret key** (nuevo) o service_role JWT (legacy) |
+| `SOCRATA_APP_TOKEN` | Pipeline F6 (opcional) + GitHub Actions | dev.socrata.com → registrar app |
 | `SUPABASE_JWT_SECRET` | Backend — solo si HS256 legacy | Dashboard → Settings → API → JWT Secret (dejar vacío si usa ES256) |
 | `SUPABASE_JWKS_URL` | Backend — si ES256/RS256 | `<SUPABASE_URL>/auth/v1/.well-known/jwks.json` |
 | `SUPABASE_DB_URL` | Scripts offline (seed COPY) | Dashboard → Settings → Database → Session pooler |

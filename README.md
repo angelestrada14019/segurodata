@@ -187,7 +187,7 @@ segurodata/
 │   └── validar_fuentes.py
 ├── .github/
 │   └── workflows/
-│       └── etl-semanal.yml  <- GitHub Action (desactivado — activar descomentando schedule)
+│       └── etl-semanal.yml  <- pipeline+reentrenamiento con quality-gate (schedule desactivado)
 ├── docs/
 │   ├── diagrama_arquitectura.svg <- Diagrama visual de la arquitectura (abre en browser)
 │   └── fuentes_validadas.xlsx    <- Excel de 20 fuentes validadas (4 hojas)
@@ -212,7 +212,12 @@ segurodata/
 
 ## Automatización (GitHub Actions)
 
-El archivo `.github/workflows/etl-semanal.yml` está **desactivado** — el pipeline se corre manualmente antes de cada actualización. Se puede activar manualmente desde: **GitHub → Actions → ETL semanal → Run workflow**.
+`.github/workflows/etl-semanal.yml` corre la cadena completa bajo demanda — descarga incremental →
+Silver → reentrena XGBoost (split temporal dinámico) → quality-gate de métricas → carga a Supabase
+(solo si el modelo nuevo no es peor que el anterior). Probado de punta a punta en CI real. El
+`schedule` semanal queda **desactivado a propósito** hasta después de la sustentación oral — se
+dispara manualmente desde **GitHub → Actions → `etl-semanal.yml` → Run workflow**. Detalles y
+secrets requeridos en el [Wiki — Instalación](https://github.com/angelestrada14019/segurodata/wiki/Instalacion#6-github-actions--pipeline-de-reentrenamiento-opcional-ya-probado-en-ci-real).
 
 ---
 

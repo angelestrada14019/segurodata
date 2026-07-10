@@ -115,13 +115,17 @@ VARIABLE OBJETIVO (Y):
   nivel_riesgo: CRÍTICO / ALTO / MEDIO / BAJO
   → percentiles de n_delitos por upz_cod × anio × mes (solo es_crimen=True):
     ≥q95 = CRÍTICO · ≥q75 = ALTO · ≥q40 = MEDIO · resto = BAJO
-  → distribución: BAJO=765, MEDIO=672, ALTO=384, CRÍTICO=97 (1,918 filas)
+  → distribución: BAJO=811, MEDIO=735, ALTO=392, CRÍTICO=100 (2,038 filas)
 
-MÉTRICAS (test temporal nov 2025 – abr 2026, 719 filas — ver datos/modelos/metricas.json):
-  banda exacta 0.871 · dentro de ±1 banda 100% · macro-F1 0.867 · recall CRÍTICO 0.92
+MÉTRICAS (test temporal dic 2025 – may 2026, 719 filas — ver datos/modelos/metricas.json):
+  banda exacta 0.871 · dentro de ±1 banda 100% · macro-F1 0.861 · recall CRÍTICO 0.92
   → nivel_riesgo es ORDINAL: la métrica defendible es el acierto dentro de ±1 banda
     (cero saltos de clase). El error de banda exacta restante es ruido de frontera
     entre percentiles, irreducible. NO perseguir 95% exact-match (ver memoria del proyecto).
+  → El split temporal es DINÁMICO (scripts/train_model.py::_calcular_corte_train_test):
+    TEST = últimos 6 meses con datos disponibles, TRAIN = el resto. Se recalcula en
+    cada reentrenamiento — estos números avanzan solos a medida que llegan datos
+    nuevos, no son una foto fija de una sola corrida.
 ```
 
 ---
@@ -245,6 +249,9 @@ El Módulo 3 usa SHAP para identificar la causa dominante del riesgo y conecta d
 **"¿Cómo previenen el crimen, no solo lo predicen?"**
 → La capa prescriptiva diagnostica la causa raíz (temporal, estructural, urbanística) y mapea cada diagnóstico a la entidad distrital responsable de la intervención. No mandamos más policías — identificamos qué tipo de intervención necesita cada zona y quién debe ejecutarla.
 
+**"¿Cómo mantienen el modelo actualizado con datos nuevos?"**
+→ Pipeline automatizado en GitHub Actions (`.github/workflows/etl-semanal.yml`, disparo manual hoy, cron semanal desactivado hasta después de la sustentación): descarga incremental → Silver → reentrena XGBoost con una ventana temporal *dinámica* (últimos 6 meses = test, se recalcula sola con cada corrida, no una fecha fija) → un quality-gate compara macro-F1 y accuracy ±1 banda contra umbrales mínimos antes de tocar producción — si el modelo nuevo es peor, el pipeline se detiene solo y Supabase no se toca. `metricas.json` queda versionado en git como historial verificable de performance en el tiempo.
+
 **"¿Qué diferencia esto del Atlas del Crimen que ganó en 2025?"**
 → El Atlas del Crimen es análisis descriptivo — explica qué ha pasado históricamente. Este sistema tiene tres capas: descriptivo (mapa interactivo en tiempo real), predictivo (XGBoost + SHAP por UPZ), y prescriptivo real (ruptures detecta cuándo cambia el patrón + GraphRAG identifica la causa + tabla ontológica mapea a la entidad responsable). El Atlas operó a nivel departamental sin modelo ML ni capa prescriptiva.
 
@@ -260,6 +267,7 @@ El Módulo 3 usa SHAP para identificar la causa dominante del riesgo y conecta d
 | ~~Hawkes Process~~ → **ruptures + GraphRAG** | Hawkes descartado. ruptures (PELT) detecta cambios estructurales históricos. GraphRAG (FastAPI + pgvector + OpenRouter) explica el *por qué* con boletines SCJ + noticias |
 | SHAP pre-computado (no on-demand) | Supabase sirve SHAP values pre-calculados → sin crash de RAM en producción |
 | **React + deck.gl** para frontend | Mapa WebGL interactivo estilo C4 / Palantir Gotham, capas toggleables, zoom Localidades→UPZs (zoom 12), modal 5 pestañas por UPZ (Descripción · Predicción · Sugerencia · Fuentes · Chatbot) |
+| **Reentrenamiento con quality-gate, sin cron activo** | `scripts/load_model_artifacts.py` nunca sobreescribe con un modelo peor sin `--force` explícito. El workflow de GitHub Actions corre la cadena completa bajo demanda (`workflow_dispatch`); el `schedule` semanal queda comentado a propósito hasta después de la sustentación oral — evita que un reentrenamiento automático caiga en medio del demo |
 | **Supabase** como backbone | PostgreSQL + PostGIS + pgvector en un solo servicio. El frontend lo consulta directamente para datos, predicciones y SHAP |
 | **FastAPI + Railway** | Backend Python unificado: GraphRAG + prescriptivo + proxy OpenRouter. Siempre activo, sin cold start, un solo deploy. Railway Plan Hobby ~$5/mes |
 | **OpenRouter** como proxy LLM | Una API key da acceso a 200+ modelos. Demo: Gemini Flash (gratis). Producción: escalable |

@@ -3,11 +3,11 @@
 > **Estado: en producción.**
 > - **Frontend:** https://segurodata-frontend.vercel.app · **Backend:** https://segurodata-api-production.up.railway.app
 > - **Backend FastAPI completo** — 7 endpoints, 36 tests verdes (incl. E3 JWT end-to-end y T5 verificados en vivo contra Supabase real)
-> - **Modelo XGBoost** — entrenado vía `scripts/train_model.py` con 18 variables. Test temporal (nov 2025 – abr 2026): acierto dentro de ±1 banda 100%, macro-F1 0.867
-> - **Supabase** — migraciones + RLS + hook JWT + Realtime ON. Artefactos reales del modelo (`origen='notebook_04'`): 1,918 predicciones + 34,524 SHAP + RPCs GeoJSON para el mapa
-> - **change_points**: 40 breakpoints ruptures PELT cargados (F1 DAI 2018-2026), COVID 2020 validado
+> - **Modelo XGBoost** — entrenado vía `scripts/train_model.py` con 18 variables y split temporal dinámico (últimos 6 meses = test, se recalcula solo en cada corrida). Test temporal actual (dic 2025 – may 2026): acierto dentro de ±1 banda 100%, macro-F1 0.861. Reentrenamiento automatizado con quality-gate en GitHub Actions (cron desactivado hasta después de la sustentación)
+> - **Supabase** — migraciones + RLS + hook JWT + Realtime ON. Artefactos reales del modelo (`origen='notebook_04'`): 2,038 predicciones + 36,684 SHAP + RPCs GeoJSON para el mapa. `upz_geometrias` con localidad real (112/112 UPZ, 19 localidades)
+> - **change_points**: 40 breakpoints ruptures PELT cargados (F1 DAI 2018-2026), COVID 2020 validado — 224 UPZs cruzan con localidad real, marcadores visibles en el mapa
 > - **Corpus GraphRAG**: 10 chunks RSS reales en pgvector (El Tiempo + El Informante)
-> - **Frontend React** — 4 módulos + modal de 5 pestañas + Panel Admin construidos y verificados con datos reales. Pendiente: heatmap día×hora (Plotly, menor prioridad) y el backfill del mapeo oficial UPZ→Localidad de Bogotá (sin eso, la capa de rupturas estructurales no tiene con qué cruzar).
+> - **Frontend React** — 4 módulos + modal de 5 pestañas + Panel Admin construidos y verificados con datos reales. Pendiente: heatmap día×hora (Plotly, menor prioridad).
 
 La aplicación responde 5 preguntas: 4 módulos analíticos (Diagnóstico · Predicción · Prescriptivo · Chatbot causal) más una capa de participación ciudadana (autenticación, mapa interactivo con modal, alertas comunitarias — ver [[Plataforma-Ciudadana]]).
 
