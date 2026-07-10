@@ -1,15 +1,24 @@
-# ETL semanal automatico — SeguroData Bogota
+# Pipeline de datos + reentrenamiento — SeguroData Bogota
 #
-# ESTADO: DESACTIVADO
-# Para activar: descomentar el bloque "schedule" de abajo y hacer commit.
+# ESTADO: DESACTIVADO (el cron semanal sigue comentado)
+# Para activar el cron: descomentar el bloque "schedule" de abajo y hacer commit.
+# Recomendacion del equipo (10-jul-2026): no activar el cron antes de la
+# sustentacion oral. Probar primero varias veces via "Run workflow" manual.
 #
-# Que hace:
-#   - Corre src/pipeline.py con las fuentes que se actualizan frecuentemente
-#   - F3 clima     → diario  (Open-Meteo, segundos)
-#   - F5 NUSE 123  → mensual (CKAN Datastore, ~5 min)
-#   - F6 Hurto PN  → mensual (Socrata, ~3 min)
-#   - F1/F2/F4/F7/F8 se omiten: son semestrales o estaticos
-#   - Commitea los Parquet actualizados de vuelta al repo
+# Que hace (cadena completa Bronze -> Silver -> Model -> Supabase):
+#   1. src/pipeline.py       -- descarga incremental F3/F5/F6 (Bronze)
+#   2. src/transform.py      -- Bronze -> Silver (nunca se llamaba antes; sin
+#                                este paso, "activar el cron" no alcanzaba)
+#   3. scripts/train_model.py       -- Silver -> Gold -> XGBoost + SHAP,
+#                                       split temporal dinamico
+#   4. scripts/load_model_artifacts.py -- carga a Supabase, PERO SOLO SI
+#      pasa el quality-gate de metricas.json (macro_f1/accuracy_within_1_band
+#      contra umbrales minimos) -- si el modelo nuevo es peor, este paso
+#      falla y el job se detiene ANTES de tocar Supabase y antes de commitear
+#      nada de vuelta al repo.
+#
+# Los pasos 2-4 se pueden saltar con el input "retrain=false" (solo refresca
+# datos crudos, como el workflow original).
 
 on:
   # schedule:
@@ -27,10 +36,15 @@ on:
         required: false
         default: 'false'
         type: boolean
+      retrain:
+        description: 'Correr tambien transform+train+load (cadena completa). false = solo ETL de datos crudos.'
+        required: false
+        default: 'true'
+        type: boolean
 
 jobs:
   etl:
-    name: Extraccion incremental de datos
+    name: Pipeline de datos y reentrenamiento
     runs-on: ubuntu-latest
 
     steps:
@@ -46,9 +60,11 @@ jobs:
           cache: 'pip'
 
       - name: Instalar dependencias
-        run: pip install -r requirements.txt
+        run: |
+          pip install -r requirements.txt
+          pip install supabase>=2.6.0
 
-      - name: Correr pipeline ETL
+      - name: Correr pipeline ETL (Bronze)
         env:
           SOCRATA_APP_TOKEN: ${{ secrets.SOCRATA_APP_TOKEN }}
         run: |
@@ -67,9 +83,24 @@ jobs:
           echo "--- Estado del pipeline ---"
           python src/pipeline.py --status
 
-      - name: Commitear datos actualizados
+      - name: Transformar Bronze -> Silver
+        if: github.event.inputs.retrain != 'false'
+        run: python src/transform.py --verbose
+
+      - name: Reentrenar modelo (Gold + XGBoost + SHAP)
+        if: github.event.inputs.retrain != 'false'
+        run: python scripts/train_model.py --verbose
+
+      - name: Cargar a Supabase (gateado por quality-check de metricas)
+        if: github.event.inputs.retrain != 'false'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: python scripts/load_model_artifacts.py
+
+      - name: Commitear datos y artefactos actualizados
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "data: ETL automatico ${{ github.run_id }} — fuentes ${{ github.event.inputs.sources || 'f3 f5 f6' }}"
-          file_pattern: "datos/raw/*.parquet datos/raw/.pipeline_state.json"
+          commit_message: "data: pipeline automatico ${{ github.run_id }} — fuentes ${{ github.event.inputs.sources || 'f3 f5 f6' }}"
+          file_pattern: "datos/raw/*.parquet datos/raw/.pipeline_state.json datos/procesados/*.parquet datos/procesados/.transform_state.json datos/features/*.parquet datos/modelos/metricas.json"
           commit_author: "github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
