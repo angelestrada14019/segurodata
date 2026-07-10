@@ -14,6 +14,7 @@ import { LeyendaRiesgo } from "@/components/mapa/leyenda-riesgo";
 import { MapaSkeleton } from "@/components/shared/loading-states";
 import { BadgeNivelRiesgo } from "@/components/shared/badge-nivel-riesgo";
 import { ModalUpz } from "@/components/modal-upz/modal-upz";
+import type { TabModalUpz } from "@/components/modal-upz/tipos";
 import { MAPLIBRE_STYLE_URL, VIEWPORT_INICIAL_BOGOTA } from "@/lib/constantes";
 import type { LocalidadFeature, UpzFeature } from "@/types/deck";
 
@@ -21,6 +22,17 @@ type FeatureSeleccionado =
   | { tipo: "upz"; feature: UpzFeature }
   | { tipo: "localidad"; feature: LocalidadFeature }
   | null;
+
+interface MapaRiesgoProps {
+  /**
+   * Pestaña con la que abre el modal UPZ al hacer click — por defecto
+   * "descripcion" (Módulo 1, ver `<ModalUpz>`). Módulo 2 — Predicción reusa
+   * este mismo mapa TAL CUAL (mismas capas/colores, cero duplicación) y solo
+   * pasa "prediccion" aquí (`routes/modulo2-prediccion.tsx`) para que el
+   * modal abra directo en la pestaña relevante para ese módulo.
+   */
+  tabInicialModal?: TabModalUpz;
+}
 
 /**
  * Mapa principal del Módulo 1 — Diagnóstico. DeckGL + MapLibre (react-map-gl)
@@ -35,8 +47,12 @@ type FeatureSeleccionado =
  * hay una UPZ concreta que mostrar. Se conserva el mini-panel (sigue siendo
  * información útil) y se muestra un toast invitando a acercar el zoom, en
  * vez de abrir un modal vacío o inventar un fallback más complejo.
+ *
+ * También lo monta `routes/modulo2-prediccion.tsx` (Módulo 2 — Predicción)
+ * sin cambio alguno de capas/colores — la única diferencia entre ambos usos
+ * es `tabInicialModal`, ver arriba.
  */
-export function MapaRiesgo() {
+export function MapaRiesgo({ tabInicialModal }: MapaRiesgoProps) {
   const [viewState, setViewState] = useState<MapViewState>(
     VIEWPORT_INICIAL_BOGOTA,
   );
@@ -165,6 +181,7 @@ export function MapaRiesgo() {
           upzCod={upzModalCod}
           open={modalAbierto}
           onOpenChange={setModalAbierto}
+          tabInicial={tabInicialModal}
         />
       )}
     </div>

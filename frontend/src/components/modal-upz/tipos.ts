@@ -12,3 +12,20 @@ export interface MensajeChat {
   texto: string;
   fuentes?: FuenteGraphrag[];
 }
+
+/**
+ * Las 5 pestañas del modal UPZ — única fuente de verdad del orden/etiquetas
+ * (consumida por `modal-upz.tsx`). `TabModalUpz` la usan también los
+ * segundos puntos de entrada al modal (`mapa-riesgo.tsx` reusado en Módulo 2,
+ * `top10-riesgo.tsx`) para pedir una pestaña inicial distinta de
+ * "descripcion" — ver prop `tabInicial` de `<ModalUpz>`.
+ */
+export const PESTANAS_MODAL_UPZ = [
+  { valor: "descripcion", etiqueta: "Descripción" },
+  { valor: "prediccion", etiqueta: "Predicción" },
+  { valor: "sugerencia", etiqueta: "Sugerencia" },
+  { valor: "fuentes", etiqueta: "Fuentes" },
+  { valor: "chatbot", etiqueta: "Chatbot" },
+] as const;
+
+export type TabModalUpz = (typeof PESTANAS_MODAL_UPZ)[number]["valor"];

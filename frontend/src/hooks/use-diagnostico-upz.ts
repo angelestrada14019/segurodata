@@ -1,33 +1,28 @@
-import { useQuery } from "@tanstack/react-query";
+import { usePeriodoVigente } from "@/hooks/use-periodo-vigente";
 import { usePredict } from "@/hooks/use-predict";
 import { useExplain } from "@/hooks/use-explain";
-import { obtenerPeriodoMasReciente } from "@/lib/periodo-predicciones";
-import { queryKeys } from "@/lib/query-keys";
 
 /**
  * Agrupa `usePredict` + `useExplain` para el período (anio, mes) VIGENTE —
  * mismo criterio de resolución de período que `use-upz-geometrias.ts` /
  * `use-localidades-geometrias.ts`: primero se resuelve el mes más reciente
- * disponible en `predicciones` (RPC `periodo_mas_reciente`, ver
- * `lib/periodo-predicciones.ts`), y solo entonces se disparan /predict y
- * /explain — nunca se llaman con anio/mes sin resolver.
+ * disponible en `predicciones` (`usePeriodoVigente`, RPC
+ * `periodo_mas_reciente`), y solo entonces se disparan /predict y /explain —
+ * nunca se llaman con anio/mes sin resolver.
  *
  * A diferencia de las geometrías (una sola llamada que depende del período),
  * aquí dos llamadas independientes (`/predict`, `/explain`) dependen del
  * mismo período resuelto, así que el período se cachea como query propia
- * (`queryKeys.periodoVigente`) en vez de resolverse por duplicado dentro de
- * cada queryFn — evita dos round-trips idénticos a la RPC.
+ * (`usePeriodoVigente` → `queryKeys.periodoVigente`) en vez de resolverse
+ * por duplicado dentro de cada queryFn — evita dos round-trips idénticos a
+ * la RPC, y comparte cache con `use-top10-riesgo.ts` (Módulo 2).
  *
  * Consumido por `components/modal-upz/modal-upz.tsx` (pestaña Predicción,
- * y de ahí el `shap_top3` viaja por prop a la pestaña Sugerencia).
+ * y de ahí el `shap_top3` viaja por prop a la pestaña Sugerencia) y por
+ * `routes/modulo3-prescriptivo.tsx`.
  */
 export function useDiagnosticoUpz(upzCod: string, habilitado = true) {
-  const periodoQuery = useQuery({
-    queryKey: queryKeys.periodoVigente,
-    queryFn: obtenerPeriodoMasReciente,
-    enabled: habilitado,
-    staleTime: 5 * 60_000,
-  });
+  const periodoQuery = usePeriodoVigente(habilitado);
 
   const periodo = periodoQuery.data;
   const listoParaConsultar = habilitado && !!periodo;

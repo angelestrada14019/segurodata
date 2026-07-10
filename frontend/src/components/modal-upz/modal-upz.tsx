@@ -15,22 +15,26 @@ import { TabPrediccion } from "@/components/modal-upz/tab-prediccion";
 import { TabSugerencia } from "@/components/modal-upz/tab-sugerencia";
 import { TabFuentes } from "@/components/modal-upz/tab-fuentes";
 import { TabChatbot } from "@/components/modal-upz/tab-chatbot";
-import type { MensajeChat } from "@/components/modal-upz/tipos";
+import {
+  PESTANAS_MODAL_UPZ,
+  type MensajeChat,
+  type TabModalUpz,
+} from "@/components/modal-upz/tipos";
 import type { GraphragResponse } from "@/types/api";
 
 interface ModalUpzProps {
   upzCod: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /**
+   * Pestaña con la que abre el modal — "descripcion" por defecto (entrada
+   * desde el mapa de Módulo 1, `/diagnostico`). Módulo 2 reusa este mismo
+   * mapa (`mapa-riesgo.tsx`) y el listado `top10-riesgo.tsx` pasando
+   * "prediccion": es la razón de ser de esas dos entradas al modal, ver
+   * `routes/modulo2-prediccion.tsx`.
+   */
+  tabInicial?: TabModalUpz;
 }
-
-const PESTANAS = [
-  { valor: "descripcion", etiqueta: "Descripción" },
-  { valor: "prediccion", etiqueta: "Predicción" },
-  { valor: "sugerencia", etiqueta: "Sugerencia" },
-  { valor: "fuentes", etiqueta: "Fuentes" },
-  { valor: "chatbot", etiqueta: "Chatbot" },
-] as const;
 
 /**
  * Modal de 5 pestañas por UPZ — pieza central de Sprint 2, prerequisito de
@@ -52,8 +56,13 @@ const PESTANAS = [
  * Se pasa todo a los 5 hijos por props: son 5 hermanos directos, un Context
  * aquí sería indirección sin beneficio (ver skill react-patterns).
  */
-export function ModalUpz({ upzCod, open, onOpenChange }: ModalUpzProps) {
-  const [tabActiva, setTabActiva] = useState<string>("descripcion");
+export function ModalUpz({
+  upzCod,
+  open,
+  onOpenChange,
+  tabInicial = "descripcion",
+}: ModalUpzProps) {
+  const [tabActiva, setTabActiva] = useState<string>(tabInicial);
   const [historialChat, setHistorialChat] = useState<MensajeChat[]>([]);
 
   const graphragMutation = useGraphrag();
@@ -69,12 +78,16 @@ export function ModalUpz({ upzCod, open, onOpenChange }: ModalUpzProps) {
   graphragMutationRef.current = graphragMutation;
 
   // Nueva UPZ → se reinicia la sesión del modal (pestaña activa, historial
-  // de chat, mutación graphrag).
+  // de chat, mutación graphrag). `tabInicial` entra en deps porque el mapa
+  // de Módulo 1 pasa "descripcion" y Módulo 2 pasa "prediccion" — si el
+  // usuario cierra el modal de una UPZ y abre otra distinta desde el otro
+  // módulo en la misma sesión de navegación, debe respetar la pestaña que
+  // corresponde a esa entrada, no quedarse pegado a la anterior.
   useEffect(() => {
-    setTabActiva("descripcion");
+    setTabActiva(tabInicial);
     setHistorialChat([]);
     graphragMutationRef.current.reset();
-  }, [upzCod]);
+  }, [upzCod, tabInicial]);
 
   const {
     prediccion,
@@ -123,7 +136,7 @@ export function ModalUpz({ upzCod, open, onOpenChange }: ModalUpzProps) {
           className="flex flex-1 flex-col overflow-hidden"
         >
           <TabsList className="mx-6 mt-3 w-fit shrink-0">
-            {PESTANAS.map((pestana) => (
+            {PESTANAS_MODAL_UPZ.map((pestana) => (
               <TabsTrigger key={pestana.valor} value={pestana.valor}>
                 {pestana.etiqueta}
               </TabsTrigger>
