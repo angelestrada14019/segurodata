@@ -75,9 +75,24 @@ FEATURES = [
 LABEL_MAP   = {"BAJO": 0, "MEDIO": 1, "ALTO": 2, "CRITICO": 3}
 LABEL_INV   = {v: k for k, v in LABEL_MAP.items()}
 
-# Split temporal: TRAIN = ene-oct 2025, TEST = nov 2025 en adelante
-TRAIN_ANIO_MAX = 2025
-TRAIN_MES_MAX  = 10
+# Split temporal: TEST = ultimos TEST_MESES_VENTANA meses con datos
+# disponibles, TRAIN = todo lo anterior. Dinamico -- se recalcula cada
+# corrida a partir del ultimo periodo real en Gold, no una fecha fija. Con
+# los datos actuales (maximo abr-2026) reproduce EXACTAMENTE el split ya
+# validado (corte oct-2025, test nov-2025..abr-2026); una corrida futura con
+# datos nuevos ajusta el corte sola, sin tocar este archivo.
+TEST_MESES_VENTANA = 6
+
+
+def _calcular_corte_train_test(df) -> tuple[int, int]:
+    """(anio, mes) del ultimo mes de TRAIN -- todo periodo posterior es TEST."""
+    periodos = df[["anio", "mes"]].drop_duplicates().sort_values(["anio", "mes"])
+    anio_max, mes_max = int(periodos.iloc[-1]["anio"]), int(periodos.iloc[-1]["mes"])
+    mes_corte, anio_corte = mes_max - TEST_MESES_VENTANA, anio_max
+    while mes_corte <= 0:
+        mes_corte += 12
+        anio_corte -= 1
+    return anio_corte, mes_corte
 
 
 # ---------------------------------------------------------------------------
@@ -296,7 +311,8 @@ def train_xgboost(gold: pl.DataFrame, verbose: bool = False):
 
     df["y"] = df["nivel_riesgo"].map(LABEL_MAP).astype(int)
 
-    # Split temporal estricto
+    # Split temporal estricto (corte dinamico, ver _calcular_corte_train_test)
+    TRAIN_ANIO_MAX, TRAIN_MES_MAX = _calcular_corte_train_test(df)
     mask_train = (df["anio"] < TRAIN_ANIO_MAX) | (
         (df["anio"] == TRAIN_ANIO_MAX) & (df["mes"] <= TRAIN_MES_MAX)
     )
