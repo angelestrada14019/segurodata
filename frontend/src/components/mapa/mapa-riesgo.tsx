@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import DeckGL from "@deck.gl/react";
 import type { MapViewState } from "@deck.gl/core";
 import { Map as MapLibreMap } from "react-map-gl/maplibre";
+import { toast } from "sonner";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 import { useUpzGeometrias } from "@/hooks/use-upz-geometrias";
@@ -12,6 +13,7 @@ import { capaLocalidades } from "@/components/mapa/capa-localidades";
 import { LeyendaRiesgo } from "@/components/mapa/leyenda-riesgo";
 import { MapaSkeleton } from "@/components/shared/loading-states";
 import { BadgeNivelRiesgo } from "@/components/shared/badge-nivel-riesgo";
+import { ModalUpz } from "@/components/modal-upz/modal-upz";
 import { MAPLIBRE_STYLE_URL, VIEWPORT_INICIAL_BOGOTA } from "@/lib/constantes";
 import type { LocalidadFeature, UpzFeature } from "@/types/deck";
 
@@ -25,15 +27,29 @@ type FeatureSeleccionado =
  * sin token, centrado en Bogotá. Zoom adaptativo: <12 agrega por localidad,
  * >=12 muestra las 112 UPZs individuales (ver `use-zoom-adaptativo.ts`).
  *
- * `onClick` de las capas es no-op en este Sprint — el modal de 5 pestañas
- * por UPZ se cablea en Sprint 2. Aquí solo se guarda el feature en estado
- * local para mostrar un panel de detalle mínimo (nombre + badge de riesgo).
+ * Click en una UPZ (zoom>=12) guarda el feature en estado local para el
+ * mini-panel (nombre + badge de riesgo, gratis en hover/selección) Y abre
+ * el modal de 5 pestañas (Sprint 2, `components/modal-upz/modal-upz.tsx`).
+ * Click en una LOCALIDAD (zoom<12, capa agregada) NO abre el modal — esa
+ * capa agrega 5-10 UPZs bajo un único polígono sin `upz_cod` individual, no
+ * hay una UPZ concreta que mostrar. Se conserva el mini-panel (sigue siendo
+ * información útil) y se muestra un toast invitando a acercar el zoom, en
+ * vez de abrir un modal vacío o inventar un fallback más complejo.
  */
 export function MapaRiesgo() {
   const [viewState, setViewState] = useState<MapViewState>(
     VIEWPORT_INICIAL_BOGOTA,
   );
   const [seleccionado, setSeleccionado] = useState<FeatureSeleccionado>(null);
+
+  // Estado del modal UPZ separado de `seleccionado`: `upzModalCod` es
+  // "sticky" (nunca vuelve a null tras el primer click en una UPZ) para que
+  // <ModalUpz> permanezca montado y Radix Dialog pueda animar el cierre —
+  // si el padre desmontara el modal por completo al cerrar, la transición
+  // `data-[state=closed]:animate-out` nunca alcanzaría a jugar. `modalAbierto`
+  // es el booleano real que controla open/close.
+  const [upzModalCod, setUpzModalCod] = useState<string | null>(null);
+  const [modalAbierto, setModalAbierto] = useState(false);
 
   const nivelAgregacion = useZoomAdaptativo(viewState.zoom);
 
@@ -47,10 +63,15 @@ export function MapaRiesgo() {
 
   const onClickUpz = useCallback((feature: UpzFeature) => {
     setSeleccionado({ tipo: "upz", feature });
+    setUpzModalCod(feature.properties.upz_cod);
+    setModalAbierto(true);
   }, []);
 
   const onClickLocalidad = useCallback((feature: LocalidadFeature) => {
     setSeleccionado({ tipo: "localidad", feature });
+    toast.info("Acércate más para ver el detalle de una UPZ específica", {
+      description: feature.properties.nom_localidad,
+    });
   }, []);
 
   const layers = useMemo(() => {
@@ -83,7 +104,7 @@ export function MapaRiesgo() {
   }
 
   return (
-    <div className="relative h-full w-full">
+    <div className="relative w-full">
       <DeckGL
         viewState={viewState}
         onViewStateChange={({ viewState: siguiente }) =>
@@ -138,6 +159,14 @@ export function MapaRiesgo() {
           <LeyendaRiesgo />
         </div>
       </div>
+
+      {upzModalCod && (
+        <ModalUpz
+          upzCod={upzModalCod}
+          open={modalAbierto}
+          onOpenChange={setModalAbierto}
+        />
+      )}
     </div>
   );
 }
