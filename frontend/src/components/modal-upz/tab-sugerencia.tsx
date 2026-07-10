@@ -1,18 +1,11 @@
-import { Building2, Loader2, Lock, Phone, RefreshCw, Sparkles } from "lucide-react";
+import { Loader2, Lock, RefreshCw, Sparkles } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { usePrescribe } from "@/hooks/use-prescribe";
 import { ApiError } from "@/lib/api-client";
-import { etiquetaFeature } from "@/lib/features-modelo";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { PanelCai } from "@/components/prescriptivo/panel-cai";
+import { TablaOntologica } from "@/components/prescriptivo/tabla-ontologica";
 import type { RolBackend, ShapFeatureValor } from "@/types/api";
 
 interface TabSugerenciaProps {
@@ -124,54 +117,9 @@ export function TabSugerencia({ upzCod, shapTop }: TabSugerenciaProps) {
         <p className="text-sm leading-relaxed text-foreground">{data.recomendacion_llm}</p>
       </div>
 
-      <div className="rounded-md border border-border bg-card p-4">
-        <div className="mb-2 flex items-center gap-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-          <Building2 className="h-3.5 w-3.5" aria-hidden="true" />
-          CAI responsable
-        </div>
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm">
-          <span className="font-medium text-foreground">{data.cai.nombre}</span>
-          <span className="font-mono-data text-xs text-muted-foreground">
-            Cuadrante {data.cai.cuadrante_id}
-          </span>
-          <span className="flex items-center gap-1.5 text-muted-foreground">
-            <Phone className="h-3.5 w-3.5" aria-hidden="true" />
-            {data.cai.telefono ?? "No registrado"}
-          </span>
-        </div>
-      </div>
+      <PanelCai cai={data.cai} />
 
-      <div>
-        <h3 className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-          Diagnóstico por variable
-        </h3>
-        <div className="rounded-md border border-border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Variable</TableHead>
-                <TableHead>Diagnóstico</TableHead>
-                <TableHead>Tipo de intervención</TableHead>
-                <TableHead>Entidad responsable</TableHead>
-                <TableHead>Acción</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.diagnosticos.map((d) => (
-                <TableRow key={d.feature}>
-                  <TableCell className="font-mono-data text-xs whitespace-nowrap">
-                    {etiquetaFeature(d.feature)}
-                  </TableCell>
-                  <TableCell className="text-sm">{d.diagnostico}</TableCell>
-                  <TableCell className="text-sm whitespace-nowrap">{d.tipo_intervencion}</TableCell>
-                  <TableCell className="text-sm whitespace-nowrap">{d.entidad_responsable}</TableCell>
-                  <TableCell className="text-sm">{d.accion}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
+      <TablaOntologica diagnosticos={data.diagnosticos} />
 
       <Button type="button" variant="outline" size="sm" onClick={generar} className="w-fit">
         <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
