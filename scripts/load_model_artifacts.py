@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import io
+import json
 import os
 import sys
 from pathlib import Path
@@ -31,6 +32,14 @@ load_dotenv(ROOT / ".env")
 
 PRED_PARQUET = ROOT / "datos" / "modelos" / "predicciones.parquet"
 SHAP_PARQUET = ROOT / "datos" / "modelos" / "shap_values.parquet"
+METRICAS_JSON = ROOT / "datos" / "modelos" / "metricas.json"
+
+# Quality-gate: umbrales minimos antes de cargar un modelo nuevo a Supabase.
+# Holgados respecto a los valores ya validados (macro_f1=0.867,
+# accuracy_within_1_band=1.0) -- atrapan una regresion real, no ruido normal
+# entre corridas. Ajustables si el criterio del equipo cambia.
+MACRO_F1_MIN = 0.75
+ACCURACY_BANDA_MIN = 0.90
 
 PRED_COLS = ["upz_cod", "anio", "mes", "nivel_riesgo",
              "prob_critico", "prob_alto", "prob_medio", "prob_bajo"]
@@ -56,6 +65,40 @@ def validar(df: pl.DataFrame, cols: list[str], nombre: str) -> pl.DataFrame:
             sys.exit(f"{nombre}: {fuera} filas con probabilidades que no suman 1")
     print(f"{nombre}: {df.height:,} filas validas")
     return df
+
+
+def validar_metricas(force: bool) -> None:
+    """Quality-gate: no carga un modelo peor que el umbral minimo sin --force.
+
+    Se corre ANTES de tocar la base de datos -- si no pasa, sys.exit(1) sin
+    ningun DELETE/INSERT. Es la unica red de seguridad que existe hoy contra
+    una regresion de modelo cargada en silencio (load_via_rest/copy_in
+    sobreescriben sin comparar contra el run anterior).
+    """
+    if not METRICAS_JSON.exists():
+        sys.exit(f"No existe {METRICAS_JSON} -- ejecuta primero: python scripts/train_model.py")
+
+    metricas = json.loads(METRICAS_JSON.read_text(encoding="utf-8"))
+    macro_f1 = metricas.get("macro_f1")
+    accuracy_banda = metricas.get("accuracy_within_1_band")
+
+    if macro_f1 is None or accuracy_banda is None:
+        sys.exit(f"{METRICAS_JSON}: faltan claves 'macro_f1'/'accuracy_within_1_band'")
+
+    problemas = []
+    if macro_f1 < MACRO_F1_MIN:
+        problemas.append(f"macro_f1={macro_f1:.3f} < minimo {MACRO_F1_MIN}")
+    if accuracy_banda < ACCURACY_BANDA_MIN:
+        problemas.append(f"accuracy_within_1_band={accuracy_banda:.3f} < minimo {ACCURACY_BANDA_MIN}")
+
+    if problemas:
+        mensaje = "Quality-gate FALLO -- " + "; ".join(problemas)
+        if force:
+            print(f"[AVISO] {mensaje} -- continuando por --force")
+            return
+        sys.exit(f"{mensaje}\nUsa --force para cargar de todas formas (no recomendado).")
+
+    print(f"Quality-gate OK: macro_f1={macro_f1:.3f}, accuracy_within_1_band={accuracy_banda:.3f}")
 
 
 def copy_in(conn, tabla: str, cols: list[str], df: pl.DataFrame, origen: str) -> None:
@@ -136,7 +179,11 @@ def load_via_rest(pred: pl.DataFrame, shap: pl.DataFrame) -> None:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--force", action="store_true",
+                     help="Carga el modelo aunque no pase el quality-gate de metricas.json")
     args = ap.parse_args()
+
+    validar_metricas(args.force)
 
     for p in (PRED_PARQUET, SHAP_PARQUET):
         if not p.exists():

@@ -13,6 +13,11 @@ graficas/*
 !datos/modelos/.gitkeep
 !graficas/.gitkeep
 
+# metricas.json SI se versiona (a diferencia del resto de datos/modelos/*) --
+# historial real de performance del modelo en el tiempo, defendible ante el
+# jurado. Se sobreescribe y commitea en cada entrenamiento.
+!datos/modelos/metricas.json
+
 # ── Python ────────────────────────────────────────────────────────────────────
 __pycache__/
 *.pyc

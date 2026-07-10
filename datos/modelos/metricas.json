@@ -1,0 +1,69 @@
+{
+  "accuracy_exact": 0.8707,
+  "accuracy_within_1_band": 1.0,
+  "mae_ordinal": 0.1293,
+  "macro_f1": 0.8666,
+  "confusion_matrix": [
+    [
+      267,
+      20,
+      0,
+      0
+    ],
+    [
+      14,
+      204,
+      28,
+      0
+    ],
+    [
+      0,
+      23,
+      121,
+      5
+    ],
+    [
+      0,
+      0,
+      3,
+      34
+    ]
+  ],
+  "confusion_labels": [
+    "BAJO",
+    "MEDIO",
+    "ALTO",
+    "CRITICO"
+  ],
+  "per_class": {
+    "BAJO": {
+      "precision": 0.9502,
+      "recall": 0.9303,
+      "f1-score": 0.9401,
+      "support": 287.0
+    },
+    "MEDIO": {
+      "precision": 0.8259,
+      "recall": 0.8293,
+      "f1-score": 0.8276,
+      "support": 246.0
+    },
+    "ALTO": {
+      "precision": 0.7961,
+      "recall": 0.8121,
+      "f1-score": 0.804,
+      "support": 149.0
+    },
+    "CRITICO": {
+      "precision": 0.8718,
+      "recall": 0.9189,
+      "f1-score": 0.8947,
+      "support": 37.0
+    }
+  },
+  "n_train": 1199,
+  "n_test": 719,
+  "best_iteration": 102,
+  "n_features": 18,
+  "split": "TRAIN<=2025-10, TEST=2025-11+"
+}
