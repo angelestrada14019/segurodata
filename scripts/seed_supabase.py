@@ -22,8 +22,12 @@ import polars as pl
 from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 load_dotenv(ROOT / "backend" / ".env")
 load_dotenv(ROOT / ".env")
+
+from src.geo_utils import build_upz_localidad_crosswalk
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
@@ -34,6 +38,7 @@ if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
 SILVER    = ROOT / "datos" / "procesados" / "silver_upz_mes.parquet"
 F2_GEOJSON = ROOT / "datos" / "raw" / "f2_upz.geojson"
 F4_GEOJSON = ROOT / "datos" / "raw" / "f4_cuadrantes.geojson"
+F5_PARQUET = ROOT / "datos" / "raw" / "f5_nuse_123.parquet"
 
 SILVER_COLS = [
     "upz_cod", "anio", "mes", "tipo_crimen", "es_crimen", "n_delitos",
@@ -93,17 +98,38 @@ def seed_geometrias(client) -> None:
     nom_col = next(c for c in gdf_upz.columns if c.upper() in ("NOMBRE", "NOM_UPZ", "UPZ_NOMBRE"))
     gdf_upz["_cod"] = gdf_upz[cod_col].astype(str).str.zfill(3)
 
+    # Localidad por UPZ (F5 NUSE trae COD_LOCALIDAD/LOCALIDAD por incidente — F2
+    # ArcGIS no tiene ese atributo). Mismo crosswalk que usa src/transform.py para
+    # Silver; F5 no trae upz_cod con cero a la izquierda, se normaliza aqui para
+    # matchear "_cod" (que si esta zfill(3) arriba).
+    loc_por_upz: dict[str, tuple[str | None, str | None]] = {}
+    if F5_PARQUET.exists():
+        crosswalk = build_upz_localidad_crosswalk(F5_PARQUET).with_columns(
+            pl.col("upz_cod").str.zfill(3)
+        )
+        loc_por_upz = {
+            r["upz_cod"]: (r["cod_localidad"], r["nom_localidad"])
+            for r in crosswalk.to_dicts()
+        }
+        print(f"Crosswalk de localidad: {len(loc_por_upz)} UPZs con localidad conocida")
+    else:
+        print(f"Advertencia: {F5_PARQUET} no existe — geometrias se cargan sin localidad")
+
     print(f"Cargando {len(gdf_upz)} UPZs via RPC...")
     for _, row in gdf_upz.iterrows():
         geom = row.geometry
         if geom.geom_type == "Polygon":
             geom = MultiPolygon([geom])
+        cod_localidad, nom_localidad = loc_por_upz.get(row["_cod"], (None, None))
         client.rpc("upsert_upz_geom", {
-            "p_upz_cod":    row["_cod"],
-            "p_upz_nombre": str(row[nom_col]),
-            "p_wkt":        geom.wkt,
+            "p_upz_cod":        row["_cod"],
+            "p_upz_nombre":     str(row[nom_col]),
+            "p_wkt":            geom.wkt,
+            "p_cod_localidad":  cod_localidad,
+            "p_nom_localidad":  nom_localidad,
         }).execute()
-    print(f"upz_geometrias: {len(gdf_upz)} geometrias actualizadas")
+    n_con_localidad = sum(1 for c in gdf_upz["_cod"] if c in loc_por_upz)
+    print(f"upz_geometrias: {len(gdf_upz)} geometrias actualizadas ({n_con_localidad} con localidad)")
 
     if not F4_GEOJSON.exists():
         print(f"Advertencia: {F4_GEOJSON} no existe — saltando cuadrantes")

@@ -51,6 +51,8 @@ STATE_FILE = PROC_DIR / ".transform_state.json"
 
 PROC_DIR.mkdir(parents=True, exist_ok=True)
 
+from src.geo_utils import build_upz_localidad_crosswalk  # noqa: E402
+
 # ─── Columnas esperadas en Bronze ─────────────────────────────────────────────
 # Nombres posibles para cada campo (el raw puede variar entre versiones del dataset)
 # F2 UPZ shapefile (Catastro Bogota ArcGIS) usa "CODIGO_UPZ"
@@ -1014,25 +1016,12 @@ def build_silver_table(
         # Asegurar upz_cod como string en base
         base = base.with_columns(pl.col("upz_cod").cast(pl.Utf8).str.strip_chars())
 
-        # JOIN 0: localidad desde F5 raw (UPZ → localidad)
-        # F5 tiene COD_LOCALIDAD y LOCALIDAD por cada fila UPZ
+        # JOIN 0: localidad desde F5 raw (UPZ → localidad) — src/geo_utils.py,
+        # compartido con scripts/seed_supabase.py::seed_geometrias(). Resuelve
+        # UPZs con mas de una localidad en F5 por moda (localidad mas frecuente),
+        # no por la primera fila que aparezca.
         if (RAW_DIR / "f5_nuse_123.parquet").exists():
-            f5_raw = pl.read_parquet(RAW_DIR / "f5_nuse_123.parquet")
-            upz_loc = (
-                f5_raw.select(["COD_UPZ", "COD_LOCALIDAD", "LOCALIDAD"])
-                .unique()
-                .with_columns(
-                    pl.col("COD_UPZ")
-                      .str.replace_all(r"[Uu][Pp][Zz]", "")
-                      .str.strip_chars()
-                      .alias("upz_cod"),
-                    pl.col("COD_LOCALIDAD").alias("cod_localidad"),
-                    pl.col("LOCALIDAD").alias("nom_localidad"),
-                )
-                .filter(~pl.col("COD_UPZ").str.contains("[Uu][Pp][Rr]"))
-                .select(["upz_cod", "cod_localidad", "nom_localidad"])
-                .unique(subset=["upz_cod"])
-            )
+            upz_loc = build_upz_localidad_crosswalk(RAW_DIR / "f5_nuse_123.parquet")
             base = base.join(upz_loc, on="upz_cod", how="left")
             if verbose:
                 n_loc = base["cod_localidad"].drop_nulls().n_unique() if "cod_localidad" in base.columns else 0
