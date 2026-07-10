@@ -38,9 +38,13 @@ export function TabDescripcion({ upzCod, upzFeature, cargando }: TabDescripcionP
   const { upz_nombre, cod_localidad, nom_localidad, nivel_riesgo } =
     upzFeature.properties;
 
+  const localidadTexto = nom_localidad
+    ? `${nom_localidad} (${cod_localidad})`
+    : "No disponible";
+
   const campos: Array<{ etiqueta: string; valor: string }> = [
     { etiqueta: "Código UPZ", valor: upzCod },
-    { etiqueta: "Localidad", valor: `${nom_localidad} (${cod_localidad})` },
+    { etiqueta: "Localidad", valor: localidadTexto },
   ];
 
   return (
@@ -53,7 +57,8 @@ export function TabDescripcion({ upzCod, upzFeature, cargando }: TabDescripcionP
           <div>
             <h3 className="text-base font-semibold text-foreground">{upz_nombre}</h3>
             <p className="font-mono-data text-xs text-muted-foreground">
-              UPZ {upzCod} · {nom_localidad}
+              UPZ {upzCod}
+              {nom_localidad ? ` · ${nom_localidad}` : ""}
             </p>
           </div>
         </div>
