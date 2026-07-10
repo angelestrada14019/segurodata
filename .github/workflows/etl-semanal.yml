@@ -73,7 +73,20 @@ jobs:
           if [ "${{ github.event.inputs.force }}" = "true" ]; then
             FORCE_FLAG="--force"
           fi
-          python src/pipeline.py --source $SOURCES $FORCE_FLAG --verbose
+          # F6 (Hurto PN) NO alimenta Silver/el modelo -- no esta en el
+          # diccionario STEPS de src/transform.py, es solo contexto de
+          # benchmarking nacional para la sustentacion oral. Se corre aparte
+          # en modo best-effort: un fallo ahi (ej. falta SOCRATA_APP_TOKEN,
+          # que es un secret DISTINTO de SUPABASE_URL/SUPABASE_SERVICE_KEY)
+          # nunca debe bloquear transform/train/load, que no dependen de F6.
+          REQUIRED_SOURCES=$(echo "$SOURCES" | tr ' ' '\n' | grep -v '^f6$' | tr '\n' ' ')
+          if [ -n "$(echo $REQUIRED_SOURCES | tr -d ' ')" ]; then
+            python src/pipeline.py --source $REQUIRED_SOURCES $FORCE_FLAG --verbose
+          fi
+          if echo "$SOURCES" | grep -qw f6; then
+            echo "--- F6 (Hurto PN, solo benchmarking) -- best-effort, no bloquea el resto ---"
+            python src/pipeline.py --source f6 $FORCE_FLAG --verbose || echo "[AVISO] F6 fallo (no bloqueante) -- revisar SOCRATA_APP_TOKEN si hace falta refrescar benchmarking"
+          fi
 
       - name: Verificar archivos generados
         run: |
