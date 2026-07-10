@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { queryKeys } from "@/lib/query-keys";
 import { obtenerPeriodoMasReciente } from "@/lib/periodo-predicciones";
@@ -8,8 +8,8 @@ import type { LocalidadFeatureCollection } from "@/types/deck";
  * Geometrías agregadas por localidad + riesgo dominante vía RPC
  * `localidades_geojson` (migración 0012). Usado cuando `use-zoom-adaptativo`
  * resuelve `'localidad'` (zoom < ZOOM_THRESHOLD). Mismo criterio de período
- * que `use-upz-geometrias` — ver comentario ahí y en
- * `lib/periodo-predicciones.ts`.
+ * que `use-upz-geometrias` — ver comentario ahí (incluye por qué
+ * `placeholderData: keepPreviousData`) y en `lib/periodo-predicciones.ts`.
  */
 export function useLocalidadesGeometrias(anio?: number, mes?: number) {
   return useQuery({
@@ -28,5 +28,6 @@ export function useLocalidadesGeometrias(anio?: number, mes?: number) {
       return data as LocalidadFeatureCollection;
     },
     staleTime: anio !== undefined && mes !== undefined ? Infinity : 5 * 60_000,
+    placeholderData: keepPreviousData,
   });
 }

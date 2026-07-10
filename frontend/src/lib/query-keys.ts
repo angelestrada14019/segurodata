@@ -29,6 +29,12 @@ export const queryKeys = {
    * `useExplain`), así que se cachea aparte para no resolverlo dos veces.
    */
   periodoVigente: ["periodo-vigente"] as const,
+  /**
+   * Rango completo (desde/hasta) de períodos disponibles en `predicciones`
+   * — alimenta `slider-temporal.tsx`. Ver `hooks/use-rango-periodos.ts` para
+   * la degradación cuando RLS bloquea la consulta directa (visitante anon).
+   */
+  rangoPeriodos: ["rango-periodos"] as const,
   predict: (upzCod: string, anio: number, mes: number) =>
     ["predict", upzCod, anio, mes] as const,
   explain: (upzCod: string, anio: number, mes: number) =>

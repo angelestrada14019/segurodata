@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { queryKeys } from "@/lib/query-keys";
 import { obtenerPeriodoMasReciente } from "@/lib/periodo-predicciones";
@@ -12,6 +12,12 @@ import type { UpzFeatureCollection } from "@/types/deck";
  * llama la RPC con p_anio/p_mes ambos NULL, produciría Features duplicados
  * por UPZ). `staleTime: Infinity` cuando el período queda fijo — la
  * geometría no cambia y el riesgo de un mes ya cerrado tampoco.
+ *
+ * `placeholderData: keepPreviousData` — `slider-temporal.tsx` (Sprint 2)
+ * cambia `anio`/`mes` en vivo (query key nuevo por cada mes navegado): sin
+ * esto, `data` caería a `undefined` en cada cambio y el mapa parpadearía a
+ * skeleton completo por cada paso del slider. Con esto, se sigue mostrando
+ * el período anterior mientras el nuevo carga en segundo plano.
  */
 export function useUpzGeometrias(anio?: number, mes?: number) {
   return useQuery({
@@ -30,5 +36,6 @@ export function useUpzGeometrias(anio?: number, mes?: number) {
       return data as UpzFeatureCollection;
     },
     staleTime: anio !== undefined && mes !== undefined ? Infinity : 5 * 60_000,
+    placeholderData: keepPreviousData,
   });
 }
