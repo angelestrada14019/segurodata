@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -58,17 +58,22 @@ export function ModalUpz({ upzCod, open, onOpenChange }: ModalUpzProps) {
 
   const graphragMutation = useGraphrag();
 
+  // `graphragMutation` es un objeto nuevo cada render (useMutation) — el
+  // efecto de abajo solo debe reaccionar a cambios de `upzCod`, nunca a la
+  // identidad de ese objeto (incluirlo entero en deps reiniciaría el
+  // historial de chat en CADA render, no solo al cambiar de UPZ). Patrón
+  // "ref con el valor más reciente": se actualiza en cada render (fuera del
+  // efecto, sin causar re-render) y el efecto lee `.current` — satisface la
+  // regla de deps sin reintroducir el problema.
+  const graphragMutationRef = useRef(graphragMutation);
+  graphragMutationRef.current = graphragMutation;
+
   // Nueva UPZ → se reinicia la sesión del modal (pestaña activa, historial
-  // de chat, mutación graphrag). `graphragMutation` es un objeto nuevo en
-  // cada render (useMutation) — solo nos interesa reaccionar a cambios de
-  // `upzCod`, no a la identidad del objeto mutation.
+  // de chat, mutación graphrag).
   useEffect(() => {
     setTabActiva("descripcion");
     setHistorialChat([]);
-    graphragMutation.reset();
-    // Deps intencional: solo [upzCod]. `graphragMutation` es un objeto nuevo
-    // en cada render (useMutation) — incluirlo dispararía este efecto en
-    // renders donde upzCod no cambió.
+    graphragMutationRef.current.reset();
   }, [upzCod]);
 
   const {
