@@ -96,6 +96,18 @@ jobs:
           echo "--- Estado del pipeline ---"
           python src/pipeline.py --status
 
+      - name: Bootstrap fuentes estaticas (F1/F2/F4/F7/F8) para transform.py
+        # datos/raw/ esta gitignored -- un checkout fresco de un runner
+        # hosteado por GitHub NO trae estos archivos (a diferencia de una
+        # maquina local, donde ya existen de una corrida anterior y rara vez
+        # cambian). transform.py falla duro si su Bronze de entrada no
+        # existe -- sin este paso, "Transformar Bronze -> Silver" siempre
+        # fallaria en un runner limpio. pipeline.py ya es incremental via
+        # HTTP Last-Modified (F1/F2/F4/F7) o metadata_modified (F8), asi que
+        # correr esto en cada run es barato salvo la primera vez.
+        if: github.event.inputs.retrain != 'false'
+        run: python src/pipeline.py --source f1 f2 f4 f7 f8 --verbose
+
       - name: Transformar Bronze -> Silver
         if: github.event.inputs.retrain != 'false'
         run: python src/transform.py --verbose
