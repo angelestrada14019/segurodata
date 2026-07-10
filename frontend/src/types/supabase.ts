@@ -2,8 +2,8 @@
  * Tipos a mano de las tablas de Supabase relevantes para el frontend —
  * skill `supabase-segurodata`. Solo se tipan las columnas consumidas
  * directamente por supabase-js (predicciones, shap_values, silver_upz_mes,
- * change_points, upz_geometrias, cuadrantes_geom). Ante discrepancia con
- * una migración real, la migración manda.
+ * change_points, upz_geometrias, cuadrantes_geom, user_profiles). Ante
+ * discrepancia con una migración real, la migración manda.
  */
 
 import type { NivelRiesgo } from "@/lib/colores-riesgo";
@@ -43,6 +43,16 @@ export interface CuadranteGeomRow {
   upz_codes: string[] | null;
 }
 
+/**
+ * Subconjunto de `cuadrantes_geom` para el selector de asignación de
+ * cuadrante del Panel Admin (`hooks/use-cuadrantes.ts`) — a propósito NO
+ * incluye `geom`/`upz_codes` (innecesarios y pesados para un `<Select>`).
+ */
+export interface CuadranteOpcionRow {
+  cuadrante_id: string;
+  nom_cai: string | null;
+}
+
 export type TipoCambio = "ALZA" | "BAJA" | "INDEFINIDO";
 
 export interface ChangePointRow {
@@ -74,4 +84,6 @@ export interface UserProfileRow {
   rol: RolUsuario;
   cuadrante_asignado: string | null;
   aprobado: boolean;
+  /** timestamptz ISO — `new Date(created_at)` para formatear en UI. */
+  created_at: string;
 }

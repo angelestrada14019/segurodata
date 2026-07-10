@@ -47,4 +47,14 @@ export const queryKeys = {
   adminUsuarios: {
     all: ["admin-usuarios"] as const,
   },
+  /**
+   * Lista liviana `{cuadrante_id, nom_cai}` para el `<Select>` del Panel
+   * Admin (`hooks/use-cuadrantes.ts`). Deliberadamente DISTINTA de
+   * `cuadrantesGeometrias.all` (RPC `cuadrantes_geojson`, geometría completa
+   * para la capa del mapa) — mismo nombre de key para ambas causaría que
+   * TanStack Query devolviera una forma de dato por la otra.
+   */
+  cuadrantesOpciones: {
+    all: ["cuadrantes-opciones"] as const,
+  },
 } as const;
