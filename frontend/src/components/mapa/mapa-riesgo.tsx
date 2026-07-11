@@ -277,6 +277,35 @@ export function MapaRiesgo({ tabInicialModal }: MapaRiesgoProps) {
             };
           }
 
+          // Las 3 capas de infraestructura (F8/F13/F14) comparten geometría o
+          // se superponen visualmente con la capa base de riesgo — sin un
+          // branch propio, su `object.properties` (que no trae `nivel_riesgo`)
+          // caía al tooltip genérico de abajo y mostraba "Riesgo: SIN_DATOS",
+          // un falso negativo (el dato sí existe, solo se preguntó al
+          // feature equivocado). Cada una muestra su propia info relevante,
+          // igual que ya hace Cuadrantes arriba.
+          if (typeof props.estacion_id === "string") {
+            return {
+              html: `<div style="font-family: var(--font-mono, monospace); font-size: 12px;"><strong>${props.nombre}</strong><br/>Estación TransMilenio</div>`,
+              style: ESTILO_TOOLTIP,
+            };
+          }
+
+          if (typeof props.camara_id === "string") {
+            const direccion = typeof props.direccion === "string" ? props.direccion : "";
+            return {
+              html: `<div style="font-family: var(--font-mono, monospace); font-size: 12px;"><strong>${props.nombre}</strong><br/>Cámara Salvavidas${direccion ? ` · ${direccion}` : ""}</div>`,
+              style: ESTILO_TOOLTIP,
+            };
+          }
+
+          if (typeof props.luminarias_led_upz === "number") {
+            return {
+              html: `<div style="font-family: var(--font-mono, monospace); font-size: 12px;"><strong>${props.upz_nombre}</strong><br/>💡 ${props.luminarias_led_upz.toLocaleString("es-CO")} luminarias LED</div>`,
+              style: ESTILO_TOOLTIP,
+            };
+          }
+
           const nombre = props.upz_nombre ?? props.nom_localidad;
           const nivel = props.nivel_riesgo ?? "SIN_DATOS";
           return {
