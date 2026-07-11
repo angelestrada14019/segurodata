@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { TextoMarkdown } from "@/components/shared/texto-markdown";
 import type { MensajeChat } from "@/components/modal-upz/tipos";
 import type { GraphragRequest, GraphragResponse } from "@/types/api";
 
@@ -166,7 +167,11 @@ function BurbujaMensaje({ mensaje }: { mensaje: MensajeChat }) {
               : "border-border bg-card text-foreground",
           )}
         >
-          <p className="whitespace-pre-wrap">{mensaje.texto}</p>
+          {esUsuario ? (
+            <p className="whitespace-pre-wrap">{mensaje.texto}</p>
+          ) : (
+            <TextoMarkdown className="text-sm leading-relaxed">{mensaje.texto}</TextoMarkdown>
+          )}
           {mensaje.fuentes && mensaje.fuentes.length > 0 && (
             // Citas inline (estilo notas al pie numeradas) en vez de remitir a
             // "la pestaña Fuentes": `ChatPanel` se monta también en

@@ -56,6 +56,12 @@ Lectura adicional (no vendorizada): [wilwaldon/Claude-Code-Frontend-Design-Toolk
 - **Módulo 3 — Prescriptivo**: FastAPI `/prescribe`.
 - **Módulo 4 — Chatbot**: FastAPI `/graphrag`.
 
+**Texto generado por LLM (Módulos 3 y 4):** `recomendacion_llm` (`/prescribe`) y las respuestas del
+chatbot (`/graphrag`) se renderizan con `<TextoMarkdown>` (`components/shared/texto-markdown.tsx`,
+`react-markdown` + `remark-breaks`) — OpenRouter suele devolver `**negrita**`/listas aunque el prompt
+no lo pida, y antes se mostraban los asteriscos crudos en pantalla. En `chat-panel.tsx` solo aplica al
+mensaje del bot; el mensaje del usuario se muestra como texto plano tal cual lo escribió.
+
 ## El mapa (deck.gl)
 
 `GeoJsonLayer` (NO `PolygonLayer` — `upz_geometrias.geom` es `MultiPolygon`, supabase-js no parsea

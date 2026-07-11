@@ -5,6 +5,7 @@ import { ApiError } from "@/lib/api-client";
 import { tieneAccesoOperacional } from "@/lib/roles-operacionales";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { TextoMarkdown } from "@/components/shared/texto-markdown";
 import { PanelCai } from "@/components/prescriptivo/panel-cai";
 import { TablaOntologica } from "@/components/prescriptivo/tabla-ontologica";
 import type { ShapFeatureValor } from "@/types/api";
@@ -113,7 +114,7 @@ export function TabSugerencia({ upzCod, shapTop }: TabSugerenciaProps) {
           <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
           Recomendación operacional
         </div>
-        <p className="text-sm leading-relaxed text-foreground">{data.recomendacion_llm}</p>
+        <TextoMarkdown>{data.recomendacion_llm}</TextoMarkdown>
       </div>
 
       <PanelCai cai={data.cai} />
