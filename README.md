@@ -52,7 +52,7 @@ Todas públicas y gratuitas — **~870,000 registros Bronze en total**:
 | F8 | Estaciones TransMilenio — TM S.A. | 153 | Estación (punto) | +2 cols: `dist_tm_metros`, `n_estaciones_tm` | Estático |
 | F10 | Noticias RSS — El Tiempo / Espectador / El Informante Soy Yo | N/A (texto) | Artículo (3 feeds verificados) | Corpus GraphRAG → Supabase pgvector | Diaria |
 | **F11** | **Malla Vial + Obras IDU** | ~miles | Segmento vial | +1 col: `km_via_intervenida_upz` | Mensual |
-| **F13** | **Cámaras Salvavidas SDM** | ~400 | Punto (cámara) | +1 col: `n_camaras_upz` + capa deck.gl | Semestral |
+| **F13** | **Cámaras Salvavidas SDM** | 92 | Punto (cámara) | +1 col: `n_camaras_upz` + capa deck.gl | Semestral |
 | **F14** | **Alumbrado Público UAESP** | 112 | UPZ (directo) | +1 col: `luminarias_led_upz` | Anual |
 | | **TOTAL BRONZE** | **~870,000+** | | **Silver: 111,606 × 20 cols** | |
 

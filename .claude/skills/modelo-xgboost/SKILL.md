@@ -25,7 +25,8 @@ FEATURES = [
     "estrato_promedio_upz", "cuadrantes_por_km2", "n_estaciones_tm", "dist_tm_metros",
     # Subregistro
     "ratio_nuse_criminal_upz",
-    # Infraestructura (F11+F13+F14 — placeholder 0 hasta tener extractores)
+    # Infraestructura (n_camaras_upz/luminarias_led_upz reales desde 10-jul;
+    # km_via_intervenida_upz = F11, sigue placeholder 0, sin extractor)
     "km_via_intervenida_upz", "n_camaras_upz", "luminarias_led_upz",
     # Tipo de delito dominante (codificado)
     "tipo_crimen_cod",

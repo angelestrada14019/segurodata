@@ -15,7 +15,7 @@ Guía para todo el trabajo geoespacial del proyecto: shapefiles de UPZ, spatial 
 | `datos/raw/f4_cuadrantes.geojson` | F4 MEBOG | 599 | Cuadrantes policiales con nombre del CAI |
 | `datos/raw/f7_estratificacion.parquet` | F7 SDP | 44,260 | Manzanas catastrales con estrato + geometría WKT |
 | `datos/raw/f8_transmilenio.geojson` | F8 TM | 153 | Estaciones TransMilenio (puntos) |
-| `datos/raw/f13_camaras_sdm.geojson` | F13 SDM | ~400 | Cámaras Salvavidas (puntos) |
+| `datos/raw/f13_camaras_sdm.geojson` | F13 SDM | 92 | Cámaras Salvavidas (puntos) |
 
 ## Spatial joins — patrones del proyecto
 

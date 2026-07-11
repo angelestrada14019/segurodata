@@ -21,7 +21,7 @@ Estas fuentes alimentan la tabla Silver y el modelo predictivo.
 | F7 | Estratificación — SDP | SDP | 44,260 | +estrato_promedio_upz | ✅ |
 | F8 | Estaciones TransMilenio | TM S.A. | 153 | +dist_tm, +n_estaciones | ❌ |
 | **F11** | **Malla Vial + Obras IDU** | **IDU / IDECA** | ~miles segs. | **+km_via_intervenida_upz** | ✅ |
-| **F13** | **Cámaras Salvavidas SDM** | **SDM** | ~400 puntos | **+n_camaras_upz + capa deck.gl** | ❌ ArcGIS Hub |
+| **F13** | **Cámaras Salvavidas SDM** | **SDM** | 92 puntos | **+n_camaras_upz + capa deck.gl** | ❌ ArcGIS Hub |
 | **F14** | **Alumbrado Público UAESP** | **UAESP** | 112 filas | **+luminarias_led_upz (granularidad nativa UPZ)** | ✅ |
 
 **Total Bronze: ~870,000+ registros → Silver: 111,606 filas × 20 columnas**

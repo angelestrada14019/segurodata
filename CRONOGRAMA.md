@@ -11,7 +11,7 @@
 
 ```
 MAYO                        JUNIO                          JULIO
-Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ✅ | Fase 4 ⏳
+Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ✅ | Fase 3 ✅ | Fase 4 ⏳
 25 May    | 26–27 May  | 27M–6Jun   |  7–20 Jun | 21J–10Jul | 11–13 Jul
 [Plan]    | [Bronze]   | [Silver+EDA]| [Modelo]  | [Dashboard+IA] | [Docs]
 ```
@@ -127,7 +127,7 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ✅ | Fase 4 ⏳
 
 ---
 
-## Fase 2 ⏳ — Modelo + Supabase + Nuevas Fuentes (7 – 20 junio 2026)
+## Fase 2 ✅ — Modelo + Supabase + Nuevas Fuentes (7 – 20 junio 2026)
 
 **Entregables:** `scripts/train_model.py` (features + modelo)
 
@@ -147,9 +147,9 @@ Fase 0 ✅ | Fase 1A ✅ | Fase 1B ✅ | Fase 2 ⏳ | Fase 3 ✅ | Fase 4 ⏳
 - [x] ✅ (11-jun) Migración 0011: columnas `metadata JSONB` en `predicciones` y `shap_values` para trazabilidad FTI (model_version, pipeline_run_date, features)
 - [x] ✅ (11-jun) Hook JWT habilitado: Dashboard → Authentication → **Auth Hooks** → "Add hook" → **"Customize Access Token (JWT) Claims hook"** → tipo PostgreSQL Function → `public.custom_access_token_hook` → ENABLED. Los roles (CIUDADANO/COMANDANTE_CAI/ANALISTA_SDSCJ/ADMIN) ya viajan en el JWT.
 - [x] ✅ (11-jun) Realtime habilitado vía migración `0009_realtime.sql` (`ALTER PUBLICATION supabase_realtime ADD TABLE silver_upz_mes`). Alternativa Dashboard: Database → Publications → `supabase_realtime` → toggle ON.
-- [ ] Integrar F13 Cámaras Salvavidas SDM → spatial join → feature `n_camaras_upz`
-- [ ] Integrar F14 Alumbrado UAESP → merge directo → feature `luminarias_led_upz`
-- [ ] Integrar F11 IDU Obras Viales → spatial join → feature `km_via_intervenida_upz`
+- [x] ✅ (10-jul) Integrar F13 Cámaras Salvavidas SDM → spatial join → feature `n_camaras_upz` (92 cámaras, ArcGIS Hub SDM)
+- [x] ✅ (10-jul) Integrar F14 Alumbrado UAESP → merge directo → feature `luminarias_led_upz` (agregado por UPZ, Catastro Bogotá — 3ra feature más importante del modelo)
+- [ ] Integrar F11 IDU Obras Viales → spatial join → feature `km_via_intervenida_upz` (placeholder=0, sin extractor — único de los 3 que sigue pendiente)
 - [x] ✅ (11-jun / 16-jun) `ruptures` PELT sobre F1 DAI 2018–2026: **40 breakpoints detectados (pen=5, max_bp=2)**, COVID 2020 BAJA validado (17 localidades). Script: `scripts/compute_change_points.py` → cargados en Supabase `change_points`.
 - [x] ✅ (10-jun) **[Pre-mortem T7]** Tabla `cuadrantes_geom` creada con índice GIST + columna `upz_codes[]` pre-computada (599 cuadrantes con nom_cai y teléfono). ⏳ Geometrías reales se cargan con `seed_supabase.py --solo geo`
 
