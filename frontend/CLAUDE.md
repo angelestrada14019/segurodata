@@ -62,10 +62,14 @@ Lectura adicional (no vendorizada): [wilwaldon/Claude-Code-Frontend-Design-Toolk
 WKB, por eso las RPCs `upz_geojson`/`localidades_geojson`/`cuadrantes_geojson` devuelven GeoJSON ya
 construido) con 112 UPZs · paleta **CRÍTICO=morado · ALTO=rojo · MEDIO=naranja · BAJO=verde** ·
 zoom adaptativo Localidades(zoom<12)→UPZs(zoom≥12) · hover · slider temporal (navega meses
-históricos de `predicciones`) · panel de capas toggleables (Cuadrantes y Cambios estructurales
-reales; Cámaras F13/Alumbrado F14/TransMilenio marcadas "Pendiente de datos", sin geometría
-inventada) · modal de 5 pestañas por UPZ (Descripción · Predicción · Sugerencia · Fuentes ·
-Chatbot), compartido como punto de entrada desde Módulo 1 y Módulo 2.
+históricos de `predicciones`, con spinner puntual vía `isFetching` mientras trae el período nuevo —
+`placeholderData: keepPreviousData` evita el parpadeo pero necesitaba esa señal aparte) · panel de
+5 capas toggleables, todas con geometría real (Cuadrantes, Cambios estructurales, TransMilenio F8,
+Cámaras Salvavidas F13, Alumbrado F14). Solo Cuadrantes sigue siendo `authenticated`-only (RPC
+`cuadrantes_geojson`, expone CAI + teléfono — decisión deliberada, panel muestra candado sin
+sesión); las otras 4 son de lectura pública desde la migración 0018 · modal de 5 pestañas por UPZ
+(Descripción · Predicción · Sugerencia · Fuentes · Chatbot), compartido como punto de entrada desde
+Módulo 1 y Módulo 2.
 
 ## Regla de documentación (INAMOVIBLE)
 

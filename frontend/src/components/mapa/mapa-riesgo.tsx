@@ -136,22 +136,34 @@ export function MapaRiesgo({ tabInicialModal }: MapaRiesgoProps) {
     periodoSeleccionado?.anio,
     periodoSeleccionado?.mes,
   );
-  // `cuadrantes_geojson` es RPC `authenticated`-only (migración 0012) — solo
-  // se dispara si el checkbox está activo Y hay sesión, nunca para el
-  // visitante anon de /diagnostico (evita un 42501 de permisos innecesario).
+  // `cuadrantes_geojson` es RPC `authenticated`-only (migración 0012, expone
+  // nombre de CAI + teléfono) — solo se dispara si el checkbox está activo Y
+  // hay sesión, nunca para el visitante anon de /diagnostico (evita un 42501
+  // de permisos innecesario).
   const cuadrantesQuery = useCuadrantesGeometrias(capasVisibles.cuadrantes && !!session);
-  // Mismo patrón/mismo motivo que cuadrantesQuery — transmilenio_geojson/
-  // camaras_geojson/alumbrado_geojson también son RPC authenticated-only
-  // (migración 0016).
-  const transmilenioQuery = useTransmilenioGeometrias(capasVisibles.transmilenio && !!session);
-  const camarasQuery = useCamarasGeometrias(capasVisibles.camaras && !!session);
-  const alumbradoQuery = useAlumbradoGeometrias(capasVisibles.alumbrado && !!session);
+  // transmilenio_geojson/camaras_geojson/alumbrado_geojson son lectura
+  // PÚBLICA desde la migración 0018 — su data ya es abierta sin cuenta en
+  // el portal de origen (ArcGIS Hub SDM/Catastro/GIS TransMilenio), así que
+  // a diferencia de cuadrantes no dependen de `session`: se disparan con
+  // solo el checkbox del panel de capas, igual para anon que autenticado.
+  const transmilenioQuery = useTransmilenioGeometrias(capasVisibles.transmilenio);
+  const camarasQuery = useCamarasGeometrias(capasVisibles.camaras);
+  const alumbradoQuery = useAlumbradoGeometrias(capasVisibles.alumbrado);
   const changePointsQuery = useChangePoints();
 
   const cargando =
     nivelAgregacion === "upz" ? upzQuery.isLoading : localidadesQuery.isLoading;
   const error =
     nivelAgregacion === "upz" ? upzQuery.error : localidadesQuery.error;
+  // `isFetching` (no `isLoading`): con `placeholderData: keepPreviousData`
+  // (ver use-upz-geometrias.ts) el mapa sigue mostrando el período anterior
+  // mientras el nuevo carga — a propósito, evita el parpadeo a skeleton
+  // completo en cada paso del slider. Pero eso dejaba CERO señal visual
+  // durante ese lapso (se veía congelado). `isFetching` sí es true en ese
+  // background-refetch aunque `isLoading` sea false — es la señal que
+  // `<SliderTemporal>` necesita para mostrar su propio spinner puntual.
+  const actualizandoPeriodo =
+    nivelAgregacion === "upz" ? upzQuery.isFetching : localidadesQuery.isFetching;
 
   const onClickUpz = useCallback((feature: UpzFeature) => {
     setSeleccionado({ tipo: "upz", feature });
@@ -305,6 +317,7 @@ export function MapaRiesgo({ tabInicialModal }: MapaRiesgoProps) {
             <SliderTemporal
               periodo={periodoSeleccionado}
               onCambiarPeriodo={setPeriodoSeleccionado}
+              actualizando={actualizandoPeriodo}
             />
           </div>
         </div>

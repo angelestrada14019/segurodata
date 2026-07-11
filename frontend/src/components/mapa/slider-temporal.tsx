@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRangoPeriodos, type Periodo } from "@/hooks/use-rango-periodos";
 import { cn } from "@/lib/utils";
@@ -20,6 +20,14 @@ interface SliderTemporalProps {
    */
   periodo: Periodo | null;
   onCambiarPeriodo: (periodo: Periodo) => void;
+  /**
+   * `true` mientras el mapa trae en segundo plano el período recién
+   * seleccionado (`isFetching` de la query activa en `mapa-riesgo.tsx`, no
+   * `isLoading` — con `keepPreviousData` el mapa sigue mostrando el período
+   * anterior durante ese lapso, así que sin esta señal el cambio de mes no
+   * tenía NINGÚN indicio visual y se leía como una UI congelada).
+   */
+  actualizando?: boolean;
   className?: string;
 }
 
@@ -48,7 +56,12 @@ function periodoDesdeOrdinal(ordinal: number): Periodo {
  * ya tenga un `periodo` explícito — ver el comentario en `SliderTemporalProps`
  * sobre por qué NO se sincroniza ese default hacia el padre automáticamente.
  */
-export function SliderTemporal({ periodo, onCambiarPeriodo, className }: SliderTemporalProps) {
+export function SliderTemporal({
+  periodo,
+  onCambiarPeriodo,
+  actualizando = false,
+  className,
+}: SliderTemporalProps) {
   const rangoQuery = useRangoPeriodos();
   const rango = rangoQuery.data;
 
@@ -103,7 +116,19 @@ export function SliderTemporal({ periodo, onCambiarPeriodo, className }: SliderT
           className="h-1.5 w-40 cursor-pointer accent-primary sm:w-56"
           aria-valuetext={etiqueta}
         />
-        <span className="font-mono-data text-xs text-muted-foreground">{etiqueta}</span>
+        <span
+          className="flex items-center gap-1.5 font-mono-data text-xs text-muted-foreground"
+          role="status"
+          aria-live="polite"
+        >
+          {etiqueta}
+          {actualizando && (
+            <>
+              <Loader2 className="h-3 w-3 animate-spin text-primary" aria-hidden="true" />
+              <span className="sr-only">Actualizando datos del período…</span>
+            </>
+          )}
+        </span>
       </div>
 
       <Button
