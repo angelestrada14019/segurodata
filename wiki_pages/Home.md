@@ -43,6 +43,7 @@ El **Módulo 3 (Prescriptivo)** combina SHAP values + detección de cambios estr
 ### Documentación técnica
 
 - [[Analisis-Exploratorio]] — Hallazgos clave del EDA: distribución espacial, estacionalidad, factor socioeconómico
+- [[Supabase-Schema]] — Schema completo, RLS por tabla, RPCs y decisiones de diseño del backend de datos
 - [[Transformacion]] — Capa Silver: esquema 20 cols, comandos, advertencia RAM F7
 - [[Estado-del-Arte]] — 20+ sistemas internacionales, 18 papers, diferenciación
 - [[Provenance]] — URLs verificadas, licencias, tabla causal, cumplimiento concurso

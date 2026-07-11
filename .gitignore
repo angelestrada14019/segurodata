@@ -63,3 +63,8 @@ Thumbs.db
 
 # ── Artefactos temporales de herramientas ────────────────────────────────────
 .playwright-mcp/
+
+# ── Materiales privados de sustentación ──────────────────────────────────────
+# Guion de video, demo script y slides — contienen notas de presentación y
+# respuestas ensayadas al jurado, no son documentación pública del proyecto.
+docs/sustentacion/

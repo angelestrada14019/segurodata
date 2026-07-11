@@ -19,8 +19,8 @@ class Settings(BaseSettings):
     supabase_jwks_url: str = ""  # escape hatch si el proyecto usa llaves asimétricas
 
     openrouter_api_key: str = ""
-    llm_model: str = "google/gemini-flash-1.5"
-    llm_model_fallback: str = "anthropic/claude-haiku"
+    llm_model: str = "google/gemini-2.5-flash-lite"
+    llm_model_fallback: str = "anthropic/claude-3-haiku"
     llm_max_tokens: int = 600
     llm_cache_ttl_seconds: int = 86_400
     llm_cache_maxsize: int = 256

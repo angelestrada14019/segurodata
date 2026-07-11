@@ -61,7 +61,7 @@ class GraphRAGService:
         if not chunks:
             return {
                 "respuesta": "No tengo información en el corpus sobre esto. "
-                "El corpus se amplía con cada boletín SCJ y noticia indexada.",
+                "El corpus se amplía con cada noticia nueva indexada.",
                 "fuentes": [],
                 "modelo_llm": "ninguno",
                 "cacheado": False,
