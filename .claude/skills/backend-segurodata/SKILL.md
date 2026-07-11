@@ -48,10 +48,10 @@ Lookup a tabla `predicciones` por PK (upz_cod, anio, mes). 404 si no existe la f
 {
   "respuesta": "Según el Boletín SCJ de noviembre 2025...",
   "fuentes": [
-    { "tipo": "BOLETIN", "titulo": "Boletín SCJ nov-2025", "fecha": "2025-11-01", "url": null },
-    { "tipo": "NOTICIA", "titulo": "El Tiempo — ...", "fecha": "2025-10-15", "url": "https://..." }
+    { "tipo": "RSS_ELTIEMPO", "titulo": "El Tiempo — ...", "fecha": "2026-06-11", "url": "https://..." },
+    { "tipo": "RSS_INFORMANTE", "titulo": "El Informante Soy Yo — ...", "fecha": "2026-04-29", "url": "https://..." }
   ],
-  "modelo_llm": "google/gemini-flash-1.5", "cacheado": false
+  "modelo_llm": "google/gemini-2.5-flash-lite", "cacheado": false
 }
 ```
 Flujo: embed pregunta (MiniLM local) → RPC `match_documents(threshold=0.7, count=5, filter_upz)` → si 0 con filtro, retry sin filtro → prompt con chunks → OpenRouter (caché TTL 24h).
@@ -169,8 +169,8 @@ SUPABASE_JWT_SECRET=                 # dejar vacío si el proyecto usa ES256 (ve
 SUPABASE_JWKS_URL=                   # <SUPABASE_URL>/auth/v1/.well-known/jwks.json — proyecto real usa ES256
 SUPABASE_DB_URL=                     # solo scripts offline (COPY bulk), no el backend
 OPENROUTER_API_KEY=
-LLM_MODEL=google/gemini-flash-1.5
-LLM_MODEL_FALLBACK=anthropic/claude-haiku
+LLM_MODEL=google/gemini-2.5-flash-lite
+LLM_MODEL_FALLBACK=anthropic/claude-3-haiku
 LLM_MAX_TOKENS=600
 LLM_CACHE_TTL_SECONDS=86400
 LLM_CACHE_MAXSIZE=256

@@ -33,7 +33,7 @@ El sistema responde tres preguntas concretas:
 | Modelo ML | `xgboost`, `scikit-learn`, `shap`, `ruptures` |
 | Change point detection | `ruptures` (PELT sobre DAI histórico 2018–2026) |
 | Embeddings (GraphRAG) | `sentence-transformers` — `all-MiniLM-L6-v2` (local, gratis, 384 dims) |
-| LLM / GraphRAG | **OpenRouter** — `google/gemini-flash-1.5` (gratis 1M tokens/día) como primaria; `anthropic/claude-haiku` como fallback |
+| LLM / GraphRAG | **OpenRouter** — `google/gemini-2.5-flash-lite` (costo marginal, <US$0.001/consulta) como primaria; `anthropic/claude-3-haiku` como fallback |
 | Base de datos | **Supabase** (PostgreSQL + PostGIS + pgvector) |
 | Backend ML | **FastAPI** (Python) en **Railway** — GraphRAG + prescriptivo + proxy OpenRouter |
 | Frontend / mapa | **React + Vite + deck.gl + Tailwind CSS** |
@@ -197,7 +197,7 @@ El Módulo 3 usa SHAP para identificar la causa dominante del riesgo y conecta d
 
 **Cuando pida análisis:** usar el contexto de Bogotá — 112 UPZs, localidades, las 12 fuentes activas. No generalizar.
 
-**Cuando pida texto para el chatbot o recomendaciones:** el Módulo 3 y 4 usan OpenRouter (modelo configurable via `LLM_MODEL` — por defecto `google/gemini-flash-1.5`). Los mensajes son operacionales (lenguaje del comandante de CAI, no jerga de ML). Distinguir del registro técnico de la wiki.
+**Cuando pida texto para el chatbot o recomendaciones:** el Módulo 3 y 4 usan OpenRouter (modelo configurable via `LLM_MODEL` — por defecto `google/gemini-2.5-flash-lite`; los modelos verdaderamente gratis de OpenRouter resultaron poco confiables — rate-limited o con respuestas incoherentes, ver `docs/chatbot_test_battery.md`). Los mensajes son operacionales (lenguaje del comandante de CAI, no jerga de ML). Distinguir del registro técnico de la wiki.
 
 **Red flags que corregir:**
 - Usar Claude API como modelo predictivo (viola el espíritu del concurso — XGBoost es el modelo)

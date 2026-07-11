@@ -38,7 +38,7 @@ Antes de cualquier prueba con datos reales, rellenar `backend/.env` a partir de 
 | `SUPABASE_DB_URL` | Settings → Database → **Connection string** → Session pooler (modo `?sslmode=require`) |
 | `SUPABASE_JWKS_URL` | Dejar vacío — el proyecto usa HS256 legacy, no necesita JWKS |
 | `OPENROUTER_API_KEY` | openrouter.ai → Keys → Create key |
-| `LLM_MODEL` | Por defecto `google/gemini-flash-1.5` (gratuito, no cambiar) |
+| `LLM_MODEL` | Por defecto `google/gemini-2.5-flash-lite` (costo marginal — los `:free` de OpenRouter resultaron poco confiables, ver `docs/chatbot_test_battery.md`) |
 
 **Configuración mínima para integración básica** (sin LLM):
 ```env

@@ -42,8 +42,8 @@ SUPABASE_URL=https://pluxaelenhkdaakxdrpm.supabase.co
 SUPABASE_SERVICE_KEY=eyJ...
 SUPABASE_JWT_SECRET=...
 OPENROUTER_API_KEY=sk-or-...
-LLM_MODEL=google/gemini-flash-1.5
-LLM_MODEL_FALLBACK=anthropic/claude-haiku
+LLM_MODEL=google/gemini-2.5-flash-lite
+LLM_MODEL_FALLBACK=anthropic/claude-3-haiku
 CORS_ORIGINS=https://<dominio-vercel>
 ```
 
@@ -105,5 +105,5 @@ Paso manual post-migración: habilitar `custom_access_token_hook` en Dashboard �
 | Railway (plan Hobby) | ~$5/mes | 8 GB RAM, siempre activo, sin cold start |
 | Vercel | $0 | Bandwidth de sobra en proyectos hobby |
 | Supabase | $0 | 500 MB DB + 1 GB storage + 2 GB transfer |
-| OpenRouter | $0 | Gemini Flash: 1M tokens/día gratis |
-| **Total** | **~$5/mes** | Suficiente para el concurso |
+| OpenRouter | <$1/mes | Gemini Flash Lite, costo marginal por consulta (`:free` no confiables, ver `docs/chatbot_test_battery.md`) |
+| **Total** | **~$5-6/mes** | Suficiente para el concurso |

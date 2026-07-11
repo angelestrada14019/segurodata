@@ -177,7 +177,7 @@ Variables a configurar en Railway:
 | `SUPABASE_JWT_SECRET` | dejar vacío si el proyecto usa ES256 (JWKS) |
 | `SUPABASE_JWKS_URL` | `https://<ref>.supabase.co/auth/v1/.well-known/jwks.json` |
 | `OPENROUTER_API_KEY` | key de openrouter.ai |
-| `LLM_MODEL` | `google/gemini-flash-1.5` |
+| `LLM_MODEL` | `google/gemini-2.5-flash-lite` |
 
 Railway (Plan Hobby ~$5/mes) mantiene el proceso siempre activo — sin cold start, sin warmup previo al demo.
 
@@ -260,7 +260,7 @@ gh workflow run etl-semanal.yml   # o desde la UI de GitHub Actions
 | `SUPABASE_JWKS_URL` | Backend — si ES256/RS256 | `<SUPABASE_URL>/auth/v1/.well-known/jwks.json` |
 | `SUPABASE_DB_URL` | Scripts offline (seed COPY) | Dashboard → Settings → Database → Session pooler |
 | `OPENROUTER_API_KEY` | Backend (LLM) | openrouter.ai → Keys |
-| `LLM_MODEL` | Backend | `google/gemini-flash-1.5` (por defecto) |
+| `LLM_MODEL` | Backend | `google/gemini-2.5-flash-lite` (por defecto) |
 | `AUTH_MODE` | Backend | `disabled` solo en development |
 | `VITE_SUPABASE_URL` | Frontend build | Igual que SUPABASE_URL |
 | `VITE_SUPABASE_ANON_KEY` | Frontend (lectura pública) | Dashboard → API → **Publishable key** (nuevo) o anon JWT (legacy) |

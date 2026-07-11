@@ -142,7 +142,7 @@ pregunta_usuario
     → sentence-transformers embed la pregunta (Python)
     → Supabase match_documents RPC (pgvector cosine similarity)
     → chunks relevantes recuperados
-    → OpenRouter API (google/gemini-flash-1.5) con OPENROUTER_API_KEY server-side
+    → OpenRouter API (google/gemini-2.5-flash-lite) con OPENROUTER_API_KEY server-side
     → respuesta operacional con citas de fuentes reales
 ```
 
@@ -161,7 +161,7 @@ python scripts/index_corpus.py --backend fastembed
 
 **Por qué sentence-transformers:** corre local en Python sin costo de API. Genera 384 dimensiones compatibles con pgvector. Un modelo de 22MB que procesa 220 documentos en segundos.
 
-**Por qué OpenRouter:** una sola API key da acceso a 200+ modelos. `google/gemini-flash-1.5` es gratuito (1M tokens/día) y multilingüe — ideal para el chatbot en español. Si se requiere mayor calidad, se cambia la variable `LLM_MODEL` sin tocar código.
+**Por qué OpenRouter:** una sola API key da acceso a 200+ modelos. `google/gemini-2.5-flash-lite` es multilingüe, rápido y de costo marginal (menos de US$0.001 por consulta con `max_tokens=600`) — ideal para el chatbot en español. Se evaluaron los modelos verdaderamente gratis (`:free`) de OpenRouter y resultaron poco confiables para producción: la mayoría está rate-limited por saturación del proveedor, y el único que respondía de forma consistente entregaba respuestas incoherentes pese a razonar correctamente internamente (ver `docs/chatbot_test_battery.md`). Si se requiere mayor calidad o cambia la disponibilidad de modelos, se cambia la variable `LLM_MODEL` sin tocar código.
 
 ## Detección de puntos de cambio (ruptures)
 

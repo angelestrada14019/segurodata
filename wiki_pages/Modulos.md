@@ -115,7 +115,7 @@ Permite preguntas en lenguaje natural. El sistema busca en el knowledge graph de
 >
 > 🤖 *"Según una nota de El Tiempo de noviembre 2023, el incremento en Kennedy (especialmente UPZs Américas y Timiza) coincide con: (1) el desplazamiento de grupos dedicados al hurto de celulares desde La Candelaria tras operativos de octubre, y (2) el inicio de obras IDU en Av. 1° de Mayo que redujo la visibilidad policial en la zona. El Plan de Desarrollo 2024-2027 contempla la instalación de 45 cámaras adicionales en las UPZs afectadas (meta 2.3.1 del Programa Bogotá Avanza en Seguridad)."*
 
-El chatbot cita fuentes reales con título del artículo, medio y fecha — no genera respuestas genéricas. El modelo LLM se configura vía variable de entorno `LLM_MODEL` en FastAPI (Railway). Por defecto: `google/gemini-flash-1.5` vía OpenRouter (gratuito). La `OPENROUTER_API_KEY` permanece en Railway — nunca se expone al browser.
+El chatbot cita fuentes reales con título del artículo, medio y fecha — no genera respuestas genéricas. El modelo LLM se configura vía variable de entorno `LLM_MODEL` en FastAPI (Railway). Por defecto: `google/gemini-2.5-flash-lite` vía OpenRouter (costo marginal, menos de US$0.001 por consulta — los modelos verdaderamente gratis de OpenRouter resultaron poco confiables en pruebas: rate-limited por el proveedor o con respuestas incoherentes). La `OPENROUTER_API_KEY` permanece en Railway — nunca se expone al browser.
 
 ---
 

@@ -55,9 +55,9 @@ backend/
 ## Variables de entorno (Railway)
 
 ```bash
-OPENROUTER_API_KEY=sk-or-...       # OpenRouter — gratis hasta 1M tokens/día
-LLM_MODEL=google/gemini-flash-1.5  # Modelo por defecto (gratis)
-LLM_MODEL_FALLBACK=anthropic/claude-haiku
+OPENROUTER_API_KEY=sk-or-...              # OpenRouter — costo marginal (:free no confiables)
+LLM_MODEL=google/gemini-2.5-flash-lite    # Modelo por defecto
+LLM_MODEL_FALLBACK=anthropic/claude-3-haiku
 SUPABASE_URL=https://pluxaelenhkdaakxdrpm.supabase.co
 SUPABASE_SERVICE_KEY=eyJ...        # Service key — NUNCA exponer al frontend
 SUPABASE_JWT_SECRET=...            # Para verificar JWTs de Supabase Auth (HS256)

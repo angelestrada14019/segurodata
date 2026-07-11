@@ -67,9 +67,9 @@ Intervención recomendada:
 
 ## Advertencias
 
-- Los SHAP values deben ser **pre-computados** en Notebook 04 y cargados en Supabase tabla `shap_values` — NUNCA calcular on-demand en la app (crash de RAM)
+- Los SHAP values deben ser **pre-computados** en `scripts/train_model.py` y cargados en Supabase tabla `shap_values` — NUNCA calcular on-demand en la app (crash de RAM)
 - El nombre del CAI viene de F4 cuadrantes → campo incluido en Silver como `cai_nombre` + `cai_direccion`
-- El texto lo genera OpenRouter (variable `LLM_MODEL=google/gemini-flash-1.5` por defecto)
+- El texto lo genera OpenRouter (variable `LLM_MODEL=google/gemini-2.5-flash-lite` por defecto — los `:free` de OpenRouter no fueron confiables, ver `docs/chatbot_test_battery.md`)
 - La `OPENROUTER_API_KEY` se configura en Cloud Run — NUNCA en el frontend
 
 ## Archivos relacionados
