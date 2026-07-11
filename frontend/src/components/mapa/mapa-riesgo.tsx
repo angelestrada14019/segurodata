@@ -10,12 +10,18 @@ import { useLocalidadesGeometrias } from "@/hooks/use-localidades-geometrias";
 import { useZoomAdaptativo } from "@/hooks/use-zoom-adaptativo";
 import { useAuth } from "@/hooks/use-auth";
 import { useCuadrantesGeometrias } from "@/hooks/use-cuadrantes-geometrias";
+import { useTransmilenioGeometrias } from "@/hooks/use-transmilenio-geometrias";
+import { useCamarasGeometrias } from "@/hooks/use-camaras-geometrias";
+import { useAlumbradoGeometrias } from "@/hooks/use-alumbrado-geometrias";
 import { useChangePoints } from "@/hooks/use-change-points";
 import { useSilverRealtime } from "@/hooks/use-silver-realtime";
 import type { Periodo } from "@/hooks/use-rango-periodos";
 import { capaUpz } from "@/components/mapa/capa-upz";
 import { capaLocalidades } from "@/components/mapa/capa-localidades";
 import { capaCuadrantes } from "@/components/mapa/capa-cuadrantes";
+import { capaTransmilenio } from "@/components/mapa/capa-transmilenio";
+import { capaCamaras } from "@/components/mapa/capa-camaras";
+import { capaAlumbrado } from "@/components/mapa/capa-alumbrado";
 import {
   capaChangePoints,
   resolverCentroidesChangePoints,
@@ -56,7 +62,13 @@ const ESTILO_TOOLTIP = {
   padding: "6px 8px",
 } as const;
 
-const CAPAS_INICIALES: CapasVisibles = { cuadrantes: false, rupturas: false };
+const CAPAS_INICIALES: CapasVisibles = {
+  cuadrantes: false,
+  rupturas: false,
+  transmilenio: false,
+  camaras: false,
+  alumbrado: false,
+};
 
 function esChangePointPunto(objeto: unknown): objeto is ChangePointPunto {
   return typeof objeto === "object" && objeto !== null && "tipo_cambio" in objeto && "position" in objeto;
@@ -128,6 +140,12 @@ export function MapaRiesgo({ tabInicialModal }: MapaRiesgoProps) {
   // se dispara si el checkbox está activo Y hay sesión, nunca para el
   // visitante anon de /diagnostico (evita un 42501 de permisos innecesario).
   const cuadrantesQuery = useCuadrantesGeometrias(capasVisibles.cuadrantes && !!session);
+  // Mismo patrón/mismo motivo que cuadrantesQuery — transmilenio_geojson/
+  // camaras_geojson/alumbrado_geojson también son RPC authenticated-only
+  // (migración 0016).
+  const transmilenioQuery = useTransmilenioGeometrias(capasVisibles.transmilenio && !!session);
+  const camarasQuery = useCamarasGeometrias(capasVisibles.camaras && !!session);
+  const alumbradoQuery = useAlumbradoGeometrias(capasVisibles.alumbrado && !!session);
   const changePointsQuery = useChangePoints();
 
   const cargando =
@@ -158,10 +176,8 @@ export function MapaRiesgo({ tabInicialModal }: MapaRiesgoProps) {
   }, [nivelAgregacion, upzQuery.data, localidadesQuery.data, onClickUpz, onClickLocalidad]);
 
   // Centroides resueltos contra `localidadesQuery.data` — MISMA colección
-  // que ya pinta `capa-localidades.tsx`, sin round-trip nuevo a Supabase (ver
-  // `capa-change-points.tsx` para el porqué esto hoy puede resolver 0 puntos:
-  // gap real de datos, `upz_geometrias.cod_localidad` viene NULL — no es un
-  // bug de este archivo).
+  // que ya pinta `capa-localidades.tsx`, sin round-trip nuevo a Supabase
+  // (backfill de `cod_localidad` corrido, ver `capa-change-points.tsx`).
   const puntosChangePoints = useMemo<ChangePointPunto[]>(() => {
     if (!changePointsQuery.data || !localidadesQuery.data) return [];
     return resolverCentroidesChangePoints(changePointsQuery.data, localidadesQuery.data);
@@ -176,8 +192,23 @@ export function MapaRiesgo({ tabInicialModal }: MapaRiesgoProps) {
       capasVisibles.rupturas && puntosChangePoints.length > 0
         ? capaChangePoints(puntosChangePoints)
         : null,
+      capasVisibles.transmilenio && transmilenioQuery.data
+        ? capaTransmilenio(transmilenioQuery.data)
+        : null,
+      capasVisibles.camaras && camarasQuery.data ? capaCamaras(camarasQuery.data) : null,
+      capasVisibles.alumbrado && alumbradoQuery.data
+        ? capaAlumbrado(alumbradoQuery.data)
+        : null,
     ],
-    [capaBase, capasVisibles, cuadrantesQuery.data, puntosChangePoints],
+    [
+      capaBase,
+      capasVisibles,
+      cuadrantesQuery.data,
+      puntosChangePoints,
+      transmilenioQuery.data,
+      camarasQuery.data,
+      alumbradoQuery.data,
+    ],
   );
 
   if (cargando && !capaBase) {

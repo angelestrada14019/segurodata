@@ -18,6 +18,15 @@ export const queryKeys = {
   cuadrantesGeometrias: {
     all: ["cuadrantes-geometrias"] as const,
   },
+  transmilenioGeometrias: {
+    all: ["transmilenio-geometrias"] as const,
+  },
+  camarasGeometrias: {
+    all: ["camaras-geometrias"] as const,
+  },
+  alumbradoGeometrias: {
+    all: ["alumbrado-geometrias"] as const,
+  },
 
   // Sprint 2
   /**

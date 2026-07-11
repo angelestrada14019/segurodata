@@ -1,6 +1,6 @@
 # Fuentes de Datos
 
-SeguroData usa **13 fuentes activas** de datos abiertos + 1 planificada (F12). Todas son públicas y gratuitas.
+SeguroData usa **12 fuentes activas** de datos abiertos + 1 planificada (F12). Todas son públicas y gratuitas.
 
 > **Regla de fuentes quirúrgicas:** Antes de proponer una fuente nueva, completar el checklist de investigación (ver sección al final). Las fuentes se agregan solo si tienen granularidad UPZ, licencia abierta, evidencia causal y esfuerzo justificado.
 
@@ -28,15 +28,14 @@ Estas fuentes alimentan la tabla Silver y el modelo predictivo.
 
 ---
 
-## Grupo 2 — Fuentes no estructuradas (F9-F10) → GraphRAG + pgvector
+## Grupo 2 — Fuente no estructurada (F10) → GraphRAG + pgvector
 
-Estas fuentes **no entran en XGBoost**. Son corpus de texto indexados en Supabase pgvector para el Módulo 4 (chatbot causal) y el Módulo 3 (contexto prescriptivo).
+Esta fuente **no entra en XGBoost**. Es corpus de texto indexado en Supabase pgvector para el Módulo 4 (chatbot causal) y el Módulo 3 (contexto prescriptivo).
 
 > **F10 incluye tres feeds RSS verificados:** El Tiempo (seguridad Bogotá), El Espectador (judicial nacional), y El Informante Soy Yo — [elinformantesoyyo.com](https://elinformantesoyyo.com) (política de seguridad, operativos, contexto institucional). Los tres feeds son accesibles con `feedparser` sin autenticación.
 
 | # | Fuente | Tipo | Actualización | Procesamiento |
 |---|--------|------|--------------|--------------|
-| F9 | Boletines SCJ — PDFs mensuales | PDF texto | Mensual | pdfplumber → sentence-transformers → pgvector (Supabase) |
 | F10 | Noticias RSS — El Tiempo / Espectador / El Informante Soy Yo | RSS | Diaria | feedparser → sentence-transformers → pgvector |
 
 ---

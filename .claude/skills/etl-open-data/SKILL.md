@@ -1,11 +1,11 @@
 ---
 name: etl-open-data
-description: Pipeline ETL de las 14 fuentes de datos abiertos de SeguroData — CKAN, Socrata, ArcGIS, Open-Meteo.
+description: Pipeline ETL de las 12 fuentes de datos abiertos de SeguroData — CKAN, Socrata, ArcGIS, Open-Meteo.
 ---
 
 # ETL Open Data — SeguroData Bogotá
 
-Pipeline de extracción de las 14 fuentes activas del proyecto. Todo vive en `src/pipeline.py` y `src/etl.py`.
+Pipeline de extracción de las 12 fuentes activas del proyecto. Todo vive en `src/pipeline.py` y `src/etl.py`.
 
 ## Plataformas — distinción crítica
 
@@ -20,14 +20,14 @@ Pipeline de extracción de las 14 fuentes activas del proyecto. Todo vive en `sr
 ## Comandos del pipeline
 
 ```bash
-python src/pipeline.py --status          # estado de las 14 fuentes
+python src/pipeline.py --status          # estado de las 12 fuentes
 python src/pipeline.py --dry-run         # qué descargaría sin ejecutar
 python src/pipeline.py                   # descargar solo lo nuevo (incremental)
 python src/pipeline.py --source f3       # una fuente específica
 python src/pipeline.py --source f1 --force  # forzar re-descarga
 ```
 
-## Las 14 fuentes activas
+## Las 12 fuentes activas
 
 | ID | Fuente | Plataforma | Resource ID / URL | Archivo Bronze |
 |----|--------|-----------|------------------|---------------|
@@ -39,7 +39,6 @@ python src/pipeline.py --source f1 --force  # forzar re-descarga
 | F6 | Hurto PN | Socrata | `4rxi-8m8d` (datos.gov.co) | `f6_hurto_pn.parquet` |
 | F7 | Estratificación SDP | CKAN | `29f2d770-bd5d-4450-9e95-8737167ba12f` | `f7_estratificacion.parquet` |
 | F8 | TransMilenio | ArcGIS | `9be8b6fb-8059-492f-a866-4a1ac031c502` | `f8_transmilenio.geojson` |
-| F9 | Boletines SCJ (PDF) | Web scraping | `scj.gov.co/cifras/estadisticas-mapas` | `boletines_scj/*.pdf` |
 | F10 | Noticias RSS | RSS | El Tiempo + Espectador + El Informante | `noticias_rss.jsonl` |
 | F11 | Obras IDU | CKAN | datosabiertos.bogota.gov.co/organization/idu | `f11_idu_calzada/` |
 | F13 | Cámaras SDM | ArcGIS Hub | data-movilidadbogota.opendata.arcgis.com | `f13_camaras_sdm.geojson` |

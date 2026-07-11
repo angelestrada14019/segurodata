@@ -28,7 +28,7 @@ desplegados y funcionando con datos reales.
 ## Arquitectura Medallion
 
 ```
-Bronze  datos/raw/          src/pipeline.py   ← extraccion incremental — 14 fuentes (F1-F8 + F9-F10 corpus + F11/F13/F14 nuevas)  ✅
+Bronze  datos/raw/          src/pipeline.py   ← extraccion incremental — 12 fuentes (F1-F8 + F10 corpus + F11/F13/F14 nuevas)  ✅
 Silver  datos/procesados/   src/transform.py  ← limpieza, joins, agrega por UPZ   ✅
 Gold    datos/features/     train_model.py    ← 18 variables + tabla maestra        ✅
 Model   datos/modelos/      train_model.py    ← XGBoost entrenado + SHAP values    ✅
@@ -36,7 +36,7 @@ Model   datos/modelos/      train_model.py    ← XGBoost entrenado + SHAP value
 
 ---
 
-## Las 14 fuentes de datos
+## Las 12 fuentes de datos
 
 Todas públicas y gratuitas — **~870,000 registros Bronze en total**:
 
@@ -50,7 +50,6 @@ Todas públicas y gratuitas — **~870,000 registros Bronze en total**:
 | F6 | Hurto a Personas — Policía Nacional | 638,569 | Municipio × día | Benchmarking nacional (sin desglose UPZ) | Mensual |
 | F7 | Estratificación por manzana — SDP | 44,260 | Manzana (polígono) | +1 col: `estrato_promedio_upz` | Según necesidad |
 | F8 | Estaciones TransMilenio — TM S.A. | 153 | Estación (punto) | +2 cols: `dist_tm_metros`, `n_estaciones_tm` | Estático |
-| F9 | Boletines SCJ — Sec. Distrital Seguridad | N/A (texto) | Documento / Artículo | Corpus GraphRAG → Supabase pgvector | Mensual |
 | F10 | Noticias RSS — El Tiempo / Espectador / El Informante Soy Yo | N/A (texto) | Artículo (3 feeds verificados) | Corpus GraphRAG → Supabase pgvector | Diaria |
 | **F11** | **Malla Vial + Obras IDU** | ~miles | Segmento vial | +1 col: `km_via_intervenida_upz` | Mensual |
 | **F13** | **Cámaras Salvavidas SDM** | ~400 | Punto (cámara) | +1 col: `n_camaras_upz` + capa deck.gl | Semestral |
@@ -63,7 +62,7 @@ Todas públicas y gratuitas — **~870,000 registros Bronze en total**:
 >
 > La columna `es_crimen` en Silver distingue los 19 tipos de alto impacto criminal (HURTO, RIÑA, LESIONES…) del resto (RUIDO, ACCIDENTE TRÁNSITO, EMBRIAGUEZ…).
 >
-> **F9 y F10 (Boletines PDF + RSS noticias)** no entran en XGBoost — son corpus de texto para los Módulos 3 (Prescriptivo) y 4 (Chatbot causal) vía GraphRAG + OpenRouter.
+> **F10 (RSS noticias)** no entra en XGBoost — es corpus de texto para los Módulos 3 (Prescriptivo) y 4 (Chatbot causal) vía GraphRAG + OpenRouter.
 
 ---
 
@@ -99,7 +98,7 @@ cp .env.example .env
 
 ## Bronze — Extracción (`src/pipeline.py`)
 
-Descarga las 14 fuentes de forma **incremental**: compara el estado local contra el servidor y solo descarga si hay datos nuevos. Segunda ejecución del mismo día → instantánea.
+Descarga las 12 fuentes de forma **incremental**: compara el estado local contra el servidor y solo descarga si hay datos nuevos. Segunda ejecución del mismo día → instantánea.
 
 ```bash
 python src/pipeline.py --dry-run          # ver qué descargaría sin ejecutar
@@ -174,15 +173,14 @@ silver = pl.read_parquet("datos/procesados/silver_upz_mes.parquet")
 segurodata/
 ├── datos/
 │   ├── raw/              <- Bronze: archivos originales (generados por pipeline.py)
-│   │   └── boletines_scj/<- F9: PDFs boletines mensuales SCJ
 │   ├── procesados/       <- Silver: datos limpios por UPZ (generados por transform.py)
 │   ├── features/         <- Gold:   tabla maestra 18 variables (train_model.py)
 │   ├── grafo/            <- GraphRAG: embeddings pgvector — sentence-transformers (Fase 3)
-│   └── modelos/          <- Model:  XGBoost + SHAP (Notebook 04)
-├── graficas/             <- Outputs del EDA (7 visualizaciones V1-V7)
+│   └── modelos/          <- Model:  XGBoost + SHAP (train_model.py)
+├── graficas/             <- Gráficas del análisis exploratorio (ver wiki — Analisis-Exploratorio)
 ├── src/
 │   ├── etl.py            <- Conectores de bajo nivel: CKAN, Socrata, ArcGIS, Open-Meteo
-│   ├── pipeline.py       <- Extracción incremental Bronze (14 fuentes F1-F14)
+│   ├── pipeline.py       <- Extracción incremental Bronze (12 fuentes activas)
 │   ├── transform.py      <- Transformación Silver (limpieza + spatial joins)
 │   └── validar_fuentes.py
 ├── .github/
@@ -194,10 +192,8 @@ segurodata/
 ├── wiki_pages/           <- FUENTE ÚNICA de documentación → PUSH_WIKI.bat → GitHub wiki
 │   ├── Home.md / Fuentes-de-Datos.md / Arquitectura.md / Modulos.md / Metodologia.md
 │   ├── Replicacion.md / Instalacion.md / Transformacion.md / Estado-del-Arte.md
-│   ├── Provenance.md / Investigacion-Fuentes.md / Reglas-Concurso.md
+│   ├── Provenance.md / Investigacion-Fuentes.md / Reglas-Concurso.md / Analisis-Exploratorio.md
 │   └── PUSH_WIKI.bat     <- helper para publicar el wiki
-├── SeguroData_01_Plan_y_Fuentes.ipynb
-├── SeguroData_02_EDA.ipynb
 ├── .env.example          <- Template de variables de entorno
 ├── .gitignore
 ├── CLAUDE.md             <- contexto para sesiones de IA
@@ -237,16 +233,16 @@ Backend ML       Railway (FastAPI — siempre activo, sin cold start, ~$5/mes)
 
 ---
 
-## Notebooks CRISP-ML
+## Metodología CRISP-ML
 
-| Notebook | Fase | Contenido | Estado |
-|----------|------|-----------|--------|
-| `SeguroData_01_Plan_y_Fuentes.ipynb` | 0 | Plan + catálogo de 14 fuentes activas + arquitectura | ✅ |
-| `SeguroData_02_EDA.ipynb` | 1 | Análisis exploratorio + change points ruptures | ✅ |
-| `scripts/train_model.py` | 2 | 18 variables + tabla ontológica prescriptiva + Supabase | ✅ (reemplaza NB03) |
-| `scripts/train_model.py` | 2 | XGBoost + SHAP pre-computados + análisis sesgo | ✅ (reemplaza NB04) |
-| `SeguroData_05_Dashboard.ipynb` | 3 | Arquitectura React+FastAPI+Supabase + screenshots | ⏳ |
-| `SeguroData_06_Deployment.ipynb` | 4 | Deploy Vercel+Supabase + registro datos.gov.co | ⏳ |
+El proceso CRISP-ML completo queda documentado en el [Wiki](https://github.com/angelestrada14019/segurodata/wiki) y ejecutado en scripts versionados (no notebooks — el concurso no lo exige, y un script probado y corrido en CI es más reproducible que un notebook):
+
+| Fase | Contenido | Dónde vive |
+|------|-----------|-----------|
+| Plan + fuentes | Catálogo de 12 fuentes activas + F12 planificada, arquitectura | [Wiki — Fuentes-de-Datos](https://github.com/angelestrada14019/segurodata/wiki/Fuentes-de-Datos), [Wiki — Provenance](https://github.com/angelestrada14019/segurodata/wiki/Provenance) |
+| Análisis exploratorio | Distribución espacial y temporal del riesgo, change points `ruptures` | [Wiki — Analisis-Exploratorio](https://github.com/angelestrada14019/segurodata/wiki/Analisis-Exploratorio) |
+| Features + modelo | 18 variables, XGBoost, SHAP pre-computado, análisis de sesgo, tabla ontológica prescriptiva | `scripts/train_model.py` — ejecutado, ver `datos/modelos/metricas.json` |
+| Arquitectura + deploy | React+FastAPI+Supabase, Vercel + Railway | [Wiki — Arquitectura](https://github.com/angelestrada14019/segurodata/wiki/Arquitectura), [Wiki — Instalacion](https://github.com/angelestrada14019/segurodata/wiki/Instalacion) |
 
 ---
 
@@ -259,6 +255,6 @@ El wiki incluye: catálogo de 20 fuentes · estado del arte internacional · gu�
 | Código | Ubicación | Para qué |
 |--------|----------|---------|
 | Conectores ETL | `src/etl.py` | CKAN, Socrata, ArcGIS, Open-Meteo de bajo nivel |
-| Pipeline Bronze | `src/pipeline.py` | Extracción incremental de las 14 fuentes |
+| Pipeline Bronze | `src/pipeline.py` | Extracción incremental de las 12 fuentes |
 | Pipeline Silver | `src/transform.py` | Limpieza, joins espaciales, tabla silver |
 | Excel fuentes validadas | `docs/fuentes_validadas.xlsx` | Metadatos, URLs, estado de cada fuente |

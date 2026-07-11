@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { CircleAlert, Info, Lock, Minus, TrendingDown, TrendingUp } from "lucide-react";
+import { CircleAlert, Info, Lock, LogIn, Minus, TrendingDown, TrendingUp } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { ApiError } from "@/lib/api-client";
+import { tieneAccesoOperacional } from "@/lib/roles-operacionales";
 import { cn, formatearPeriodo } from "@/lib/utils";
 import { etiquetaFeature } from "@/lib/features-modelo";
 import {
@@ -29,6 +30,17 @@ const ORDEN_PROBABILIDADES: NivelRiesgo[] = ["CRITICO", "ALTO", "MEDIO", "BAJO"]
  * Resiliente a fallo parcial: si /predict responde pero /explain falla o
  * todavía carga, se muestra igual la predicción (no se bloquea la pestaña
  * completa por un solo endpoint caído).
+ *
+ * Gate de rol PROACTIVO (mismo patrón que `tab-sugerencia.tsx`): un
+ * visitante sin sesión o con rol CIUDADANO nunca debería ni intentar la
+ * llamada — antes de esto, `modal-upz.tsx` disparaba /predict igual para
+ * cualquier visitante y esta pestaña dependía de interpretar el error
+ * resultante (401 con JSON limpio la mayoría de las veces, pero a veces
+ * "Failed to fetch" sin status — CORS/red, no siempre llega a ser un
+ * `ApiError` con `.status` legible). `modal-upz.tsx` ya no dispara la
+ * consulta en absoluto para estos roles (ver `puedeVerPrediccion`), así que
+ * este chequeo aquí es en rigor redundante — se deja como defensa en
+ * profundidad por si el componente se reusa en otro lugar sin ese gate.
  */
 export function TabPrediccion({
   prediccion,
@@ -36,6 +48,22 @@ export function TabPrediccion({
   isLoading,
   error,
 }: TabPrediccionProps) {
+  const { rol } = useAuth();
+
+  if (!tieneAccesoOperacional(rol)) {
+    return (
+      <Alert>
+        <Lock className="h-4 w-4" aria-hidden="true" />
+        <AlertTitle>Disponible solo para roles operacionales</AlertTitle>
+        <AlertDescription>
+          La predicción por UPZ está disponible para Comandante CAI, Analista
+          SDSCJ y Admin. Inicia sesión con una cuenta institucional para
+          acceder.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
   if (isLoading && !prediccion) {
     return <PanelSkeleton lineas={6} />;
   }
@@ -199,6 +227,8 @@ function FilaShap({ item }: { item: ShapFeatureValor }) {
 }
 
 function EstadoErrorPrediccion({ error }: { error: Error | null }) {
+  const { rol } = useAuth();
+
   if (!error) {
     return (
       <div
@@ -223,13 +253,37 @@ function EstadoErrorPrediccion({ error }: { error: Error | null }) {
     );
   }
 
+  // Sin sesión — comportamiento esperado para el visitante público del mapa
+  // (matriz de acceso: Predicción requiere COMANDANTE_CAI/ANALISTA_SDSCJ/ADMIN,
+  // ver wiki_pages/Modulos.md), no un fallo real. Antes caía al Alert
+  // genérico de abajo con el mensaje técnico crudo ("Error 401 al llamar
+  // /predict"), que se leía como un error del sistema en vez de una
+  // restricción de acceso esperada.
+  if (error instanceof ApiError && error.status === 401) {
+    return (
+      <Alert>
+        <LogIn className="h-4 w-4" aria-hidden="true" />
+        <AlertTitle>Inicia sesión para ver la predicción</AlertTitle>
+        <AlertDescription>
+          Este módulo requiere una cuenta con rol operativo (Comandante de CAI
+          o Analista). El mapa de diagnóstico y el chatbot siguen disponibles
+          sin iniciar sesión.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
   if (error instanceof ApiError && error.status === 403) {
     return (
       <Alert variant="destructive">
         <Lock className="h-4 w-4" aria-hidden="true" />
-        <AlertTitle>Fuera de tu cuadrante</AlertTitle>
+        <AlertTitle>
+          {rol === "COMANDANTE_CAI" ? "Fuera de tu cuadrante" : "Sin permiso para este módulo"}
+        </AlertTitle>
         <AlertDescription>
-          Esta UPZ no pertenece al cuadrante asignado a tu usuario.
+          {rol === "COMANDANTE_CAI"
+            ? "Esta UPZ no pertenece al cuadrante asignado a tu usuario."
+            : "Tu rol no tiene acceso a la predicción detallada por UPZ."}
         </AlertDescription>
       </Alert>
     );

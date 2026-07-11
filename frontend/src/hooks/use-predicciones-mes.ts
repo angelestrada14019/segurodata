@@ -3,8 +3,6 @@ import { supabase } from "@/lib/supabase";
 import { queryKeys } from "@/lib/query-keys";
 import type { PrediccionRow } from "@/types/supabase";
 
-// TODO(Sprint 2): consumir desde el slider-temporal.tsx (Módulo 1) para
-// listar meses disponibles / precargar predicciones de un período.
 export function usePrediccionesMes(anio: number, mes: number, enabled = true) {
   return useQuery({
     queryKey: queryKeys.prediccionesMes(anio, mes),

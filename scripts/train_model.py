@@ -37,7 +37,8 @@ ROOT = Path(__file__).resolve().parents[1]
 load_dotenv(ROOT / "backend" / ".env")
 load_dotenv(ROOT / ".env")
 
-SILVER  = ROOT / "datos" / "procesados" / "silver_upz_mes.parquet"
+PROC_DIR = ROOT / "datos" / "procesados"
+SILVER  = PROC_DIR / "silver_upz_mes.parquet"
 GOLD    = ROOT / "datos" / "features"  / "tabla_maestra_upz.parquet"
 MODEL   = ROOT / "datos" / "modelos"   / "modelo_xgboost.pkl"
 PRED    = ROOT / "datos" / "modelos"   / "predicciones.parquet"
@@ -238,12 +239,29 @@ def build_gold(verbose: bool = False) -> pl.DataFrame:
     # Unir tipo dominante
     gold = nuse_ratio.join(tipo_dom, on=["upz_cod", "anio", "mes"], how="left")
 
-    # Placeholder F11/F13/F14 (extractores aun no implementados)
-    gold = gold.with_columns([
-        pl.lit(0.0).alias("km_via_intervenida_upz"),
-        pl.lit(0).cast(pl.Int32).alias("n_camaras_upz"),
-        pl.lit(0).cast(pl.Int32).alias("luminarias_led_upz"),
-    ])
+    # F13/F14: features reales (extractores implementados 10-jul). upz_cod se
+    # castea a Utf8 explicitamente -- CSV con valores puramente numericos
+    # ("16", "20"...) se infiere como Int64 al leer con polars, mientras que
+    # Silver.upz_cod es String sin cero a la izquierda ("1","10"..) -- un join
+    # sin este cast no matchea nada.
+    camaras_csv = PROC_DIR / "features_camaras_upz.csv"
+    alumbrado_csv = PROC_DIR / "features_alumbrado_upz.csv"
+    if camaras_csv.exists():
+        camaras = pl.read_csv(camaras_csv).with_columns(pl.col("upz_cod").cast(pl.Utf8))
+        gold = gold.join(camaras, on="upz_cod", how="left")
+        gold = gold.with_columns(pl.col("n_camaras_upz").fill_null(0).cast(pl.Int32))
+    else:
+        gold = gold.with_columns(pl.lit(0).cast(pl.Int32).alias("n_camaras_upz"))
+
+    if alumbrado_csv.exists():
+        alumbrado = pl.read_csv(alumbrado_csv).with_columns(pl.col("upz_cod").cast(pl.Utf8))
+        gold = gold.join(alumbrado, on="upz_cod", how="left")
+        gold = gold.with_columns(pl.col("luminarias_led_upz").fill_null(0).cast(pl.Int32))
+    else:
+        gold = gold.with_columns(pl.lit(0).cast(pl.Int32).alias("luminarias_led_upz"))
+
+    # Placeholder F11 (extractor aun no implementado -- fuera del alcance actual)
+    gold = gold.with_columns(pl.lit(0.0).alias("km_via_intervenida_upz"))
 
     # ---- nivel_riesgo por percentiles ----
     q95 = gold["n_delitos_total"].quantile(0.95)

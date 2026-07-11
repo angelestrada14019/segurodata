@@ -1,7 +1,7 @@
 # ESTADO_DEL_ARTE.md — Sistemas de Predicción de Crimen: Revisión Global
 
-> Documento de referencia para el Notebook 01 (Business Understanding) y la sustentación oral.
-> Cubre 20+ sistemas en 15+ países, 5 sistemas colombianos, 18 papers clave, y la diferenciación explícita de este proyecto vs todos los sistemas revisados.
+> Documento de referencia para la sustentación oral.
+> Cubre 20+ sistemas en 15+ países, 6 sistemas colombianos, 18 papers clave, y la diferenciación explícita de este proyecto vs todos los sistemas revisados.
 
 ---
 
@@ -91,9 +91,9 @@
 | Interpretabilidad | ❌ No (caja negra) | ❌ No | ❌ No | ❌ No publicado | **✅ SHAP values por UPZ (pre-computados)** |
 | Capa prescriptiva | ❌ No | ❌ No | ❌ No | ❌ No | **✅ Tabla ontológica + diagnóstico causal + entidades responsables** |
 | API operacional | Propietaria (SaaS) | SaaS (licencia $) | ❌ No | ❌ No | **✅ API REST pública (FastAPI + Railway)** |
-| Sesgo documentado | ❌ No (lo hundió) | ⚠️ Sin publicar | ❌ No aplica | ❌ No publicado | **✅ Notebook 04 — análisis estrato** |
+| Sesgo documentado | ❌ No (lo hundió) | ⚠️ Sin publicar | ❌ No aplica | ❌ No publicado | **✅ `scripts/train_model.py` — análisis estrato** |
 | Compatible EU AI Act | ❌ No (perfilamiento individual) | ⚠️ Zona-level pero con cámaras | N/A | ⚠️ Punto geoespacial | **✅ Zone-level, sin perfilamiento individual** |
-| Datos abiertos | ❌ No (propietarios) | ❌ No | ✅ Sí (nacional) | ⚠️ Parcial | **✅ 20 fuentes verificadas, 100% abiertas** |
+| Datos abiertos | ❌ No (propietarios) | ❌ No | ✅ Sí (nacional) | ⚠️ Parcial | **✅ 12 fuentes verificadas, 100% abiertas** |
 | LLM / Generativa | ❌ No | ❌ No | Chatbot básico | ❌ No | **✅ Reporte operacional en lenguaje natural** |
 | Multi-ciudad | ❌ No (licencias por ciudad) | ✅ Sí (SaaS $) | ❌ No | ❌ No | **✅ Arquitectura modular (Medellín, Cali documentados)** |
 | Hardware / IoT | ❌ No (PredPol) | ✅ Cámaras desde dic 2023 | ❌ No | ❌ No | Roadmap futuro — fuera de scope v1 |
@@ -102,13 +102,13 @@
 
 ---
 
-## 4. Papers clave a citar (Notebook 01 y README)
+## 4. Papers clave a citar (este documento y README)
 
 1. **Mohler et al. (2011)** — "Self-exciting point process modeling of crime" — *Journal of the American Statistical Association* — Paper fundacional de todos los modelos Hawkes para crimen. Base teórica del SEPP.
 
 2. **Riascos & Mateo (2019)** — "Crime prediction using self-exciting point processes" — *NeurIPS LatinX Workshop* / *SIAM News 2019* — Aplicación Bogotá, CAP-AUC=0.8. El benchmark colombiano más sólido. Financiado por Colciencias.
 
-3. **Barrera et al. (2023)** — "Modelling underreported spatio-temporal crime events" — *PMC/NCBI* — Uniandes+UNAL — Primer paper colombiano que modela el sesgo de subregistro explícitamente. Citar en Notebook 05.
+3. **Barrera et al. (2023)** — "Modelling underreported spatio-temporal crime events" — *PMC/NCBI* — Uniandes+UNAL — Primer paper colombiano que modela el sesgo de subregistro explícitamente.
 
 4. **D'Angelo et al. (2022/2024)** — "Self-exciting point process modelling of crimes on linear networks" — *Journal of the Royal Statistical Society / SAGE Journals* — Hawkes en red lineal de calles aplicado a Bucaramanga. Mejora de precisión espacial.
 
@@ -128,7 +128,7 @@
 
 12. **Systematic Review (2024)** — "Effectiveness of Big Data and Predictive Policing" — *Taylor & Francis / Policing & Society* — Revisión global de 30+ sistemas en EE.UU., Europa y Asia. Conclusión: impacto en crimen es marginal sin cambios operacionales.
 
-13. **EU AI Act 2024** — "Prohibited AI Practices" (Art. 5) — *Future of Privacy Forum analysis* — Marco legal que prohíbe el perfilamiento individual para predicción de crimen. El enfoque UPZ-level de este proyecto es compatible. Citar en Notebook 01 y Notebook 05.
+13. **EU AI Act 2024** — "Prohibited AI Practices" (Art. 5) — *Future of Privacy Forum analysis* — Marco legal que prohíbe el perfilamiento individual para predicción de crimen. El enfoque UPZ-level de este proyecto es compatible.
 
 14. **BID Blog (2024)** — "Combatir el crimen con IA" — *iadb.org* — El crimen cuesta 3.4% del PIB regional en ALC. Inversión $2.5B 2024-2027. Referencia para la apertura de la sustentación oral.
 
@@ -160,22 +160,22 @@ La arquitectura es modular por diseño. Replicar en otra ciudad colombiana requi
 - **Cali**: Datos disponibles pero fragmentados entre diferentes portales. Requiere trabajo de integración adicional.
 - **Barranquilla**: Usar transfer learning (preentrenar en Bogotá, afinar con datos nacionales Policía filtrados por municipio). Granularidad solo a nivel de localidades.
 
-**Advertencia:** No implementar la extensión en el concurso — el jurado no puntúa por número de ciudades sino por profundidad del análisis. Documentar como "escalabilidad planificada" en Notebook 06 y README.
+**Advertencia:** No implementar la extensión en el concurso — el jurado no puntúa por número de ciudades sino por profundidad del análisis. Documentar como "escalabilidad planificada" en README y `wiki_pages/Replicacion.md`.
 
 ---
 
 ## 6. Lecciones aprendidas de sistemas internacionales
 
-**Para Notebook 01 (Business Understanding) y la sustentación oral:**
+**Para la sustentación oral:**
 
 ### 1. No replicar el error de PredPol
 El sistema predice zonas de alto riesgo, **no perfila individuos**. Las intervenciones recomendadas son urbanísticas/sociales, no solo policiales masivas. El Tribunal Constitucional alemán (2023) y el EU AI Act (2024-2025) validan que el enfoque de zona (UPZ) es el éticamente correcto.
 
 ### 2. El Tribunal Constitucional alemán es el marco ético de referencia
-La sentencia de febrero 2023 articula con precisión qué viola derechos fundamentales (individual profiling) y qué no (zone-level prediction + crime prevention). Citar en Notebook 01 y Notebook 05: "el diseño de este proyecto fue pensado con base en los más altos estándares internacionales de derechos".
+La sentencia de febrero 2023 articula con precisión qué viola derechos fundamentales (individual profiling) y qué no (zone-level prediction + crime prevention): "el diseño de este proyecto fue pensado con base en los más altos estándares internacionales de derechos".
 
 ### 3. El análisis de sesgo es obligatorio y diferenciador
-Documentar explícitamente en Notebook 05 que el modelo no discrimina sistemáticamente por estrato socioeconómico. PredPol fue discontinuado por esto (2x más patrullaje en barrios negros). Argentina 2024 ya genera controversia similar. El análisis de bias es diferenciador ético, no solo técnico — y el jurado lo valorará.
+Documentado explícitamente en `scripts/train_model.py` (función `analisis_sesgo()`) que el modelo no discrimina sistemáticamente por estrato socioeconómico. PredPol fue discontinuado por esto (2x más patrullaje en barrios negros). Argentina 2024 ya genera controversia similar. El análisis de bias es diferenciador ético, no solo técnico — y el jurado lo valorará.
 
 ### 4. La capa prescriptiva como diferenciador ético y práctico
 En lugar de "más policías en zonas pobres" (error sistémico de todos los sistemas que fueron cancelados), el modelo identifica qué tipo de intervención (iluminación, empleo, espacio público) reduce el riesgo estructuralmente. **Ninguno de los 20+ sistemas internacionales revisados tiene esta capa.** Es el diferenciador genuino.
@@ -187,20 +187,22 @@ Todos los papers colombianos lo documentan. Barrera et al. (2023) es la referenc
 El crimen cuesta **3.4% del PIB regional** en ALC (BID 2023), vs 1.9% mundial. Tasa de homicidios: 18 por 100K en ALC vs 5.6 mundial (UNODC). Bogotá concentra una fracción desproporcionada de los delitos de Colombia. Este contexto justifica la urgencia en los primeros 60 segundos de la sustentación.
 
 ### 7. La combinación de las 4 capas es genuinamente nueva
-Revisados 20+ sistemas en 15+ países y 5 sistemas colombianos: **ninguno** combina Hawkes (auto-excitación temporal) + SHAP (interpretabilidad causal) + prescripción (diagnóstico causal con mapeo a entidades responsables) + operacionalización (FastAPI pública + datos 100% abiertos). Esto es genuinamente nuevo en el estado del arte global del predictive policing con datos abiertos.
+Revisados 20+ sistemas en 15+ países y 6 sistemas colombianos: **ninguno** combina detección de cambios estructurales (`ruptures`/PELT sobre la serie histórica de delitos) + SHAP (interpretabilidad causal) + prescripción (diagnóstico causal con mapeo a entidades responsables, vía GraphRAG) + operacionalización (FastAPI pública + datos 100% abiertos). Esto es genuinamente nuevo en el estado del arte global del predictive policing con datos abiertos.
+
+> Nota de diseño: se evaluó un enfoque de auto-excitación temporal (procesos de Hawkes) en fase de planeación y se descartó en favor de `ruptures` + GraphRAG — ver `CLAUDE.md`, sección "Decisiones de diseño ya tomadas".
 
 ---
 
 ## 7. Preguntas difíciles del jurado — respuestas con sustento de estado del arte
 
 **"¿Su modelo discrimina por estrato?"**
-→ Sí lo analizamos explícitamente en Notebook 04. Usamos SHAP values para verificar que el peso del estrato en las predicciones es proporcional a su correlación real con el crimen, y no produce predicciones sistemáticamente más altas para zonas de estrato bajo. PredPol en EE.UU. fue discontinuado por este problema — nosotros lo prevenimos por diseño.
+→ Sí lo analizamos explícitamente en `scripts/train_model.py`. Usamos SHAP values para verificar que el peso del estrato en las predicciones es proporcional a su correlación real con el crimen, y no produce predicciones sistemáticamente más altas para zonas de estrato bajo. PredPol en EE.UU. fue discontinuado por este problema — nosotros lo prevenimos por diseño.
 
 **"¿Qué pasa con el subregistro?"**
 → Lo mitigamos de dos formas. Primero, cruzamos el Delito de Alto Impacto (SIEDCO) con NUSE 123 (FUENTE 1) para calcular el ratio llamadas/denuncias_formales por UPZ — ese ratio mismo es un proxy del nivel de subregistro por zona. Segundo, incorporamos datos de Medicina Legal (FUENTE 16 y 17) para capturar lesiones que llegan a urgencias pero no siempre a la policía. Barrera et al. (2023) de Uniandes es la referencia metodológica.
 
 **"¿Cómo escala esto a otra ciudad?"**
-→ La arquitectura es modular. Para Medellín: sustituir el dataset Socrata/CKAN por SISC via MEData, reemplazar los shapefiles de UPZ por los de comunas, y reentrenar el modelo. ~2 semanas de ingeniería. Para Barranquilla se puede usar transfer learning preentrenando en Bogotá (paper: PLOS ONE 2024, arXiv 2406.06645). Documentado en Notebook 06.
+→ La arquitectura es modular. Para Medellín: sustituir el dataset Socrata/CKAN por SISC via MEData, reemplazar los shapefiles de UPZ por los de comunas, y reentrenar el modelo. ~2 semanas de ingeniería. Para Barranquilla se puede usar transfer learning preentrenando en Bogotá (paper: PLOS ONE 2024, arXiv 2406.06645). Documentado en `wiki_pages/Replicacion.md`.
 
 **"¿Cómo previenen el crimen, no solo lo predicen?"**
 → La capa prescriptiva diagnostica la causa raíz del riesgo — si es temporal (evento próximo), estructural (desempleo, hacinamiento) o urbanística (iluminación, espacio público) — y mapea cada diagnóstico a la entidad distrital responsable de la intervención. No es "más policías en zonas pobres" (el error de PredPol). Es identificar qué tipo de intervención específica necesita cada zona y quién debe ejecutarla. Ninguno de los sistemas internacionales revisados tiene esta capa.

@@ -40,7 +40,7 @@ backend/
 # GET /explain?upz_cod=044&anio=2026&mes=7 — SHAP pre-computado desde Supabase
 # → { "shap_top3": [{"feature":"cuadrantes_por_km2","valor":-0.34}, ...] }  (+shap_completo si ANALISTA/ADMIN)
 
-# POST /graphrag — RAG sobre corpus F9/F10 (pgvector + OpenRouter)
+# POST /graphrag — RAG sobre corpus F10 (pgvector + OpenRouter)
 { "pregunta": "¿Por qué aumentó el hurto en Kennedy?", "upz_contexto": "044" }
 # → { "respuesta": "...", "fuentes": [...], "modelo_llm": "...", "cacheado": false }
 

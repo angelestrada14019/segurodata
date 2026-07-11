@@ -11,7 +11,7 @@ El proyecto sigue CRISP-ML (Cross-Industry Standard Process for Machine Learning
 
 | Notebook | Fase CRISP-ML | Contenido | Estado |
 |----------|--------------|-----------|--------|
-| `SeguroData_01_Plan_y_Fuentes.ipynb` | Business Understanding | Catálogo 14 fuentes, arquitectura, diferenciador | ✅ |
+| `SeguroData_01_Plan_y_Fuentes.ipynb` | Business Understanding | Catálogo 12 fuentes activas + F12 planificada, arquitectura, diferenciador | ✅ |
 | `SeguroData_02_EDA.ipynb` | Data Understanding | EDA + change points ruptures F1 DAI | ✅ |
 | `scripts/train_model.py` | Data Preparation | 18 variables, tabla ontológica prescriptiva, Supabase | ✅ |
 | `SeguroData_04_Modelo.ipynb` | Modeling + Evaluation | XGBoost + SHAP pre-computados + análisis sesgo | ⏳ |

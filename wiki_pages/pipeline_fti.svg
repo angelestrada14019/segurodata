@@ -1,236 +1,103 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 680" width="1100" height="680" font-family="'Segoe UI', Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 760" font-family="Segoe UI, Arial, sans-serif">
+  <rect x="0" y="0" width="1100" height="760" fill="#0f1218"/>
 
-  <!-- Background -->
-  <rect width="1100" height="680" fill="#f0f4f8"/>
+  <text x="550" y="38" text-anchor="middle" font-size="22" font-weight="700" fill="#f5f5f5">Pipeline FTI — Feature / Training / Inference</text>
+  <text x="550" y="60" text-anchor="middle" font-size="12" fill="#9aa4b2">Estado final — actualizado 10 julio 2026</text>
 
-  <!-- Title -->
-  <text x="550" y="38" text-anchor="middle" font-size="20" font-weight="bold" fill="#1e293b">Pipeline FTI — SeguroData Bogotá</text>
-  <text x="550" y="58" text-anchor="middle" font-size="12" fill="#64748b">Feature / Training / Inference — Silver queda LOCAL, Supabase recibe solo outputs</text>
+  <!-- ===== OFFLINE: Feature + Training ===== -->
+  <rect x="30" y="86" width="1040" height="248" rx="8" fill="none" stroke="#4bb374" stroke-width="1.5" stroke-dasharray="5,4"/>
+  <text x="50" y="108" font-size="14" font-weight="700" fill="#4bb374">OFFLINE — Feature + Training (bajo demanda, GitHub Actions workflow_dispatch)</text>
 
-  <!-- ============================================================ -->
-  <!-- TRAINING PIPELINE (top, left half) -->
-  <!-- ============================================================ -->
-  <rect x="20" y="75" width="510" height="270" rx="12" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
-  <text x="275" y="97" text-anchor="middle" font-size="13" font-weight="bold" fill="#1d4ed8">PIPELINE DE ENTRENAMIENTO (una sola vez — offline)</text>
+  <g font-size="12" font-weight="700" fill="#0f1218">
+    <rect x="50" y="122" width="180" height="60" rx="6" fill="#7dd3a8"/>
+    <text x="140" y="146" text-anchor="middle" font-size="12">src/pipeline.py</text>
+    <text x="140" y="163" text-anchor="middle" font-size="9" font-weight="400">Bronze — 12 fuentes, incremental</text>
+  </g>
+  <line x1="230" y1="152" x2="264" y2="152" stroke="#6b7280" stroke-width="2" marker-end="url(#arrow)"/>
 
-  <!-- Bronze box -->
-  <rect x="40" y="110" width="120" height="60" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
-  <text x="100" y="132" text-anchor="middle" font-size="11" font-weight="bold" fill="#92400e">BRONZE</text>
-  <text x="100" y="147" text-anchor="middle" font-size="9.5" fill="#78350f">datos/raw/</text>
-  <text x="100" y="160" text-anchor="middle" font-size="9" fill="#78350f">F1-F14 · pipeline.py</text>
+  <g font-size="12" font-weight="700" fill="#0f1218">
+    <rect x="266" y="122" width="180" height="60" rx="6" fill="#63c98a"/>
+    <text x="356" y="146" text-anchor="middle" font-size="12">src/transform.py</text>
+    <text x="356" y="163" text-anchor="middle" font-size="9" font-weight="400">Silver — 111,606 × 20 cols</text>
+  </g>
+  <line x1="446" y1="152" x2="480" y2="152" stroke="#6b7280" stroke-width="2" marker-end="url(#arrow)"/>
 
-  <!-- Arrow Bronze→Silver -->
-  <line x1="160" y1="140" x2="188" y2="140" stroke="#475569" stroke-width="1.5" marker-end="url(#arr)"/>
+  <g font-size="12" font-weight="700" fill="#0f1218">
+    <rect x="482" y="122" width="200" height="60" rx="6" fill="#4bb374"/>
+    <text x="582" y="141" text-anchor="middle" font-size="12">scripts/train_model.py</text>
+    <text x="582" y="157" text-anchor="middle" font-size="9" font-weight="400">Gold (18 vars) + XGBoost</text>
+    <text x="582" y="170" text-anchor="middle" font-size="9" font-weight="400">+ SHAP + análisis de sesgo</text>
+  </g>
+  <line x1="682" y1="152" x2="716" y2="152" stroke="#6b7280" stroke-width="2" marker-end="url(#arrow)"/>
 
-  <!-- Silver box -->
-  <rect x="188" y="110" width="120" height="60" rx="8" fill="#d1fae5" stroke="#10b981" stroke-width="1.5"/>
-  <text x="248" y="132" text-anchor="middle" font-size="11" font-weight="bold" fill="#065f46">SILVER</text>
-  <text x="248" y="147" text-anchor="middle" font-size="9.5" fill="#064e3b">111,606 × 23 cols</text>
-  <text x="248" y="160" text-anchor="middle" font-size="9" fill="#064e3b">transform.py — LOCAL</text>
+  <g font-size="12" font-weight="700" fill="#0f1218">
+    <rect x="718" y="122" width="170" height="60" rx="6" fill="#f2c14e"/>
+    <text x="803" y="146" text-anchor="middle" font-size="12">quality-gate</text>
+    <text x="803" y="163" text-anchor="middle" font-size="9" font-weight="400">macro-F1 / ±1 banda ≥ umbral</text>
+  </g>
+  <line x1="888" y1="152" x2="922" y2="152" stroke="#6b7280" stroke-width="2" marker-end="url(#arrow)"/>
 
-  <!-- Arrow Silver→Gold -->
-  <line x1="308" y1="140" x2="336" y2="140" stroke="#475569" stroke-width="1.5" marker-end="url(#arr)"/>
+  <g font-size="12" font-weight="700" fill="#0f1218">
+    <rect x="924" y="122" width="130" height="60" rx="6" fill="#a78bfa"/>
+    <text x="989" y="146" text-anchor="middle" font-size="11">load_model</text>
+    <text x="989" y="160" text-anchor="middle" font-size="11">_artifacts.py</text>
+    <text x="989" y="174" text-anchor="middle" font-size="8" font-weight="400">→ Supabase</text>
+  </g>
 
-  <!-- Gold box -->
-  <rect x="336" y="110" width="120" height="60" rx="8" fill="#fce7f3" stroke="#ec4899" stroke-width="1.5"/>
-  <text x="396" y="132" text-anchor="middle" font-size="11" font-weight="bold" fill="#9d174d">GOLD</text>
-  <text x="396" y="147" text-anchor="middle" font-size="9.5" fill="#831843">17 features</text>
-  <text x="396" y="160" text-anchor="middle" font-size="9" fill="#831843">Notebook 03 — LOCAL</text>
+  <!-- Rechazo del quality gate -->
+  <path d="M 803 182 L 803 220 L 300 220 L 300 152" fill="none" stroke="#e05c5c" stroke-width="1.5" stroke-dasharray="3,3" marker-end="url(#arrowred)"/>
+  <text x="550" y="234" text-anchor="middle" font-size="10" fill="#e05c5c">si el modelo nuevo es PEOR: el pipeline se detiene solo, Supabase no se toca (--force para forzar)</text>
 
-  <!-- Arrow Gold→Model -->
-  <line x1="396" y1="170" x2="396" y2="198" stroke="#475569" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="50" y="266" font-size="11" fill="#9aa4b2">Split temporal DINÁMICO: TEST = últimos 6 meses con datos, se recalcula en cada corrida — no es una fecha fija.</text>
+  <text x="50" y="284" font-size="11" fill="#9aa4b2">Probado de punta a punta en CI real (.github/workflows/etl-semanal.yml). El "schedule" semanal queda desactivado</text>
+  <text x="50" y="302" font-size="11" fill="#9aa4b2">a propósito hasta después de la sustentación oral — se dispara manualmente (workflow_dispatch), nunca "congelado".</text>
 
-  <!-- Model box -->
-  <rect x="240" y="198" width="220" height="65" rx="8" fill="#ede9fe" stroke="#7c3aed" stroke-width="2"/>
-  <text x="350" y="220" text-anchor="middle" font-size="11" font-weight="bold" fill="#4c1d95">MODELO CONGELADO</text>
-  <text x="350" y="235" text-anchor="middle" font-size="9.5" fill="#4c1d95">XGBoost + SHAP pre-computado</text>
-  <text x="350" y="249" text-anchor="middle" font-size="9" fill="#6d28d9">datos/modelos/ — Notebook 04</text>
-  <text x="350" y="261" text-anchor="middle" font-size="8.5" fill="#7c3aed">⚠ nunca se re-entrena en producción</text>
+  <!-- ===== ONLINE: Inference ===== -->
+  <rect x="30" y="358" width="1040" height="330" rx="8" fill="none" stroke="#5ec8ff" stroke-width="1.5" stroke-dasharray="5,4"/>
+  <text x="50" y="380" font-size="14" font-weight="700" fill="#5ec8ff">ONLINE — Inference (siempre activo, sin cold start)</text>
 
-  <!-- Arrow Gold→Model from left -->
-  <line x1="248" y1="217" x2="240" y2="230" stroke="#475569" stroke-width="1.5" marker-end="url(#arr)"/>
+  <g font-size="12" font-weight="700" fill="#0f1218">
+    <rect x="450" y="404" width="200" height="52" rx="6" fill="#e5e7eb"/>
+    <text x="550" y="426" text-anchor="middle" font-size="12">Usuario / Jurado</text>
+    <text x="550" y="443" text-anchor="middle" font-size="9" font-weight="400">navegador</text>
+  </g>
+  <line x1="550" y1="456" x2="550" y2="486" stroke="#6b7280" stroke-width="2" marker-end="url(#arrow)"/>
 
-  <!-- ruptures PELT box -->
-  <rect x="40" y="198" width="170" height="60" rx="8" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
-  <text x="125" y="220" text-anchor="middle" font-size="10.5" font-weight="bold" fill="#14532d">ruptures PELT</text>
-  <text x="125" y="234" text-anchor="middle" font-size="9" fill="#15803d">F1 DAI 2018-2026</text>
-  <text x="125" y="248" text-anchor="middle" font-size="9" fill="#15803d">59 breakpoints detectados</text>
+  <g font-size="12" font-weight="700" fill="#0f1218">
+    <rect x="380" y="488" width="340" height="52" rx="6" fill="#5ec8ff"/>
+    <text x="550" y="510" text-anchor="middle" font-size="12">FRONTEND — React + deck.gl (Vercel)</text>
+    <text x="550" y="527" text-anchor="middle" font-size="9" font-weight="400">4 módulos + modal 5 pestañas + Panel Admin</text>
+  </g>
 
-  <!-- Arrow ruptures→Supabase (goes down/right to inference) -->
-  <line x1="210" y1="228" x2="240" y2="228" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrG)"/>
+  <line x1="470" y1="540" x2="250" y2="574" stroke="#6b7280" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="630" y1="540" x2="850" y2="574" stroke="#6b7280" stroke-width="2" marker-end="url(#arrow)"/>
 
-  <!-- index_corpus box -->
-  <rect x="40" y="288" width="170" height="55" rx="8" fill="#fff7ed" stroke="#ea580c" stroke-width="1.5"/>
-  <text x="125" y="308" text-anchor="middle" font-size="10.5" font-weight="bold" fill="#7c2d12">index_corpus.py</text>
-  <text x="125" y="322" text-anchor="middle" font-size="9" fill="#9a3412">F9 PDFs + F10 RSS → chunks</text>
-  <text x="125" y="335" text-anchor="middle" font-size="9" fill="#9a3412">MiniLM embeddings (384 dims)</text>
+  <g font-size="12" font-weight="700" fill="#0f1218">
+    <rect x="70" y="576" width="360" height="70" rx="6" fill="#a78bfa"/>
+    <text x="250" y="598" text-anchor="middle" font-size="12">Lectura directa — Supabase (RLS)</text>
+    <text x="250" y="615" text-anchor="middle" font-size="9" font-weight="400">geometrías UPZ, predicciones, SHAP,</text>
+    <text x="250" y="629" text-anchor="middle" font-size="9" font-weight="400">cuadrantes, infraestructura, change_points</text>
+  </g>
 
-  <!-- Arrow index_corpus→Supabase -->
-  <line x1="210" y1="315" x2="248" y2="315" stroke="#ea580c" stroke-width="1.5" stroke-dasharray="4,3"/>
-  <line x1="248" y1="315" x2="248" y2="360" stroke="#ea580c" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrO)"/>
+  <g font-size="12" font-weight="700" fill="#0f1218">
+    <rect x="670" y="576" width="360" height="70" rx="6" fill="#ff8a5c"/>
+    <text x="850" y="596" text-anchor="middle" font-size="12">BACKEND — FastAPI (Railway)</text>
+    <text x="850" y="612" text-anchor="middle" font-size="9" font-weight="400">/predict /explain /graphrag /prescribe</text>
+    <text x="850" y="626" text-anchor="middle" font-size="9" font-weight="400">valida JWT ES256/JWKS · aplica rol · rate limit</text>
+  </g>
 
-  <!-- ============================================================ -->
-  <!-- SUPABASE (center) -->
-  <!-- ============================================================ -->
-  <rect x="335" y="360" width="240" height="160" rx="12" fill="#f0fdf4" stroke="#22c55e" stroke-width="2.5"/>
-  <text x="455" y="382" text-anchor="middle" font-size="13" font-weight="bold" fill="#14532d">SUPABASE</text>
-  <text x="455" y="397" text-anchor="middle" font-size="9.5" fill="#15803d">PostgreSQL + PostGIS + pgvector</text>
+  <line x1="850" y1="646" x2="850" y2="674" stroke="#6b7280" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="850" y="690" text-anchor="middle" font-size="10" fill="#9aa4b2">lookup en Supabase (nunca inferencia on-demand) + OpenRouter para GraphRAG/prescriptivo</text>
 
-  <rect x="350" y="405" width="200" height="22" rx="4" fill="#bbf7d0" stroke="#16a34a" stroke-width="1"/>
-  <text x="450" y="420" text-anchor="middle" font-size="9" fill="#14532d">predicciones / shap_values ← NB04</text>
+  <line x1="250" y1="646" x2="250" y2="674" stroke="#6b7280" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="250" y="690" text-anchor="middle" font-size="10" fill="#9aa4b2">predicciones y SHAP son lookup por PK — pre-computados en el pipeline offline de arriba</text>
 
-  <rect x="350" y="431" width="200" height="22" rx="4" fill="#bbf7d0" stroke="#16a34a" stroke-width="1"/>
-  <text x="450" y="446" text-anchor="middle" font-size="9" fill="#14532d">change_points ← ruptures ✅ 59</text>
-
-  <rect x="350" y="457" width="200" height="22" rx="4" fill="#bbf7d0" stroke="#16a34a" stroke-width="1"/>
-  <text x="450" y="472" text-anchor="middle" font-size="9" fill="#14532d">documents_corpus ← embeddings ✅ 18</text>
-
-  <rect x="350" y="483" width="200" height="22" rx="4" fill="#bbf7d0" stroke="#16a34a" stroke-width="1"/>
-  <text x="450" y="498" text-anchor="middle" font-size="9" fill="#14532d">upz_geometrias / cuadrantes_geom</text>
-
-  <!-- Arrow Model→Supabase (via load_model_artifacts) -->
-  <line x1="396" y1="263" x2="396" y2="330" stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="5,3"/>
-  <line x1="396" y1="330" x2="430" y2="358" stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrV)"/>
-  <text x="360" y="325" font-size="8.5" fill="#7c3aed">load_model_artifacts.py</text>
-
-  <!-- Arrow ruptures→Supabase (change_points) -->
-  <line x1="125" y1="258" x2="125" y2="380" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="4,3"/>
-  <line x1="125" y1="380" x2="335" y2="446" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrG)"/>
-
-  <!-- Arrow index_corpus→Supabase -->
-  <line x1="210" y1="315" x2="335" y2="468" stroke="#ea580c" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrO)"/>
-
-  <!-- ============================================================ -->
-  <!-- INFERENCE PIPELINE (right half) -->
-  <!-- ============================================================ -->
-  <rect x="570" y="75" width="510" height="560" rx="12" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
-  <text x="825" y="97" text-anchor="middle" font-size="13" font-weight="bold" fill="#92400e">PIPELINE DE INFERENCIA (producción — semanal)</text>
-
-  <!-- New Data box -->
-  <rect x="590" y="110" width="200" height="60" rx="8" fill="#fce7f3" stroke="#db2777" stroke-width="1.5"/>
-  <text x="690" y="132" text-anchor="middle" font-size="11" font-weight="bold" fill="#9d174d">DATOS NUEVOS</text>
-  <text x="690" y="147" text-anchor="middle" font-size="9.5" fill="#831843">F3 clima · F5 NUSE · F10 RSS</text>
-  <text x="690" y="160" text-anchor="middle" font-size="9" fill="#831843">pipeline.py (incremental)</text>
-
-  <!-- Arrow NewData→Features -->
-  <line x1="690" y1="170" x2="690" y2="198" stroke="#475569" stroke-width="1.5" marker-end="url(#arr)"/>
-
-  <!-- Feature Extraction -->
-  <rect x="590" y="198" width="200" height="55" rx="8" fill="#fff7ed" stroke="#ea580c" stroke-width="1.5"/>
-  <text x="690" y="218" text-anchor="middle" font-size="11" font-weight="bold" fill="#7c2d12">EXTRACCIÓN FEATURES</text>
-  <text x="690" y="232" text-anchor="middle" font-size="9.5" fill="#9a3412">17 variables → vector de entrada</text>
-  <text x="690" y="246" text-anchor="middle" font-size="9" fill="#9a3412">usando modelo CONGELADO</text>
-
-  <!-- Arrow Features→Inference -->
-  <line x1="690" y1="253" x2="690" y2="281" stroke="#475569" stroke-width="1.5" marker-end="url(#arr)"/>
-
-  <!-- Frozen model reference line -->
-  <line x1="460" y1="230" x2="590" y2="230" stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrV)"/>
-  <text x="520" y="224" font-size="8" fill="#7c3aed">modelo leído</text>
-
-  <!-- FastAPI Inference box -->
-  <rect x="590" y="281" width="200" height="70" rx="8" fill="#e0e7ff" stroke="#4f46e5" stroke-width="2"/>
-  <text x="690" y="302" text-anchor="middle" font-size="11" font-weight="bold" fill="#312e81">FastAPI Railway</text>
-  <text x="690" y="317" text-anchor="middle" font-size="9.5" fill="#3730a3">/predict → XGBoost.predict()</text>
-  <text x="690" y="331" text-anchor="middle" font-size="9.5" fill="#3730a3">/explain → SHAP pre-computado</text>
-  <text x="690" y="345" text-anchor="middle" font-size="9" fill="#6366f1">/graphrag → pgvector + OpenRouter</text>
-
-  <!-- Arrow FastAPI→Supabase -->
-  <line x1="590" y1="316" x2="577" y2="316" stroke="#4f46e5" stroke-width="1.5"/>
-  <line x1="577" y1="316" x2="577" y2="450" stroke="#4f46e5" stroke-width="1.5"/>
-  <line x1="577" y1="450" x2="575" y2="450" stroke="#4f46e5" stroke-width="1.5" marker-end="url(#arrI)"/>
-
-  <!-- Arrow Supabase→FastAPI (read) -->
-  <line x1="575" y1="420" x2="590" y2="330" stroke="#22c55e" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrG)"/>
-  <text x="560" y="370" font-size="8" fill="#15803d" transform="rotate(-55,560,370)">lee datos</text>
-
-  <!-- React Frontend box -->
-  <rect x="800" y="281" width="260" height="70" rx="8" fill="#f0f9ff" stroke="#0ea5e9" stroke-width="1.5"/>
-  <text x="930" y="302" text-anchor="middle" font-size="11" font-weight="bold" fill="#0c4a6e">React + deck.gl</text>
-  <text x="930" y="317" text-anchor="middle" font-size="9.5" fill="#075985">Vercel · mapa UPZs WebGL</text>
-  <text x="930" y="331" text-anchor="middle" font-size="9.5" fill="#075985">modal 5 pestañas · Supabase Realtime</text>
-  <text x="930" y="345" text-anchor="middle" font-size="9" fill="#0284c7">zoom Localidades→UPZs (zoom 12)</text>
-
-  <!-- Arrow FastAPI→React -->
-  <line x1="790" y1="316" x2="800" y2="316" stroke="#4f46e5" stroke-width="1.5" marker-end="url(#arrI)"/>
-
-  <!-- Arrow Supabase→React (Realtime) -->
-  <line x1="575" y1="440" x2="800" y2="350" stroke="#22c55e" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrG)"/>
-  <text x="685" y="418" font-size="8" fill="#15803d">Realtime</text>
-
-  <!-- User icons / roles -->
-  <rect x="800" y="380" width="260" height="100" rx="8" fill="#f8fafc" stroke="#94a3b8" stroke-width="1"/>
-  <text x="930" y="398" text-anchor="middle" font-size="10" font-weight="bold" fill="#334155">Usuarios</text>
-  <text x="830" y="415" font-size="9" fill="#475569">● COMANDANTE_CAI</text>
-  <text x="830" y="430" font-size="9" fill="#475569">  → /predict solo su cuadrante (RLS)</text>
-  <text x="830" y="448" font-size="9" fill="#475569">● ANALISTA_SDSCJ</text>
-  <text x="830" y="463" font-size="9" fill="#475569">  → todas las UPZs + SHAP completo</text>
-  <text x="830" y="481" font-size="9" fill="#475569">● CIUDADANO → chatbot básico</text>
-
-  <!-- Arrow React→Users -->
-  <line x1="930" y1="351" x2="930" y2="378" stroke="#0ea5e9" stroke-width="1.5" marker-end="url(#arrC)"/>
-
-  <!-- Weekly inference note -->
-  <rect x="590" y="380" width="200" height="80" rx="8" fill="#fefce8" stroke="#ca8a04" stroke-width="1.5"/>
-  <text x="690" y="400" text-anchor="middle" font-size="10" font-weight="bold" fill="#713f12">Cadencia de inferencia</text>
-  <text x="690" y="416" text-anchor="middle" font-size="9" fill="#854d0e">Semanal (GitHub Action lunes 6AM)</text>
-  <text x="690" y="430" text-anchor="middle" font-size="9" fill="#854d0e">F3 clima — horaria (Open-Meteo)</text>
-  <text x="690" y="444" text-anchor="middle" font-size="9" fill="#854d0e">F5 NUSE — mensual (Socrata)</text>
-  <text x="690" y="458" text-anchor="middle" font-size="9" fill="#854d0e">Model CONGELADO — no re-entrena</text>
-
-  <!-- OpenRouter box -->
-  <rect x="590" y="490" width="200" height="55" rx="8" fill="#fdf4ff" stroke="#a855f7" stroke-width="1.5"/>
-  <text x="690" y="511" text-anchor="middle" font-size="10.5" font-weight="bold" fill="#581c87">OpenRouter</text>
-  <text x="690" y="526" text-anchor="middle" font-size="9.5" fill="#6b21a8">google/gemini-flash-1.5</text>
-  <text x="690" y="540" text-anchor="middle" font-size="9" fill="#7e22ce">OPENROUTER_API_KEY en Railway</text>
-
-  <!-- Arrow FastAPI→OpenRouter -->
-  <line x1="690" y1="351" x2="690" y2="488" stroke="#a855f7" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrP)"/>
-
-  <!-- ============================================================ -->
-  <!-- LEGEND -->
-  <!-- ============================================================ -->
-  <rect x="20" y="375" width="290" height="110" rx="8" fill="white" stroke="#cbd5e1" stroke-width="1"/>
-  <text x="165" y="393" text-anchor="middle" font-size="10" font-weight="bold" fill="#334155">Leyenda</text>
-  <line x1="35" y1="410" x2="65" y2="410" stroke="#475569" stroke-width="1.5" marker-end="url(#arr)"/>
-  <text x="73" y="414" font-size="9" fill="#475569">Flujo de datos (síncrono)</text>
-  <line x1="35" y1="428" x2="65" y2="428" stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrV)"/>
-  <text x="73" y="432" font-size="9" fill="#475569">Modelo/artifacts leídos</text>
-  <line x1="35" y1="446" x2="65" y2="446" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrG)"/>
-  <text x="73" y="450" font-size="9" fill="#475569">Escritura offline → Supabase</text>
-  <line x1="35" y1="464" x2="65" y2="464" stroke="#22c55e" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrG)"/>
-  <text x="73" y="468" font-size="9" fill="#475569">Lectura Supabase (Realtime)</text>
-
-  <!-- Key insight box -->
-  <rect x="20" y="498" width="290" height="75" rx="8" fill="#fffbeb" stroke="#f59e0b" stroke-width="1.5"/>
-  <text x="165" y="516" text-anchor="middle" font-size="10" font-weight="bold" fill="#92400e">Principio FTI clave</text>
-  <text x="35" y="532" font-size="9" fill="#78350f">Silver (111K filas) permanece LOCAL.</text>
-  <text x="35" y="547" font-size="9" fill="#78350f">Supabase recibe solo OUTPUTS:</text>
-  <text x="35" y="562" font-size="9" fill="#78350f">predicciones · shap · change_points · corpus</text>
-
-  <!-- Arrowhead markers -->
   <defs>
-    <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-      <path d="M0,0 L0,6 L8,3 z" fill="#475569"/>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#6b7280"/>
     </marker>
-    <marker id="arrG" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-      <path d="M0,0 L0,6 L8,3 z" fill="#16a34a"/>
-    </marker>
-    <marker id="arrV" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-      <path d="M0,0 L0,6 L8,3 z" fill="#7c3aed"/>
-    </marker>
-    <marker id="arrO" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-      <path d="M0,0 L0,6 L8,3 z" fill="#ea580c"/>
-    </marker>
-    <marker id="arrI" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-      <path d="M0,0 L0,6 L8,3 z" fill="#4f46e5"/>
-    </marker>
-    <marker id="arrP" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-      <path d="M0,0 L0,6 L8,3 z" fill="#a855f7"/>
-    </marker>
-    <marker id="arrC" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-      <path d="M0,0 L0,6 L8,3 z" fill="#0ea5e9"/>
+    <marker id="arrowred" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#e05c5c"/>
     </marker>
   </defs>
-
 </svg>

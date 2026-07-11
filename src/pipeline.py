@@ -1,5 +1,5 @@
 """
-pipeline.py — Extracción incremental de las 8 fuentes de SeguroData Bogotá.
+pipeline.py — Extracción incremental de las 11 fuentes estructuradas de SeguroData Bogotá.
 
 Cada extractor compara el estado actual (fecha de descarga, Last-Modified, max(fecha))
 contra lo guardado en datos/raw/.pipeline_state.json y SOLO descarga si hay
@@ -75,13 +75,23 @@ URL_F8_ARCGIS = (
     "https://gis.transmilenio.gov.co/arcgis/rest/services/"
     "Troncal/consulta_estaciones_troncales/MapServer/0/query"
 )
+# F13: Camaras Salvavidas — ArcGIS REST de Secretaria Distrital de Movilidad (SDM),
+# item 3b8a87f958104f0a9181e48c7406bc6d en el Hub data-movilidadbogota.opendata.arcgis.com
+# (URL resuelta via su feed DCAT-US, la pagina del Hub es 100% JS y bloquea scraping directo)
+URL_F13_ARCGIS = (
+    "https://services2.arcgis.com/NEwhEo9GGSHXcRXV/arcgis/rest/services/"
+    "Camaras_Salvavidas_Bogota/FeatureServer/0/query"
+)
+# F14: Alumbrado Publico (LED/MH/NA por UPZ) — ArcGIS REST de Catastro Bogota, ya
+# agregado por CODIGO_UPZ (poligono), sin necesidad de spatial join. OJO: el recurso
+# GeoJSON listado en el dataset CKAN "luminarias_upz-bogota-d-c" esta mal etiquetado
+# (sirve datos de contenerizacion de residuos, no de alumbrado) — se usa el servicio
+# ArcGIS REST directo en su lugar, verificado con 112 filas = 112 UPZ.
+URL_F14_ARCGIS = (
+    "https://serviciosgis.catastrobogota.gov.co/arcgis/rest/services/"
+    "serviciospublicos/sistemaalumbradopublico/MapServer/0/query"
+)
 
-# F9: Secretaría Distrital de Seguridad — Boletines PDF mensuales
-# AVISO (jun-2026): el contenido migró al Observatorio OSCJ (ArcGIS Experience Builder).
-# La nueva URL carga 100% vía JavaScript — BeautifulSoup no puede scrapearlo.
-# Descarga manual o Playwright requeridos. Ver scripts/index_corpus.py --seed-demo para demo.
-URL_F9_SCJ_BASE = "https://oaiee.scj.gov.co/ObservatorioSCJ.html"
-URL_F9_SCJ_OLD = "https://scj.gov.co/cifras/boletines"  # redirige al Observatorio
 # F10: RSS feeds de noticias Bogotá (seguridad ciudadana)
 RSS_FEEDS_F10 = {
     "el_tiempo": "https://www.eltiempo.com/rss/bogota.xml",
@@ -92,8 +102,6 @@ KEYWORDS_SEGURIDAD = [
     "policia", "captura", "detenido", "violencia", "extorsion",
     "secuestro", "lesiones", "atraco", "inseguridad", "cuadrante",
 ]
-RAW_BOLETINES = RAW_DIR / "boletines_scj"
-
 CKAN_BASE = "https://datosabiertos.bogota.gov.co/api/3/action"
 
 # Open-Meteo — coordenadas Bogotá
@@ -115,6 +123,8 @@ VALIDATIONS: dict[str, dict] = {
     # F7: columna se llama ESTRATO (mayusculas) en el JSON de Catastro Bogota
     "f7_estratificacion": {"required_cols": ["ESTRATO"], "min_rows": 10_000},
     "f8_transmilenio":    {"min_rows": 50},
+    "f13_camaras":        {"min_rows": 50},
+    "f14_alumbrado":      {"expected_rows": 112, "tolerance": 10},
 }
 
 
@@ -848,89 +858,120 @@ def extract_f8_transmilenio(
         return ExtractResult(source, "error", 0, 0, "", str(exc))
 
 
-def extract_f9_scj_boletines(
+def extract_f13_camaras(
     state: PipelineState,
     force: bool = False,
     dry_run: bool = False,
     verbose: bool = False,
 ) -> ExtractResult:
     """
-    F9 — PDFs de boletines mensuales SCJ (Secretaria Distrital de Seguridad y Convivencia).
-    AVISO (jun-2026): los boletines migraron al Observatorio OSCJ que usa ArcGIS Experience
-    Builder (100% JavaScript). BeautifulSoup no puede obtener los PDFs. Se necesita Playwright
-    o descarga manual. Mientras tanto usar --seed-demo en index_corpus.py para el corpus demo.
-    Fuente actual: https://oaiee.scj.gov.co/ObservatorioSCJ.html
-    Salida: datos/raw/boletines_scj/*.pdf (un PDF por boletin)
+    F13 — Camaras Salvavidas (fotodeteccion de infracciones), Secretaria Distrital
+    de Movilidad (puntos, ~92 camaras).
+    Fuente: ArcGIS REST del Hub SDM (Camaras_Salvavidas_Bogota/FeatureServer/0).
+    Estrategia: estatico — solo descarga si el archivo no existe o se fuerza.
     """
     import requests
-    from bs4 import BeautifulSoup
+    import json
 
-    source = "f9_scj_boletines"
-    RAW_BOLETINES.mkdir(parents=True, exist_ok=True)
+    source = "f13_camaras"
+    out_path = RAW_DIR / "f13_camaras_sdm.geojson"
     saved = state.get(source)
 
+    if not force and out_path.exists() and saved.get("row_count", 0) >= 50:
+        rows = saved.get("row_count", 0)
+        return ExtractResult(source, "skipped", 0, rows, str(out_path),
+                             "Camaras Salvavidas ya descargado (estatico ArcGIS REST)")
+
     if dry_run:
-        return ExtractResult(source, "updated", -1, -1, str(RAW_BOLETINES),
-                             "[DRY-RUN] F9 requiere Playwright (ArcGIS JS). Usar --seed-demo en index_corpus.py")
+        return ExtractResult(source, "updated", -1, -1, str(out_path),
+                             "[DRY-RUN] descargaria camaras salvavidas desde ArcGIS REST")
 
     try:
+        import geopandas as gpd
+
         if verbose:
-            print(f"    Accediendo a {URL_F9_SCJ_BASE}...")
-            print(f"    AVISO: el Observatorio OSCJ usa ArcGIS JS — PDF scraping no disponible sin Playwright")
-        resp = requests.get(URL_F9_SCJ_BASE, timeout=30,
-                            headers={"User-Agent": "Mozilla/5.0"})
+            print(f"    Descargando camaras salvavidas desde ArcGIS REST...")
+        resp = requests.get(URL_F13_ARCGIS, params={
+            "where": "1=1",
+            "outFields": "*",
+            "f": "geojson",
+            "resultRecordCount": 1000,
+            "resultOffset": 0,
+        }, timeout=60)
         resp.raise_for_status()
 
-        soup = BeautifulSoup(resp.text, "html.parser")
-        # Buscar todos los enlaces a PDFs con "boletin" o "informe" en el nombre
-        pdf_links = []
-        for a in soup.find_all("a", href=True):
-            href = a["href"]
-            if ".pdf" in href.lower() and any(
-                kw in href.lower() for kw in ["boletin", "informe", "estadis"]
-            ):
-                if not href.startswith("http"):
-                    href = "https://scj.gov.co" + href
-                pdf_links.append(href)
+        geojson_data = resp.json()
+        out_path.write_text(json.dumps(geojson_data), encoding="utf-8")
 
-        # Eliminar duplicados preservando orden
-        seen = set()
-        pdf_links = [x for x in pdf_links if not (x in seen or seen.add(x))]
+        gdf = gpd.read_file(out_path)
+        ok, msg = _validate(source, gdf, verbose)
+        if not ok:
+            return ExtractResult(source, "error", 0, 0, "", f"Validacion fallo: {msg}")
 
-        if not pdf_links:
-            msg = ("F9: 0 PDFs encontrados. El Observatorio OSCJ usa ArcGIS JS (no scrappeable "
-                   "con BS4). Descarga manual en: https://oaiee.scj.gov.co/ObservatorioSCJ.html "
-                   "Seccion: Boletines > Estudios. O usa: python scripts/index_corpus.py --seed-demo")
-            return ExtractResult(source, "error", 0, 0, str(RAW_BOLETINES), msg)
+        rows = len(gdf)
+        if verbose:
+            print(f"    {rows} camaras salvavidas | columnas: {gdf.columns.tolist()}")
+        state.update(source, row_count=rows, file_path=str(out_path), status="ok")
+        return ExtractResult(source, "updated", rows, rows, str(out_path), msg)
+    except Exception as exc:
+        return ExtractResult(source, "error", 0, 0, "", str(exc))
+
+
+def extract_f14_alumbrado(
+    state: PipelineState,
+    force: bool = False,
+    dry_run: bool = False,
+    verbose: bool = False,
+) -> ExtractResult:
+    """
+    F14 — Alumbrado Publico por UPZ (poligonos, 112 UPZ), UAESP via Catastro Bogota.
+    Fuente: ArcGIS REST (sistemaalumbradopublico/MapServer/0) — ya agregado por
+    CODIGO_UPZ con columnas LED/MH/NA/TOTAL, sin necesidad de spatial join.
+    Estrategia: estatico — solo descarga si el archivo no existe o se fuerza.
+    """
+    import requests
+    import json
+
+    source = "f14_alumbrado"
+    out_path = RAW_DIR / "f14_alumbrado_upz.geojson"
+    saved = state.get(source)
+
+    if not force and out_path.exists() and saved.get("row_count", 0) >= 100:
+        rows = saved.get("row_count", 0)
+        return ExtractResult(source, "skipped", 0, rows, str(out_path),
+                             "Alumbrado publico ya descargado (estatico ArcGIS REST)")
+
+    if dry_run:
+        return ExtractResult(source, "updated", -1, -1, str(out_path),
+                             "[DRY-RUN] descargaria alumbrado publico por UPZ desde ArcGIS REST")
+
+    try:
+        import geopandas as gpd
 
         if verbose:
-            print(f"    Encontrados {len(pdf_links)} PDFs en la pagina SCJ")
+            print(f"    Descargando alumbrado publico por UPZ desde ArcGIS REST...")
+        resp = requests.get(URL_F14_ARCGIS, params={
+            "where": "1=1",
+            "outFields": "*",
+            "f": "geojson",
+            "resultRecordCount": 1000,
+            "resultOffset": 0,
+        }, timeout=60)
+        resp.raise_for_status()
 
-        new_count = 0
-        for url in pdf_links:
-            fname = url.split("/")[-1].split("?")[0]
-            if not fname.endswith(".pdf"):
-                fname = fname + ".pdf"
-            out = RAW_BOLETINES / fname
-            if not out.exists() or force:
-                try:
-                    r = requests.get(url, timeout=60,
-                                     headers={"User-Agent": "Mozilla/5.0"})
-                    r.raise_for_status()
-                    out.write_bytes(r.content)
-                    new_count += 1
-                    if verbose:
-                        print(f"    Descargado: {fname}")
-                except Exception as e:
-                    if verbose:
-                        print(f"    Error descargando {fname}: {e}")
+        geojson_data = resp.json()
+        out_path.write_text(json.dumps(geojson_data), encoding="utf-8")
 
-        total_pdfs = len(list(RAW_BOLETINES.glob("*.pdf")))
-        state.update(source, last_downloaded=str(date.today()),
-                     row_count=total_pdfs, file_path=str(RAW_BOLETINES), status="ok")
-        return ExtractResult(source, "updated", new_count, total_pdfs,
-                             str(RAW_BOLETINES),
-                             f"{new_count} PDFs nuevos | {total_pdfs} total en {RAW_BOLETINES.name}/")
+        gdf = gpd.read_file(out_path)
+        ok, msg = _validate(source, gdf, verbose)
+        if not ok:
+            return ExtractResult(source, "error", 0, 0, "", f"Validacion fallo: {msg}")
+
+        rows = len(gdf)
+        if verbose:
+            print(f"    {rows} UPZ con alumbrado | columnas: {gdf.columns.tolist()}")
+        state.update(source, row_count=rows, file_path=str(out_path), status="ok")
+        return ExtractResult(source, "updated", rows, rows, str(out_path), msg)
     except Exception as exc:
         return ExtractResult(source, "error", 0, 0, "", str(exc))
 
@@ -1027,8 +1068,9 @@ EXTRACTORS = {
     "f6": extract_f6_hurto,
     "f7": extract_f7_estratificacion,
     "f8": extract_f8_transmilenio,
-    "f9": extract_f9_scj_boletines,
     "f10": extract_f10_noticias_rss,
+    "f13": extract_f13_camaras,
+    "f14": extract_f14_alumbrado,
 }
 
 SOURCE_LABELS = {
@@ -1040,8 +1082,9 @@ SOURCE_LABELS = {
     "f6": "Hurto Personas (PN)",
     "f7": "Estratificación SDP",
     "f8": "Estaciones TM",
-    "f9": "Boletines SCJ (PDF)",
     "f10": "Noticias RSS Bogota",
+    "f13": "Camaras Salvavidas",
+    "f14": "Alumbrado Publico UPZ",
 }
 
 

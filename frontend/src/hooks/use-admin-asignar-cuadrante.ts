@@ -3,8 +3,6 @@ import { apiClient } from "@/lib/api-client";
 import { queryKeys } from "@/lib/query-keys";
 import type { AsignarCuadranteRequest } from "@/types/api";
 
-// TODO(Sprint 3): consumir desde /admin/usuarios (solo rol ADMIN). Contrato:
-// PATCH /admin/usuarios/{user_id}/cuadrante.
 export function useAdminAsignarCuadrante() {
   const queryClient = useQueryClient();
 

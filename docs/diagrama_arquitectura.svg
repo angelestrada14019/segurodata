@@ -1,327 +1,122 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" width="1200" height="800" font-family="Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" font-family="Segoe UI, Arial, sans-serif">
+  <rect x="0" y="0" width="1200" height="900" fill="#0f1218"/>
 
-  <!-- Background -->
-  <rect width="1200" height="800" fill="#f8fafc"/>
+  <text x="600" y="40" text-anchor="middle" font-size="24" font-weight="700" fill="#f5f5f5">SeguroData Bogotá — Arquitectura de Fuentes y Pipeline</text>
+  <text x="600" y="64" text-anchor="middle" font-size="13" fill="#9aa4b2">Estado final — actualizado 10 julio 2026</text>
 
-  <!-- Title -->
-  <text x="600" y="14" text-anchor="middle" font-size="14" font-weight="bold" fill="#1e293b">SeguroData Bogotá — Arquitectura de Fuentes de Datos</text>
+  <!-- ===================== FUENTES ===================== -->
+  <text x="60" y="100" font-size="15" font-weight="700" fill="#e5e7eb">12 fuentes de datos abiertos activas + 1 planificada</text>
 
-  <!-- ===== ZONA 1: CKAN Bogotá ===== -->
-  <rect x="10" y="20" width="240" height="155" rx="6" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
-  <text x="130" y="37" text-anchor="middle" font-size="10" font-weight="bold" fill="#1e40af">CKAN Bogotá</text>
-  <text x="130" y="51" text-anchor="middle" font-size="8.5" fill="#1e3a8a">datosabiertos.bogota.gov.co</text>
-  <rect x="18" y="55" width="224" height="14" rx="3" fill="#bfdbfe"/>
-  <text x="130" y="65" text-anchor="middle" font-size="8" fill="#1e40af">[datos.gov.co] ✓</text>
-  <text x="20" y="83" font-size="8.5" fill="#1e3a8a">F1  Delito Alto Impacto</text>
-  <text x="20" y="98" font-size="8.5" fill="#1e3a8a">F4  Cuadrantes Policía</text>
-  <text x="20" y="113" font-size="8.5" fill="#1e3a8a">F5  NUSE 123 C4</text>
-  <rect x="16" y="104" width="228" height="15" rx="2" fill="#fef9c3" stroke="#ca8a04" stroke-width="0.8"/>
-  <text x="130" y="114" text-anchor="middle" font-size="8" font-weight="bold" fill="#92400e">F5  NUSE 123 C4  [★BASE★]</text>
-  <text x="20" y="131" font-size="8.5" fill="#1e3a8a">F7  Estratificación SDP</text>
-  <text x="20" y="147" font-size="8" fill="#3b82f6">— descarga ZIP / Datastore API</text>
-  <text x="20" y="161" font-size="8" fill="#3b82f6">— geojson / parquet</text>
+  <!-- Grupo 1: estructuradas -> XGBoost -->
+  <text x="60" y="122" font-size="11" fill="#9aa4b2">Grupo 1 — estructuradas → XGBoost + mapa</text>
+  <g font-size="11" fill="#0f1218" font-weight="600">
+    <g transform="translate(60,130)">
+      <rect width="94" height="36" rx="4" fill="#5ec8ff"/><text x="47" y="15" text-anchor="middle">F1 DAI</text><text x="47" y="28" text-anchor="middle" font-size="9" font-weight="400">Localidad×año</text>
+    </g>
+    <g transform="translate(162,130)">
+      <rect width="94" height="36" rx="4" fill="#5ec8ff"/><text x="47" y="15" text-anchor="middle">F2 UPZ</text><text x="47" y="28" text-anchor="middle" font-size="9" font-weight="400">112 polígonos</text>
+    </g>
+    <g transform="translate(264,130)">
+      <rect width="94" height="36" rx="4" fill="#5ec8ff"/><text x="47" y="15" text-anchor="middle">F3 Clima</text><text x="47" y="28" text-anchor="middle" font-size="9" font-weight="400">Open-Meteo</text>
+    </g>
+    <g transform="translate(366,130)">
+      <rect width="94" height="36" rx="4" fill="#5ec8ff"/><text x="47" y="15" text-anchor="middle">F4 Cuadrantes</text><text x="47" y="28" text-anchor="middle" font-size="9" font-weight="400">599 · MEBOG</text>
+    </g>
+    <g transform="translate(468,130)">
+      <rect width="94" height="36" rx="4" fill="#3ba7e0"/><text x="47" y="15" text-anchor="middle" fill="#0f1218">F5 NUSE</text><text x="47" y="28" text-anchor="middle" font-size="9" font-weight="400" fill="#0f1218">Base: 111,606 filas</text>
+    </g>
+    <g transform="translate(570,130)">
+      <rect width="94" height="36" rx="4" fill="#5ec8ff"/><text x="47" y="15" text-anchor="middle">F6 Hurto PN</text><text x="47" y="28" text-anchor="middle" font-size="9" font-weight="400">Benchmarking</text>
+    </g>
+    <g transform="translate(672,130)">
+      <rect width="94" height="36" rx="4" fill="#5ec8ff"/><text x="47" y="15" text-anchor="middle">F7 Estrato</text><text x="47" y="28" text-anchor="middle" font-size="9" font-weight="400">44,260 manzanas</text>
+    </g>
+    <g transform="translate(774,130)">
+      <rect width="94" height="36" rx="4" fill="#5ec8ff"/><text x="47" y="15" text-anchor="middle">F8 TransMil.</text><text x="47" y="28" text-anchor="middle" font-size="9" font-weight="400">153 estaciones</text>
+    </g>
+    <g transform="translate(876,130)">
+      <rect width="94" height="36" rx="4" fill="#f2c14e"/><text x="47" y="15" text-anchor="middle" fill="#0f1218">F11 Malla vial</text><text x="47" y="28" text-anchor="middle" font-size="9" font-weight="400" fill="#0f1218">placeholder=0</text>
+    </g>
+    <g transform="translate(978,130)">
+      <rect width="94" height="36" rx="4" fill="#5ec8ff"/><text x="47" y="15" text-anchor="middle">F13 Cámaras</text><text x="47" y="28" text-anchor="middle" font-size="9" font-weight="400">92 puntos · real</text>
+    </g>
+    <g transform="translate(1080,130)">
+      <rect width="60" height="36" rx="4" fill="#5ec8ff"/><text x="30" y="15" text-anchor="middle" font-size="10">F14</text><text x="30" y="28" text-anchor="middle" font-size="8" font-weight="400">Alumbrado</text>
+    </g>
+  </g>
 
-  <!-- ===== ZONA 2: Socrata Nacional ===== -->
-  <rect x="260" y="20" width="150" height="155" rx="6" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
-  <text x="335" y="37" text-anchor="middle" font-size="10" font-weight="bold" fill="#14532d">Socrata Nacional</text>
-  <text x="335" y="51" text-anchor="middle" font-size="8.5" fill="#14532d">www.datos.gov.co</text>
-  <rect x="268" y="55" width="134" height="14" rx="3" fill="#bbf7d0"/>
-  <text x="335" y="65" text-anchor="middle" font-size="8" fill="#15803d">[datos.gov.co] ✓</text>
-  <text x="270" y="84" font-size="8.5" fill="#14532d">F6  Hurto Personas PN</text>
-  <text x="270" y="99" font-size="8.5" fill="#166534">638,569 filas</text>
-  <rect x="268" y="103" width="134" height="14" rx="3" fill="#fef9c3"/>
-  <text x="335" y="113" text-anchor="middle" font-size="8" fill="#92400e">[solo benchmark]</text>
-  <text x="270" y="130" font-size="8" fill="#16a34a">Socrata 4rxi-8m8d</text>
-  <text x="270" y="144" font-size="8" fill="#16a34a">API REST + SDK sodapy</text>
-  <text x="270" y="158" font-size="8" fill="#16a34a">Benchmarking nacional</text>
+  <!-- Grupo 2: no estructuradas -> GraphRAG -->
+  <text x="60" y="196" font-size="11" fill="#9aa4b2">Grupo 2 — no estructuradas → GraphRAG (pgvector)</text>
+  <g font-size="11" font-weight="600">
+    <g transform="translate(60,204)">
+      <rect width="140" height="36" rx="4" fill="#c792ea"/><text x="70" y="15" text-anchor="middle" fill="#0f1218">F10 Noticias RSS</text><text x="70" y="28" text-anchor="middle" font-size="9" font-weight="400" fill="#0f1218">3 feeds · 10 chunks reales</text>
+    </g>
+    <g transform="translate(212,204)">
+      <rect width="140" height="36" rx="4" fill="none" stroke="#6b7280" stroke-width="1.5" stroke-dasharray="4,3"/><text x="70" y="15" text-anchor="middle" fill="#9aa4b2">F12 Plan Desarrollo</text><text x="70" y="28" text-anchor="middle" font-size="9" font-weight="400" fill="#9aa4b2">planificada, Fase 3+</text>
+    </g>
+  </g>
 
-  <!-- ===== ZONA 3: APIs Externas ===== -->
-  <rect x="420" y="20" width="185" height="155" rx="6" fill="#ffedd5" stroke="#ea580c" stroke-width="1.5"/>
-  <text x="512" y="37" text-anchor="middle" font-size="10" font-weight="bold" fill="#7c2d12">APIs Externas</text>
-  <text x="512" y="51" text-anchor="middle" font-size="8.5" fill="#9a3412">NO datos.gov.co ✗</text>
-  <rect x="428" y="55" width="169" height="14" rx="3" fill="#fed7aa"/>
-  <text x="512" y="65" text-anchor="middle" font-size="8" fill="#c2410c">Fuentes especializadas</text>
-  <text x="428" y="83" font-size="8.5" fill="#7c2d12">F2  UPZ Shapefile</text>
-  <text x="436" y="96" font-size="7.5" fill="#c2410c">Catastro — ArcGIS REST</text>
-  <text x="428" y="111" font-size="8.5" fill="#7c2d12">F3  Clima Open-Meteo</text>
-  <text x="436" y="124" font-size="7.5" fill="#c2410c">API abierta — sin clave API</text>
-  <text x="428" y="139" font-size="8.5" fill="#7c2d12">F8  Estaciones TransMilenio</text>
-  <text x="436" y="152" font-size="7.5" fill="#c2410c">TM S.A. — ArcGIS REST</text>
-  <text x="428" y="167" font-size="7.5" fill="#ea580c">geojson / parquet</text>
+  <!-- Arrow down to Bronze -->
+  <line x1="600" y1="252" x2="600" y2="278" stroke="#6b7280" stroke-width="2" marker-end="url(#arrow)"/>
 
-  <!-- ===== ZONA 4: Tabla Ref. PN ===== -->
-  <rect x="615" y="20" width="220" height="155" rx="6" fill="#fee2e2" stroke="#dc2626" stroke-width="1.5"/>
-  <text x="725" y="37" text-anchor="middle" font-size="10" font-weight="bold" fill="#7f1d1d">Tabla Ref. PN</text>
-  <rect x="623" y="42" width="204" height="14" rx="3" fill="#fecaca"/>
-  <text x="725" y="52" text-anchor="middle" font-size="8" fill="#991b1b">[datos.gov.co — Socrata]</text>
-  <text x="623" y="70" font-size="8" fill="#7f1d1d">HOMICIDIO PN      m8fd-ahd9</text>
-  <text x="623" y="83" font-size="8" fill="#7f1d1d">ABIGEATO          p88b-5ac7</text>
-  <text x="623" y="96" font-size="8" fill="#7f1d1d">Med Legal  79dd-d24f / 2kpj-cktv</text>
-  <text x="623" y="109" font-size="8" fill="#7f1d1d">Incautación       kk69-w2jj</text>
-  <rect x="621" y="113" width="206" height="14" rx="3" fill="#fecaca"/>
-  <text x="725" y="123" text-anchor="middle" font-size="8" fill="#991b1b">SIEDCO 2bxu: 404 no disponible</text>
-  <line x1="623" y1="131" x2="827" y2="131" stroke="#dc2626" stroke-width="0.8" stroke-dasharray="3,2"/>
-  <text x="623" y="143" font-size="8" fill="#b91c1c">→ Granularidad: MUNICIPIO</text>
-  <text x="623" y="156" font-size="8" fill="#b91c1c">→ Sin desglose por UPZ</text>
-  <text x="623" y="169" font-size="7.5" fill="#dc2626">→ Uso: contexto sustentación oral</text>
+  <!-- ===================== MEDALLION ===================== -->
+  <g font-size="13" font-weight="700" fill="#0f1218">
+    <rect x="60" y="280" width="1080" height="46" rx="6" fill="#7dd3a8"/>
+    <text x="80" y="298" font-size="13">BRONZE</text>
+    <text x="80" y="315" font-size="10" font-weight="400">datos/raw/ — src/pipeline.py — descarga incremental, solo lo nuevo</text>
+  </g>
+  <line x1="600" y1="326" x2="600" y2="350" stroke="#6b7280" stroke-width="2" marker-end="url(#arrow)"/>
 
-  <!-- ===== ZONA 5: NO ESTRUCTURADAS ===== -->
-  <rect x="845" y="20" width="345" height="155" rx="6" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
-  <text x="1017" y="37" text-anchor="middle" font-size="10" font-weight="bold" fill="#4c1d95">NO ESTRUCTURADAS [Plan]</text>
-  <rect x="853" y="42" width="329" height="14" rx="3" fill="#ddd6fe"/>
-  <text x="1017" y="52" text-anchor="middle" font-size="8" fill="#5b21b6">Oportunidad de diferenciación</text>
-  <text x="853" y="70" font-size="8.5" fill="#4c1d95">F9  SCJ Boletines PDF</text>
-  <text x="869" y="83" font-size="8" fill="#6d28d9">scj.gov.co → corpus LLM</text>
-  <text x="853" y="98" font-size="8.5" fill="#4c1d95">F10  RSS Noticias Bogotá</text>
-  <text x="869" y="111" font-size="8" fill="#6d28d9">El Tiempo / El Espectador</text>
-  <rect x="851" y="115" width="331" height="15" rx="3" fill="#fecaca" stroke="#dc2626" stroke-width="0.8"/>
-  <text x="1017" y="125" text-anchor="middle" font-size="8" font-weight="bold" fill="#991b1b">Twitter/X: DESCARTADO (viola reglas concurso)</text>
-  <text x="853" y="143" font-size="7.5" fill="#7c3aed">→ No entran en XGBoost</text>
-  <text x="853" y="156" font-size="7.5" fill="#7c3aed">→ Solo LLM context: Módulo 3 Recom + Módulo 4 Chat</text>
-  <text x="853" y="168" font-size="7.5" fill="#7c3aed">→ Fase 2 del proyecto (pendiente)</text>
+  <g font-size="13" font-weight="700" fill="#0f1218">
+    <rect x="60" y="352" width="1080" height="46" rx="6" fill="#63c98a"/>
+    <text x="80" y="370" font-size="13">SILVER</text>
+    <text x="80" y="387" font-size="10" font-weight="400">datos/procesados/silver_upz_mes.parquet — src/transform.py — limpieza + spatial joins — 111,606 filas × 20 columnas</text>
+  </g>
+  <line x1="600" y1="398" x2="600" y2="422" stroke="#6b7280" stroke-width="2" marker-end="url(#arrow)"/>
 
-  <!-- ===== FLECHAS ZONA 1-3 → BRONZE ===== -->
-  <!-- Flecha Zona 1 -->
-  <line x1="130" y1="176" x2="130" y2="204" stroke="#2563eb" stroke-width="2.5"/>
-  <polygon points="124,197 136,197 130,206" fill="#2563eb"/>
+  <g font-size="13" font-weight="700" fill="#0f1218">
+    <rect x="60" y="424" width="1080" height="46" rx="6" fill="#4bb374"/>
+    <text x="80" y="442" font-size="13">GOLD + MODEL</text>
+    <text x="80" y="459" font-size="10" font-weight="400">scripts/train_model.py — 18 variables, XGBoost, SHAP, análisis de sesgo, quality-gate — macro-F1 0.867</text>
+  </g>
+  <line x1="600" y1="470" x2="600" y2="494" stroke="#6b7280" stroke-width="2" marker-end="url(#arrow)"/>
 
-  <!-- Flecha Zona 2 -->
-  <line x1="335" y1="176" x2="335" y2="204" stroke="#16a34a" stroke-width="2.5"/>
-  <polygon points="329,197 341,197 335,206" fill="#16a34a"/>
+  <!-- ===================== SUPABASE ===================== -->
+  <g font-size="13" font-weight="700" fill="#0f1218">
+    <rect x="60" y="496" width="1080" height="56" rx="6" fill="#a78bfa"/>
+    <text x="80" y="518" font-size="14">SUPABASE — PostgreSQL + PostGIS + pgvector</text>
+    <text x="80" y="538" font-size="10" font-weight="400">predicciones · shap_values · upz_geometrias · cuadrantes_geom · transmilenio_geom · camaras_geom · upz_infraestructura · change_points · documents_corpus · Auth + RLS por rol</text>
+  </g>
+  <line x1="600" y1="552" x2="600" y2="576" stroke="#6b7280" stroke-width="2" marker-end="url(#arrow)"/>
 
-  <!-- Flecha Zona 3 -->
-  <line x1="512" y1="176" x2="512" y2="204" stroke="#ea580c" stroke-width="2.5"/>
-  <polygon points="506,197 518,197 512,206" fill="#ea580c"/>
+  <!-- ===================== SERVING LAYER ===================== -->
+  <g font-size="13" font-weight="700" fill="#0f1218">
+    <rect x="120" y="578" width="440" height="70" rx="6" fill="#ff8a5c"/>
+    <text x="140" y="600" font-size="14">BACKEND — FastAPI (Railway)</text>
+    <text x="140" y="617" font-size="10" font-weight="400">/predict /explain /graphrag /prescribe /whoami /admin</text>
+    <text x="140" y="632" font-size="10" font-weight="400">JWT ES256/JWKS · rate limiting · siempre activo, sin cold start</text>
+  </g>
+  <g font-size="13" font-weight="700" fill="#0f1218">
+    <rect x="620" y="578" width="460" height="70" rx="6" fill="#5ec8ff"/>
+    <text x="640" y="600" font-size="14">FRONTEND — React + deck.gl (Vercel)</text>
+    <text x="640" y="617" font-size="10" font-weight="400">4 módulos + modal 5 pestañas + Panel Admin</text>
+    <text x="640" y="632" font-size="10" font-weight="400">lee Supabase directo (RLS) + llama al backend para lógica de rol/LLM</text>
+  </g>
+  <line x1="560" y1="613" x2="620" y2="613" stroke="#6b7280" stroke-width="2" marker-end="url(#arrow)" marker-start="url(#arrow)"/>
 
-  <!-- Flecha Zona 4 → Benchmarking Nacional (dashed — no va a Bronze, va a benchmarking) -->
-  <line x1="725" y1="176" x2="725" y2="204" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4,3"/>
-  <polygon points="719,198 731,198 725,206" fill="#dc2626"/>
+  <g font-size="12" font-weight="700" fill="#0f1218">
+    <rect x="200" y="672" width="280" height="42" rx="6" fill="#f2c14e"/>
+    <text x="340" y="690" text-anchor="middle" font-size="12">OpenRouter</text>
+    <text x="340" y="705" text-anchor="middle" font-size="9" font-weight="400">Gemini Flash (primario) — GraphRAG + prescriptivo</text>
+  </g>
+  <line x1="340" y1="648" x2="340" y2="672" stroke="#6b7280" stroke-width="2" marker-end="url(#arrow)"/>
 
-  <!-- Flecha Zona 5 → Plan No Estructuradas (dashed — plan futuro Fase 2) -->
-  <line x1="1017" y1="176" x2="1017" y2="204" stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="4,3"/>
-  <polygon points="1011,198 1023,198 1017,206" fill="#7c3aed"/>
+  <text x="600" y="760" text-anchor="middle" font-size="11" fill="#6b7280">https://segurodata-frontend.vercel.app · https://segurodata-api-production.up.railway.app</text>
+  <text x="600" y="780" text-anchor="middle" font-size="11" fill="#6b7280">12 fuentes activas (F1–F8, F10, F11, F13, F14) + F12 planificada · repositorio público</text>
 
-  <!-- ===== CAPA BRONZE ===== -->
-  <rect x="10" y="206" width="595" height="230" rx="8" fill="#fef9c3" stroke="#ca8a04" stroke-width="2"/>
-  <!-- Header Bronze -->
-  <rect x="10" y="206" width="595" height="24" rx="8" fill="#ca8a04"/>
-  <rect x="10" y="218" width="595" height="12" fill="#ca8a04"/>
-  <text x="307" y="222" text-anchor="middle" font-size="11" font-weight="bold" fill="white">BRONZE LAYER — datos/raw/   (TOTAL: 868,140 filas)</text>
-
-  <!-- Columna izquierda Bronze -->
-  <!-- f1 -->
-  <rect x="20" y="236" width="278" height="30" rx="4" fill="white" stroke="#d97706" stroke-width="1"/>
-  <text x="30" y="249" font-size="9" font-weight="bold" fill="#1e293b">f1_dai.geojson</text>
-  <text x="210" y="249" font-size="9" fill="#ca8a04" font-weight="bold">21 filas</text>
-  <text x="30" y="261" font-size="8" fill="#64748b">[Localidad × año]  Delito Alto Impacto — solo EDA histórico</text>
-
-  <!-- f2 -->
-  <rect x="20" y="272" width="278" height="30" rx="4" fill="white" stroke="#d97706" stroke-width="1"/>
-  <text x="30" y="285" font-size="9" font-weight="bold" fill="#1e293b">f2_upz.geojson</text>
-  <text x="210" y="285" font-size="9" fill="#ca8a04" font-weight="bold">112 filas</text>
-  <text x="30" y="297" font-size="8" fill="#64748b">[UPZ polígono]  Base espacial</text>
-
-  <!-- f3 -->
-  <rect x="20" y="308" width="278" height="30" rx="4" fill="white" stroke="#d97706" stroke-width="1"/>
-  <text x="30" y="321" font-size="9" font-weight="bold" fill="#1e293b">f3_clima.parquet</text>
-  <text x="200" y="321" font-size="9" fill="#ca8a04" font-weight="bold">56,112 filas</text>
-  <text x="30" y="333" font-size="8" fill="#64748b">[Hora × día]  Open-Meteo Bogotá</text>
-
-  <!-- f4 -->
-  <rect x="20" y="344" width="278" height="30" rx="4" fill="white" stroke="#d97706" stroke-width="1"/>
-  <text x="30" y="357" font-size="9" font-weight="bold" fill="#1e293b">f4_cuadrantes.geojson</text>
-  <text x="210" y="357" font-size="9" fill="#ca8a04" font-weight="bold">599 filas</text>
-  <text x="30" y="369" font-size="8" fill="#64748b">[Cuadrante polígono]  MEBOG</text>
-
-  <!-- Columna derecha Bronze -->
-  <!-- f5 — destacado como BASE -->
-  <rect x="308" y="236" width="287" height="47" rx="4" fill="#ffedd5" stroke="#ea580c" stroke-width="2"/>
-  <text x="318" y="251" font-size="9" font-weight="bold" fill="#7c2d12">f5_nuse_123.parquet</text>
-  <text x="490" y="251" font-size="9" fill="#ea580c" font-weight="bold">128,314 filas</text>
-  <rect x="560" y="236" width="35" height="14" rx="3" fill="#ea580c"/>
-  <text x="577" y="246" text-anchor="middle" font-size="7.5" font-weight="bold" fill="white">★BASE</text>
-  <text x="318" y="265" font-size="8" fill="#9a3412">86 tipos NUSE × UPZ × mes</text>
-  <text x="318" y="278" font-size="8" fill="#c2410c" font-style="italic">★ BASE FILAS SILVER</text>
-
-  <!-- f6 -->
-  <rect x="308" y="289" width="287" height="30" rx="4" fill="white" stroke="#d97706" stroke-width="1"/>
-  <text x="318" y="302" font-size="9" font-weight="bold" fill="#1e293b">f6_hurto_pn.parquet</text>
-  <text x="475" y="302" font-size="9" fill="#ca8a04" font-weight="bold">638,569 filas</text>
-  <text x="318" y="314" font-size="8" fill="#64748b">[Benchmarking nacional]  Socrata — no entra a Silver JOIN</text>
-
-  <!-- f7 -->
-  <rect x="308" y="325" width="287" height="28" rx="4" fill="white" stroke="#d97706" stroke-width="1"/>
-  <text x="318" y="338" font-size="9" font-weight="bold" fill="#1e293b">f7_estratificacion.parquet</text>
-  <text x="480" y="338" font-size="9" fill="#ca8a04" font-weight="bold">44,260 filas</text>
-  <text x="318" y="349" font-size="8" fill="#64748b">[Manzana × estrato]  SDP</text>
-
-  <!-- f8 -->
-  <rect x="308" y="359" width="287" height="28" rx="4" fill="white" stroke="#d97706" stroke-width="1"/>
-  <text x="318" y="372" font-size="9" font-weight="bold" fill="#1e293b">f8_transmilenio.geojson</text>
-  <text x="490" y="372" font-size="9" fill="#ca8a04" font-weight="bold">153 filas</text>
-  <text x="318" y="383" font-size="8" fill="#64748b">[Estaciones TM]  TransMilenio S.A.</text>
-
-  <!-- ===== CUADRO BENCHMARKING ===== -->
-  <rect x="615" y="206" width="220" height="230" rx="8" fill="#fee2e2" stroke="#dc2626" stroke-width="2"/>
-  <rect x="615" y="206" width="220" height="24" rx="8" fill="#dc2626"/>
-  <rect x="615" y="218" width="220" height="12" fill="#dc2626"/>
-  <text x="725" y="222" text-anchor="middle" font-size="10" font-weight="bold" fill="white">Benchmarking Nacional</text>
-  <text x="625" y="250" font-size="9" fill="#7f1d1d" font-weight="bold">Granularidad: MUNICIPIO</text>
-  <text x="625" y="266" font-size="8.5" fill="#991b1b">Sin desglose por UPZ</text>
-  <line x1="623" y1="273" x2="827" y2="273" stroke="#dc2626" stroke-width="0.8" stroke-dasharray="4,2"/>
-  <text x="625" y="288" font-size="8.5" fill="#7f1d1d">Uso: sustentación oral</text>
-  <text x="625" y="303" font-size="8.5" fill="#7f1d1d">Bogotá vs Colombia</text>
-  <text x="625" y="318" font-size="8.5" fill="#7f1d1d">Comparativa nacional</text>
-  <line x1="623" y1="325" x2="827" y2="325" stroke="#dc2626" stroke-width="0.8" stroke-dasharray="4,2"/>
-  <text x="625" y="340" font-size="8" fill="#b91c1c">F6 ya presente en Bronze</text>
-  <text x="625" y="354" font-size="8" fill="#b91c1c">como f6_hurto_pn.parquet</text>
-  <rect x="623" y="360" width="204" height="30" rx="4" fill="#fecaca"/>
-  <text x="725" y="373" text-anchor="middle" font-size="8" fill="#7f1d1d">No genera features para</text>
-  <text x="725" y="386" text-anchor="middle" font-size="8" fill="#7f1d1d">el modelo XGBoost</text>
-  <text x="625" y="415" font-size="7.5" fill="#dc2626" font-style="italic">SIEDCO 2bxu: 404 no disp.</text>
-  <text x="625" y="428" font-size="7.5" fill="#dc2626" font-style="italic">Datos descartados</text>
-
-  <!-- ===== CUADRO FUTURO F9+F10 ===== -->
-  <rect x="845" y="206" width="345" height="230" rx="8" fill="#ede9fe" stroke="#7c3aed" stroke-width="2"/>
-  <rect x="845" y="206" width="345" height="24" rx="8" fill="#7c3aed"/>
-  <rect x="845" y="218" width="345" height="12" fill="#7c3aed"/>
-  <text x="1017" y="222" text-anchor="middle" font-size="10" font-weight="bold" fill="white">Plan No Estructuradas [Fase 2]</text>
-  <text x="855" y="248" font-size="9" fill="#4c1d95" font-weight="bold">F9 → boletines_corpus.json</text>
-  <text x="869" y="261" font-size="8" fill="#6d28d9">SCJ boletines PDF → parsing + chunks</text>
-  <text x="855" y="278" font-size="9" fill="#4c1d95" font-weight="bold">F10 → noticias_corpus.json</text>
-  <text x="869" y="291" font-size="8" fill="#6d28d9">RSS El Tiempo / El Espectador → NLP</text>
-  <line x1="853" y1="298" x2="1182" y2="298" stroke="#7c3aed" stroke-width="0.8" stroke-dasharray="4,2"/>
-  <rect x="853" y="303" width="329" height="14" rx="3" fill="#ddd6fe"/>
-  <text x="1017" y="313" text-anchor="middle" font-size="8" fill="#4c1d95" font-weight="bold">NO entran en XGBoost</text>
-  <text x="855" y="331" font-size="8.5" fill="#5b21b6">Solo LLM context:</text>
-  <text x="869" y="345" font-size="8" fill="#6d28d9">Módulo 3 — Recomendaciones (Claude API)</text>
-  <text x="869" y="359" font-size="8" fill="#6d28d9">Módulo 4 — Chatbot (Claude API)</text>
-  <rect x="853" y="365" width="329" height="16" rx="3" fill="#fecaca" stroke="#dc2626" stroke-width="1"/>
-  <text x="1017" y="376" text-anchor="middle" font-size="8" font-weight="bold" fill="#991b1b">Twitter/X DESCARTADO — viola reglas + USD$100/mes API</text>
-  <text x="855" y="400" font-size="7.5" fill="#7c3aed">Nota: permiten contextualizar alertas con</text>
-  <text x="855" y="413" font-size="7.5" fill="#7c3aed">noticias recientes de la zona en cuestión</text>
-  <text x="855" y="426" font-size="7.5" fill="#7c3aed" font-style="italic">Pendiente: Fase 2 — 7-20 junio 2026</text>
-
-  <!-- ===== FLECHA GRANDE Bronze → Silver ===== -->
-  <line x1="307" y1="437" x2="307" y2="465" stroke="#16a34a" stroke-width="3.5"/>
-  <polygon points="298,457 316,457 307,467" fill="#16a34a"/>
-  <!-- Etiqueta flecha -->
-  <rect x="230" y="438" width="155" height="16" rx="4" fill="#bbf7d0" stroke="#16a34a" stroke-width="1"/>
-  <text x="307" y="450" text-anchor="middle" font-size="9" font-weight="bold" fill="#14532d">JOIN + transform</text>
-
-  <!-- ===== CAPA SILVER ===== -->
-  <rect x="10" y="467" width="595" height="235" rx="8" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
-  <!-- Header Silver -->
-  <rect x="10" y="467" width="595" height="24" rx="8" fill="#15803d"/>
-  <rect x="10" y="479" width="595" height="12" fill="#15803d"/>
-  <text x="307" y="483" text-anchor="middle" font-size="10.5" font-weight="bold" fill="white">SILVER LAYER — datos/procesados/silver_upz_mes.parquet</text>
-
-  <!-- Pasos JOIN -->
-  <text x="22" y="509" font-size="11" fill="#15803d" font-weight="bold">JOIN 0:</text>
-  <text x="80" y="509" font-size="10" fill="#1e293b">+ cod_localidad, nom_localidad</text>
-  <text x="300" y="509" font-size="9" fill="#64748b" font-style="italic">← F5 raw (UPZ → localidad)</text>
-
-  <text x="22" y="527" font-size="11" fill="#15803d" font-weight="bold">JOIN 1:</text>
-  <text x="80" y="527" font-size="10" fill="#1e293b">+ temperatura_c, precipitacion_mm</text>
-  <text x="300" y="527" font-size="9" fill="#64748b" font-style="italic">← F3 clima (por mes)</text>
-
-  <text x="22" y="545" font-size="11" fill="#15803d" font-weight="bold">JOIN 2:</text>
-  <text x="80" y="545" font-size="10" fill="#1e293b">+ cuadrantes_km2, n_cai</text>
-  <text x="300" y="545" font-size="9" fill="#64748b" font-style="italic">← F4 cuadrantes (spatial UPZ)</text>
-
-  <text x="22" y="563" font-size="11" fill="#15803d" font-weight="bold">JOIN 3:</text>
-  <text x="80" y="563" font-size="10" fill="#1e293b">+ estrato_promedio</text>
-  <text x="300" y="563" font-size="9" fill="#64748b" font-style="italic">← F7 estratificación (spatial UPZ)</text>
-
-  <text x="22" y="581" font-size="11" fill="#15803d" font-weight="bold">JOIN 4:</text>
-  <text x="80" y="581" font-size="10" fill="#1e293b">+ dist_tm_m, n_estaciones_tm</text>
-  <text x="300" y="581" font-size="9" fill="#64748b" font-style="italic">← F8 TransMilenio (spatial UPZ)</text>
-
-  <!-- FLAG línea -->
-  <rect x="18" y="588" width="579" height="16" rx="3" fill="#dcfce7" stroke="#16a34a" stroke-width="0.8"/>
-  <text x="22" y="599" font-size="9" fill="#14532d" font-weight="bold">FLAG:</text>
-  <text x="58" y="599" font-size="9" fill="#15803d">es_crimen=True (19 tipos delito)   |   False (67 tipos desorden/otros)</text>
-
-  <!-- Caja OUTPUT -->
-  <rect x="18" y="610" width="579" height="80" rx="6" fill="#bbf7d0" stroke="#16a34a" stroke-width="1.5"/>
-  <text x="307" y="628" text-anchor="middle" font-size="10" font-weight="bold" fill="#14532d">OUTPUT</text>
-  <text x="307" y="645" text-anchor="middle" font-size="10" fill="#166534" font-weight="bold">111,606 filas × 23 cols   |   120 UPZs   |   86 tipos   |   19 localidades</text>
-  <line x1="26" y1="652" x2="589" y2="652" stroke="#16a34a" stroke-width="0.8" stroke-dasharray="4,2"/>
-  <text x="307" y="668" text-anchor="middle" font-size="9" fill="#15803d">Llave:  upz_cod × anio × mes × tipo_crimen</text>
-  <text x="307" y="682" text-anchor="middle" font-size="8.5" fill="#166534" font-style="italic">Commit: a05b93e  |  Fase 1A completada</text>
-
-  <!-- ===== FLECHAS HORIZONTALES Silver → Gold → Model ===== -->
-  <!-- Silver → Gold -->
-  <line x1="606" y1="580" x2="612" y2="580" stroke="#0369a1" stroke-width="2.5"/>
-  <polygon points="609,575 609,585 617,580" fill="#0369a1"/>
-
-  <!-- Gold → Model -->
-  <line x1="836" y1="580" x2="842" y2="580" stroke="#a16207" stroke-width="2.5"/>
-  <polygon points="839,575 839,585 847,580" fill="#a16207"/>
-
-  <!-- ===== CUADROS LATERALES SILVER (alineados) ===== -->
-  <!-- Flecha hacia Gold (derecha de Silver) -->
-  <rect x="615" y="467" width="220" height="235" rx="8" fill="#f0f9ff" stroke="#0369a1" stroke-width="2"/>
-  <rect x="615" y="467" width="220" height="24" rx="8" fill="#0369a1"/>
-  <rect x="615" y="479" width="220" height="12" fill="#0369a1"/>
-  <text x="725" y="483" text-anchor="middle" font-size="10" font-weight="bold" fill="white">GOLD [Siguiente]</text>
-  <text x="625" y="510" font-size="8.5" fill="#0c4a6e" font-weight="bold">datos/features/</text>
-  <text x="625" y="526" font-size="8.5" fill="#0369a1">tabla_maestra_upz.parquet</text>
-  <line x1="623" y1="533" x2="827" y2="533" stroke="#0369a1" stroke-width="0.8" stroke-dasharray="4,2"/>
-  <text x="625" y="549" font-size="8.5" fill="#0c4a6e" font-weight="bold">Las 14 variables del modelo:</text>
-  <text x="633" y="563" font-size="7.5" fill="#0369a1">• n_delitos_upz_4sem / 8sem</text>
-  <text x="633" y="576" font-size="7.5" fill="#0369a1">• tipo_delito_dominante</text>
-  <text x="633" y="589" font-size="7.5" fill="#0369a1">• dia_semana, mes, franja</text>
-  <text x="633" y="602" font-size="7.5" fill="#0369a1">• temperatura_c, precipitacion_mm</text>
-  <text x="633" y="615" font-size="7.5" fill="#0369a1">• estrato_promedio_upz</text>
-  <text x="633" y="628" font-size="7.5" fill="#0369a1">• cuadrantes_por_km2</text>
-  <text x="633" y="641" font-size="7.5" fill="#0369a1">• n_estaciones_tm, dist_tm_m</text>
-  <text x="633" y="654" font-size="7.5" fill="#0369a1">• ratio_nuse_delitos_upz</text>
-  <line x1="623" y1="661" x2="827" y2="661" stroke="#0369a1" stroke-width="0.8" stroke-dasharray="4,2"/>
-  <text x="625" y="676" font-size="8" fill="#0c4a6e" font-weight="bold">Y: nivel_riesgo ALTO/MEDIO/BAJO</text>
-  <text x="625" y="689" font-size="7.5" fill="#0369a1">Notebook 03 — Fase 2</text>
-
-  <!-- MODEL -->
-  <rect x="845" y="467" width="345" height="235" rx="8" fill="#fefce8" stroke="#a16207" stroke-width="2"/>
-  <rect x="845" y="467" width="345" height="24" rx="8" fill="#a16207"/>
-  <rect x="845" y="479" width="345" height="12" fill="#a16207"/>
-  <text x="1017" y="483" text-anchor="middle" font-size="10" font-weight="bold" fill="white">MODEL [Fase 2-3]</text>
-  <text x="855" y="510" font-size="9" fill="#713f12" font-weight="bold">datos/modelos/</text>
-  <text x="855" y="526" font-size="8.5" fill="#92400e">xgboost_segurodata.pkl</text>
-  <text x="855" y="540" font-size="8.5" fill="#92400e">shap_values.parquet</text>
-  <line x1="853" y1="547" x2="1182" y2="547" stroke="#a16207" stroke-width="0.8" stroke-dasharray="4,2"/>
-  <text x="855" y="562" font-size="9" fill="#713f12" font-weight="bold">Pipeline XGBoost:</text>
-  <text x="869" y="576" font-size="8" fill="#92400e">Train: 2020-2023  |  Test: 2024</text>
-  <text x="869" y="590" font-size="8" fill="#92400e">Validación temporal (no aleatoria)</text>
-  <text x="869" y="604" font-size="8" fill="#92400e">Backtesting + métricas</text>
-  <line x1="853" y1="611" x2="1182" y2="611" stroke="#a16207" stroke-width="0.8" stroke-dasharray="4,2"/>
-  <text x="855" y="626" font-size="9" fill="#713f12" font-weight="bold">SHAP → Módulo 3 Recom:</text>
-  <text x="869" y="640" font-size="8" fill="#92400e">Feature dominante → CAI responsable</text>
-  <text x="869" y="654" font-size="8" fill="#92400e">Puente datos → acción operacional</text>
-  <line x1="853" y1="661" x2="1182" y2="661" stroke="#a16207" stroke-width="0.8" stroke-dasharray="4,2"/>
-  <text x="855" y="676" font-size="9" fill="#713f12" font-weight="bold">Claude API — Módulos 3+4:</text>
-  <text x="869" y="690" font-size="8" fill="#92400e">Recom operacional + Chatbot NL</text>
-
-  <!-- ===== LEYENDA ===== -->
-  <rect x="10" y="715" width="1180" height="75" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5"/>
-  <text x="20" y="732" font-size="8.5" font-weight="bold" fill="#1e293b">LEYENDA</text>
-  <line x1="75" y1="722" x2="75" y2="740" stroke="#94a3b8" stroke-width="1"/>
-  <text x="85" y="732" font-size="8.5" fill="#334155">[datos.gov.co] = F1 F4 F5 F6 F7</text>
-  <text x="85" y="745" font-size="8.5" fill="#334155">APIs Externas (no datos.gov.co) = F2 F3 F8</text>
-  <line x1="340" y1="722" x2="340" y2="758" stroke="#94a3b8" stroke-width="1"/>
-  <text x="350" y="732" font-size="8.5" fill="#334155">[★BASE] = F5 genera las 111,606 filas del Silver</text>
-  <text x="350" y="745" font-size="8.5" fill="#334155">+col = agrega columnas (sin crear filas nuevas)</text>
-  <line x1="660" y1="722" x2="660" y2="758" stroke="#94a3b8" stroke-width="1"/>
-  <text x="670" y="732" font-size="8.5" fill="#334155">Estructuradas: F1-F8 (100% implementadas)</text>
-  <text x="670" y="745" font-size="8.5" fill="#334155">No estructuradas [Plan Fase 2]: F9 PDFs, F10 RSS</text>
-  <line x1="960" y1="722" x2="960" y2="758" stroke="#94a3b8" stroke-width="1"/>
-  <text x="970" y="732" font-size="8.5" fill="#991b1b" font-weight="bold">Twitter/X DESCARTADO</text>
-  <text x="970" y="745" font-size="8.5" fill="#334155">viola reglas concurso</text>
-  <text x="970" y="758" font-size="8.5" fill="#334155">+ USD$100/mes API</text>
-
-  <!-- Línea separadora adicional leyenda -->
-  <line x1="10" y1="760" x2="1190" y2="760" stroke="#e2e8f0" stroke-width="1"/>
-  <text x="600" y="774" text-anchor="middle" font-size="7.5" fill="#94a3b8">SeguroData Bogotá — Concurso Datos al Ecosistema 2026 — MinTIC — Reto #2 Seguridad Ciudadana y Justicia</text>
-  <text x="600" y="786" text-anchor="middle" font-size="7.5" fill="#94a3b8">Autor: angelestrada14019 | Fase 1A completada — commit a05b93e | 2026-05-27</text>
-
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#6b7280"/>
+    </marker>
+  </defs>
 </svg>

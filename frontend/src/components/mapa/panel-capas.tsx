@@ -2,9 +2,6 @@ import { Layers } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { DISPONIBLE as CAMARAS_DISPONIBLE } from "@/components/mapa/capa-camaras";
-import { DISPONIBLE as ALUMBRADO_DISPONIBLE } from "@/components/mapa/capa-alumbrado";
-import { DISPONIBLE as TM_DISPONIBLE } from "@/components/mapa/capa-transmilenio";
 
 /** Capas reales controladas por este panel — entran/salen del array `layers`
  * de `mapa-riesgo.tsx` según estos booleanos (estado controlado, el padre es
@@ -12,6 +9,9 @@ import { DISPONIBLE as TM_DISPONIBLE } from "@/components/mapa/capa-transmilenio
 export interface CapasVisibles {
   cuadrantes: boolean;
   rupturas: boolean;
+  transmilenio: boolean;
+  camaras: boolean;
+  alumbrado: boolean;
 }
 
 interface PanelCapasProps {
@@ -23,25 +23,19 @@ interface PanelCapasProps {
 const CAPAS_DISPONIBLES: { id: keyof CapasVisibles; etiqueta: string }[] = [
   { id: "cuadrantes", etiqueta: "Cuadrantes de Policía" },
   { id: "rupturas", etiqueta: "Cambios estructurales" },
-];
-
-/** Wireado a la constante `DISPONIBLE` que exporta cada `capa-*.tsx` — si
- * algún día una de estas fuentes deja de ser placeholder=0 en el modelo
- * (ver `CLAUDE.md` raíz), basta con flipear esa constante para que el
- * checkbox salga de esta lista, sin mantener un segundo listado a mano. */
-const CAPAS_PENDIENTES: { etiqueta: string; disponible: boolean }[] = [
-  { etiqueta: "Cámaras Salvavidas (F13)", disponible: CAMARAS_DISPONIBLE },
-  { etiqueta: "Alumbrado público (F14)", disponible: ALUMBRADO_DISPONIBLE },
-  { etiqueta: "Estaciones TransMilenio", disponible: TM_DISPONIBLE },
+  { id: "transmilenio", etiqueta: "Estaciones TransMilenio" },
+  { id: "camaras", etiqueta: "Cámaras Salvavidas (F13)" },
+  { id: "alumbrado", etiqueta: "Alumbrado público (F14)" },
 ];
 
 /**
  * Panel de capas toggleables del mapa — controla qué factories de
- * `capa-*.tsx` entran al array `layers` de `mapa-riesgo.tsx`. Cámaras
- * F13/Alumbrado F14/TransMilenio se listan DESHABILITADAS a propósito: el
- * placeholder=0 de esas 3 features en el modelo (`CLAUDE.md` raíz) significa
- * que no hay geometría real que dibujar todavía — mostrarlas como checkbox
- * inactivo con "Pendiente de datos" documenta el roadmap sin inventar datos.
+ * `capa-*.tsx` entran al array `layers` de `mapa-riesgo.tsx`. Las 5 capas
+ * tienen geometría real desde el 10-jul (F8/F13/F14 dejaron de ser
+ * placeholder — ver `capa-transmilenio.tsx`/`capa-camaras.tsx`/
+ * `capa-alumbrado.tsx`); si en el futuro se agrega una fuente nueva sin
+ * extractor todavía, listarla aquí solo cuando exista geometría real que
+ * dibujar (nunca inventar datos).
  */
 export function PanelCapas({ capas, onCambiarCapas, className }: PanelCapasProps) {
   return (
@@ -72,18 +66,6 @@ export function PanelCapas({ capas, onCambiarCapas, className }: PanelCapasProps
           </Label>
         </div>
       ))}
-
-      <div className="mt-1 flex flex-col gap-1 border-t border-border pt-1.5 text-muted-foreground">
-        {CAPAS_PENDIENTES.filter((c) => !c.disponible).map((c) => (
-          <div key={c.etiqueta} className="flex items-center gap-2">
-            <Checkbox checked={false} disabled aria-label={`${c.etiqueta} — pendiente de datos`} />
-            <span>
-              {c.etiqueta}
-              <span className="ml-1 italic">— Pendiente de datos</span>
-            </span>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }

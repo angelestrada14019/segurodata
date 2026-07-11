@@ -99,13 +99,13 @@ CREATE TABLE IF NOT EXISTS user_profiles (
 
 **Claims JWT** — función `public.custom_access_token_hook(event jsonb)` inyecta `rol` y `cuadrante_asignado` en el access token. ⚠️ El hook se habilita **manualmente**: Dashboard → Auth → Hooks → Custom Access Token.
 
-### `documents_corpus` — corpus GraphRAG (F9+F10, pgvector)
+### `documents_corpus` — corpus GraphRAG (F10, pgvector)
 ```sql
 CREATE TABLE IF NOT EXISTS documents_corpus (
   id           bigserial PRIMARY KEY,
   content      text NOT NULL,
   content_hash varchar UNIQUE,    -- sha256 para dedup en reindexación
-  source       varchar,           -- 'SCJ_BOLETIN' | 'RSS_ELTIEMPO' | 'RSS_ESPECTADOR' | 'RSS_INFORMANTE' | 'SEED_DEV'
+  source       varchar,           -- 'RSS_ELTIEMPO' | 'RSS_ESPECTADOR' | 'RSS_INFORMANTE' | 'SEED_DEV'
   titulo       varchar,
   fecha        date,
   url          varchar,
@@ -141,7 +141,7 @@ Sin cambios — ver `docs/HU-Features-Opcionales.md`. Realtime habilitado por cu
 ```bash
 # Migraciones: supabase/migrations/*.sql — aplicadas vía MCP Supabase (apply_migration)
 python scripts/seed_supabase.py         # silver (COPY) + geo F2/F4 + predicciones/shap sintéticos (origen='seed_dev')
-python scripts/index_corpus.py          # F9/F10 → chunks → embeddings → documents_corpus
+python scripts/index_corpus.py          # F10 → chunks → embeddings → documents_corpus
 python scripts/load_model_artifacts.py  # SWITCH: borra seed_dev, carga artefactos reales Notebooks 03/04
 ```
 

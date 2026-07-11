@@ -5,7 +5,7 @@
 > **Competencia:** 349 equipos / 1,096 participantes (al 19 mayo 2026)  
 > **Competidor directo identificado:** "Atlas del Crimen" ganó Datos al Ecosistema 2025 — análisis descriptivo sin modelo predictivo ni capa prescriptiva.
 >
-> **⚠️ ALERTA DE FECHA:** El evento final es **GovCamps 2026 (primera semana de agosto 2026)**. Verificar fecha exacta de registro en datos.gov.co antes de planificar entrega final.
+> **Entrega confirmada: 13 de julio de 2026, antes de medianoche** (código en GitHub público + registro en datos.gov.co). **GovCamps 2026 (primera semana de agosto)** es el evento presencial posterior para los equipos finalistas seleccionados — no es la fecha de entrega.
 
 ---
 
@@ -25,26 +25,24 @@
 
 ## Checklist de entrega
 
-> Verificar fecha exacta en datos.gov.co — final GovCamps confirmado primera semana de agosto 2026
-
-- [ ] Repositorio GitHub público con todos los archivos
-- [ ] 6 notebooks `SeguroData_01` a `SeguroData_06` completos y ejecutables
-- [ ] README.md con instrucciones de instalación + URL Vercel (frontend) + URL Railway (backend)
-- [ ] **Aplicación React + deck.gl** desplegada en Vercel — URL pública, 4 módulos funcionando
-- [ ] Mapa con zoom adaptativo (Localidades → UPZs) + modal 5 pestañas por UPZ operativo
-- [ ] Módulo 2: proyección temporal +4 semanas visible en panel de predicción con banda de confianza
-- [ ] **FastAPI en Railway** desplegado y respondiendo — `/predict`, `/graphrag` y `/prescribe` operativos
-- [ ] Supabase Auth configurado — 4 roles operativos (CIUDADANO / COMANDANTE_CAI / ANALISTA_SDSCJ / ADMIN)
-- [ ] RLS activa en tablas de predicciones y SHAP — test de aislamiento por cuadrante verificado
-- [ ] **Supabase** configurado — Silver table + predicciones + SHAP pre-computados + pgvector cargados
-- [ ] Módulo 3 Prescriptivo: tabla ontológica documentada en Notebook 03 + LLM operacional (nombre CAI incluido)
-- [ ] SHAP values pre-computados en Notebook 04 + cargados en Supabase
-- [ ] Análisis de sesgo por estrato en Notebook 04
-- [ ] `ruptures` — change points detectados y guardados en Supabase tabla `change_points`
+- [x] ✅ Repositorio GitHub público con todos los archivos
+- [x] ✅ Metodología CRISP-ML documentada en `wiki_pages/` (plan, fuentes, análisis exploratorio, arquitectura) + `scripts/train_model.py` ejecutado y versionado
+- [x] ✅ README.md con instrucciones de instalación + URL Vercel (frontend) + URL Railway (backend)
+- [x] ✅ **Aplicación React + deck.gl** desplegada en Vercel — URL pública, 4 módulos funcionando
+- [x] ✅ Mapa con zoom adaptativo (Localidades → UPZs) + modal 5 pestañas por UPZ operativo
+- [x] ✅ Módulo 2: proyección temporal +4 semanas visible en panel de predicción con banda de confianza
+- [x] ✅ **FastAPI en Railway** desplegado y respondiendo — `/predict`, `/graphrag` y `/prescribe` operativos
+- [x] ✅ Supabase Auth configurado — 4 roles operativos (CIUDADANO / COMANDANTE_CAI / ANALISTA_SDSCJ / ADMIN)
+- [x] ✅ RLS activa en tablas de predicciones y SHAP — test de aislamiento por cuadrante verificado
+- [x] ✅ **Supabase** configurado — Silver table + predicciones + SHAP pre-computados + pgvector cargados
+- [x] ✅ Módulo 3 Prescriptivo: tabla ontológica (`backend/app/data/tabla_ontologica_seed.json`) + LLM operacional (nombre CAI incluido)
+- [x] ✅ SHAP values pre-computados (`scripts/train_model.py`) + cargados en Supabase
+- [x] ✅ Análisis de sesgo por estrato (`scripts/train_model.py::analisis_sesgo`)
+- [x] ✅ `ruptures` — change points detectados y guardados en Supabase tabla `change_points`
 - [ ] Enlace registrado en datos.gov.co en la sección "Usos" — **OBLIGATORIO para no ser descalificado**
 - [ ] Video pitch de 3 minutos grabado y subido
 - [ ] Presentación de 10 minutos preparada
-- [ ] Auditoría de git history para API keys: `git log --all -p | grep -iE "api.key|token|secret"`
+- [x] ✅ Auditoría de git history para API keys — sin hallazgos
 - [ ] Respuestas para preguntas difíciles ensayadas (ver sección abajo)
 
 ---
@@ -52,7 +50,7 @@
 ## Preguntas difíciles del jurado — respuestas preparadas
 
 **"¿Su modelo discrimina por estrato?"**
-→ Sí lo analizamos explícitamente. El Notebook 04 incluye análisis de sesgo por estrato socioeconómico: comparación de predicciones por estrato (1-6), verificando que los falsos negativos no estén concentrados en estratos bajos, y SHAP interaction plots. PredPol en EE.UU. fue discontinuado por este problema — nosotros lo prevenimos por diseño.
+→ Sí lo analizamos explícitamente. `scripts/train_model.py` incluye análisis de sesgo por estrato socioeconómico: comparación de predicciones por estrato (1-6), verificando que los falsos negativos no estén concentrados en estratos bajos, y SHAP interaction plots. PredPol en EE.UU. fue discontinuado por este problema — nosotros lo prevenimos por diseño.
 
 **"¿Qué pasa con el subregistro?"**
 → Lo mitigamos de dos formas: (1) cruzamos el Delito de Alto Impacto (SIEDCO) con NUSE 123 para calcular el ratio llamadas/denuncias formales por UPZ — ese ratio mismo es un proxy del nivel de subregistro por zona. (2) El feature `ratio_nuse_criminal_upz` entra directamente al XGBoost como variable explicativa. Barrera et al. (Uniandes 2023) es la referencia metodológica.

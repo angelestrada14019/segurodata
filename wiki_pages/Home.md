@@ -14,7 +14,7 @@ desplegados con datos reales.
 
 ---
 
-## Las 4 preguntas que responde
+## Las 5 preguntas que responde
 
 | # | Pregunta | Módulo | Tecnología |
 |---|---------|--------|-----------|
@@ -28,11 +28,11 @@ desplegados con datos reales.
 
 > *"SeguroData no solo predice dónde habrá delitos — le dice exactamente a qué cuadrante de la Policía tiene que ir y por qué. Ese es el puente que hoy no existe entre los datos abiertos de Bogotá y la acción institucional."*
 
-El **Módulo 3 (Prescriptivo)** combina SHAP values + detección de cambios estructurales (`ruptures`) + tabla ontológica de intervenciones → OpenRouter (Gemini Flash vía `LLM_MODEL`) genera la recomendación en lenguaje operacional para el comandante de CAI. El **Módulo 4 (Chatbot causal)** usa GraphRAG (FastAPI + Supabase pgvector + OpenRouter) para responder preguntas como "¿por qué está subiendo el hurto en Kennedy?" con citas de boletines SCJ, noticias y el Plan de Desarrollo.
+El **Módulo 3 (Prescriptivo)** combina SHAP values + detección de cambios estructurales (`ruptures`) + tabla ontológica de intervenciones → OpenRouter (Gemini Flash vía `LLM_MODEL`) genera la recomendación en lenguaje operacional para el comandante de CAI. El **Módulo 4 (Chatbot causal)** usa GraphRAG (FastAPI + Supabase pgvector + OpenRouter) para responder preguntas como "¿por qué está subiendo el hurto en Kennedy?" con citas de noticias y el Plan de Desarrollo.
 
 ## Navegación
 
-- [[Fuentes de Datos]] — 13 fuentes activas (F1-F8, F11, F13, F14, F9, F10) + 1 planificada (F12)
+- [[Fuentes de Datos]] — 12 fuentes activas (F1-F8, F10, F11, F13, F14) + 1 planificada (F12)
 - [[Arquitectura]] — Medallion Architecture + GraphRAG + Autenticación
 - [[Modulos]] — Los 5 módulos del sistema + matriz de acceso por rol
 - [[Plataforma-Ciudadana]] — Roles, mapa interactivo, roadmap y features ciudadanas
@@ -42,6 +42,7 @@ El **Módulo 3 (Prescriptivo)** combina SHAP values + detección de cambios estr
 
 ### Documentación técnica
 
+- [[Analisis-Exploratorio]] — Hallazgos clave del EDA: distribución espacial, estacionalidad, factor socioeconómico
 - [[Transformacion]] — Capa Silver: esquema 20 cols, comandos, advertencia RAM F7
 - [[Estado-del-Arte]] — 20+ sistemas internacionales, 18 papers, diferenciación
 - [[Provenance]] — URLs verificadas, licencias, tabla causal, cumplimiento concurso

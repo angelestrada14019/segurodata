@@ -7,7 +7,7 @@
  * `@deck.gl/layers`, NO `PolygonLayer`).
  */
 
-import type { Feature, FeatureCollection, MultiPolygon } from "geojson";
+import type { Feature, FeatureCollection, MultiPolygon, Point } from "geojson";
 import type { NivelRiesgo } from "@/lib/colores-riesgo";
 
 export interface UpzFeatureProperties {
@@ -50,6 +50,45 @@ export type LocalidadFeatureCollection = FeatureCollection<
 export type CuadranteFeatureCollection = FeatureCollection<
   MultiPolygon,
   CuadranteFeatureProperties
+>;
+
+/**
+ * Infraestructura F8/F13/F14 (migración `20260710_0016_infraestructura_puntual.sql`).
+ * TransMilenio/Cámaras son puntos (`ScatterplotLayer`, mismo patrón que
+ * `capa-change-points.tsx`); Alumbrado reusa la geometría MultiPolygon de
+ * `upz_geometrias` (RPC `alumbrado_geojson`), es un choropleth como
+ * `capa-cuadrantes.tsx`, no puntos individuales.
+ */
+export interface TransmilenioFeatureProperties {
+  estacion_id: string;
+  nombre: string;
+}
+
+export interface CamaraFeatureProperties {
+  camara_id: string;
+  nombre: string;
+  direccion: string;
+  localidad: string;
+}
+
+export interface AlumbradoFeatureProperties {
+  upz_cod: string;
+  upz_nombre: string;
+  luminarias_led_upz: number;
+}
+
+export type TransmilenioFeature = Feature<Point, TransmilenioFeatureProperties>;
+export type CamaraFeature = Feature<Point, CamaraFeatureProperties>;
+export type AlumbradoFeature = Feature<MultiPolygon, AlumbradoFeatureProperties>;
+
+export type TransmilenioFeatureCollection = FeatureCollection<
+  Point,
+  TransmilenioFeatureProperties
+>;
+export type CamaraFeatureCollection = FeatureCollection<Point, CamaraFeatureProperties>;
+export type AlumbradoFeatureCollection = FeatureCollection<
+  MultiPolygon,
+  AlumbradoFeatureProperties
 >;
 
 /** Nivel de agregación que decide `use-zoom-adaptativo.ts`. */

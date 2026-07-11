@@ -42,14 +42,11 @@ export const ETIQUETA_TIPO_CAMBIO: Record<TipoCambio, string> = {
  * `change_points.localidad_cod` viene de F1 DAI (columna `CMIULOCAL`) y
  * `upz_geometrias.cod_localidad` de F5 NUSE (`COD_LOCALIDAD`).
  *
- * Estado real de datos (verificado, migración
- * `supabase/migrations/20260710_0014_localidades_geojson_fallback_sin_localidad.sql`):
- * `upz_geometrias.cod_localidad` está NULL en las 112 filas — el pipeline F2
- * nunca trajo el código de localidad. Con eso, esta función de matching hoy
- * no resuelve ningún punto (0 marcadores, nunca uno mal ubicado) — queda
- * lista para cuando el backfill del mapeo UPZ→Localidad llegue (pendiente
- * como tarea de pipeline de datos aparte, fuera del alcance de este
- * dispatch), sin requerir ningún cambio en el frontend.
+ * Backfill corrido (`scripts/seed_supabase.py --solo geo`, migración
+ * `20260710_0015_upz_geom_localidad.sql`): `upz_geometrias.cod_localidad`
+ * está poblado en las 112 filas. Verificado en vivo contra la RPC real
+ * (`periodo_mas_reciente` → `localidades_geojson`): 19/19 localidades
+ * resuelven `cod_localidad`/`nom_localidad`.
  */
 function normalizarCodigoLocalidad(codigo: string | null | undefined): string {
   if (!codigo) return "";

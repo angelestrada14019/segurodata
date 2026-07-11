@@ -134,22 +134,6 @@
 | **Rol en pipeline** | +2 cols Silver: dist_tm_metros (distancia centroide UPZ a TM), n_estaciones_tm |
 | **Archivo Bronze** | `datos/raw/f8_transmilenio.geojson` |
 
-## F9 — Boletines SCJ — Sec. Distrital Seguridad
-
-| Campo | Valor |
-|-------|-------|
-| **Entidad** | Secretaría Distrital de Seguridad, Convivencia y Justicia (SDSCJ) |
-| **Portal** | scj.gov.co (no en datos.gov.co — entidad distrital, uso libre) |
-| **URL de descarga** | https://scj.gov.co/cifras/estadisticas-mapas |
-| **Resource ID** | — scraping web PDFs públicos |
-| **Formato** | PDF (boletines mensuales) |
-| **Granularidad** | Documento / mes (ciudad completa) |
-| **Período** | 2018–presente — mensual |
-| **Registros Bronze** | N/A (texto — no filas) |
-| **Licencia** | Información pública — uso libre (entidad distrital Bogotá) |
-| **Rol en pipeline** | Corpus GraphRAG → pgvector (Módulo 4 — OpenRouter) — NO entra en XGBoost |
-| **Archivo Bronze** | `datos/raw/boletines_scj/*.pdf` |
-
 ## F10 — Noticias RSS — Seguridad Bogotá (3 feeds)
 
 | Campo | Valor |
@@ -165,7 +149,7 @@
 | **Rol en pipeline** | Corpus GraphRAG → sentence-transformers → Supabase pgvector |
 | **Archivo Bronze** | `datos/raw/noticias_rss.jsonl` |
 
-> El tercer feed (El Informante Soy Yo — elinformantesoyyo.com) aporta contexto político-institucional: cambios de comandancia, operativos de seguridad, decisiones de inversión distrital. Complementa F9 (datos crimen SCJ) y los feeds de El Tiempo/Espectador.
+> El tercer feed (El Informante Soy Yo — elinformantesoyyo.com) aporta contexto político-institucional: cambios de comandancia, operativos de seguridad, decisiones de inversión distrital. Complementa los feeds de El Tiempo/Espectador.
 
 ## F11 — IDU — Calzada y Estado Superficial
 
@@ -180,7 +164,7 @@
 | **Período** | Mensual (último: abr 2026) |
 | **Registros Bronze** | ~miles de segmentos viales |
 | **Licencia** | CC BY 4.0 |
-| **Rol en pipeline** | ✅ ACTIVADA: feature `km_via_intervenida_upz` → XGBoost (Silver col +1) |
+| **Rol en pipeline** | ⏳ Placeholder — feature `km_via_intervenida_upz` definida en el modelo, extractor no implementado todavía (a diferencia de F13/F14, que sí tienen datos reales) |
 | **Archivo Bronze** | `datos/raw/f11_idu_calzada/` (pendiente) |
 
 ## F12 — Plan de Desarrollo Bogotá 2024-2027 — "Bogotá Camina Segura"
@@ -211,9 +195,9 @@
 | **Formato** | GeoJSON / Feature Service ArcGIS |
 | **Granularidad** | Punto (lat/lon de cada cámara de foto-detección) |
 | **Período** | Estático — actualización semestral |
-| **Registros Bronze** | ~400 puntos estimados |
+| **Registros Bronze** | 92 puntos (confirmado, extractor real) |
 | **Licencia** | ArcGIS Hub público — uso libre |
-| **Rol en pipeline** | Spatial join → feature `n_camaras_upz` (XGBoost) + capa ScatterplotLayer en deck.gl |
+| **Rol en pipeline** | Spatial join → feature `n_camaras_upz` (XGBoost) + capa `GeoJsonLayer` en deck.gl |
 | **Archivo Bronze** | `datos/raw/f13_camaras_sdm.geojson` |
 
 ## F14 — Alumbrado Público UAESP por UPZ
@@ -245,7 +229,7 @@ Esta tabla documenta las variables causales que explican el incremento o reducci
 | Alta distancia a TransMilenio | Mayor vulnerabilidad peatonal en zonas de baja cobertura de transporte masivo (Flórez & Gómez 2019) | F8 → feature `dist_tm_metros` | ✅ Implementado |
 | Temperatura alta / baja precipitación | Teoría de actividades rutinarias (Cohen & Felson 1979); validado para Bogotá (SCJ 2022) | F3 → features `temperatura_c`, `precipitacion_mm` | ✅ Implementado |
 | Subregistro alto (ratio NUSE/delitos formales) | SCJ Boletín dic 2024: 30–40% subregistro en estratos 1–2; NUSE capta incidentes no denunciados | F5 → feature `ratio_nuse_delitos_upz` | ✅ Implementado |
-| Obras viales activas (IDU) | Desplazamiento de residentes, reducción iluminación nocturna, flujo de trabajadores → oportunidad de hurto (SCJ Observatorio 2023) | F11 IDU → feature `km_via_intervenida_upz` | ✅ ACTIVA Fase 2 |
+| Obras viales activas (IDU) | Desplazamiento de residentes, reducción iluminación nocturna, flujo de trabajadores → oportunidad de hurto (SCJ Observatorio 2023) | F11 IDU → feature `km_via_intervenida_upz` | ⏳ Placeholder — extractor no implementado |
 | Baja cobertura cámaras (SDM) | Menor disuasión tecnológica → mayor impunidad percibida (evidencia SCJ 2023: cobertura incompleta estrato 1-2) | F13 Cámaras → feature `n_camaras_upz` | ✅ ACTIVA Fase 2 |
 | Baja iluminación pública (UAESP) | ScienceDirect 2025: correlación negativa estadísticamente significativa entre iluminación nocturna y crimen urbano | F14 Alumbrado → feature `luminarias_led_upz` | ✅ ACTIVA Fase 2 |
 | Incumplimiento metas Plan de Desarrollo seguridad | Acuerdo 927 de 2024 — programa "Bogotá avanza en seguridad" ($7.5 billones COP); seguimiento SDP 2025 | F12 PDD → GraphRAG corpus | ⏳ Fase 3 |
@@ -264,7 +248,7 @@ Esta tabla documenta las variables causales que explican el incremento o reducci
 | Correcta atribución | Este documento — URL y Resource ID para cada fuente | ✅ |
 | No datos privados ni de pago | Todas las fuentes son públicas y gratuitas | ✅ |
 | Reproducible (instrucciones instalación) | `pip install -r requirements.txt; python src/pipeline.py` | ✅ |
-| 6 notebooks CRISP-ML documentados | SeguroData_01 a _06 (01 completo, 02–06 en progreso) | ⏳ En progreso |
+| Metodología CRISP-ML documentada | Plan, fuentes, EDA y arquitectura en `wiki_pages/`; features/modelo/SHAP en `scripts/train_model.py` (ejecutado y versionado) | ✅ |
 
 ---
 

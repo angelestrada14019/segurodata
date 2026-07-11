@@ -9,6 +9,7 @@ Uso:
     python scripts/seed_supabase.py --solo silver   # solo bulk silver
     python scripts/seed_supabase.py --solo geo      # solo geometrias F2/F4
     python scripts/seed_supabase.py --solo synth    # solo predicciones+shap sintéticos
+    python scripts/seed_supabase.py --solo infra    # solo puntos F8/F13 + conteos upz_infraestructura
 """
 
 from __future__ import annotations
@@ -173,9 +174,64 @@ def seed_sinteticos(client) -> None:
     print(f"predicciones seed_dev: {data.get('predicciones', '?')} | shap_dev: {data.get('shap_values', '?')}")
 
 
+def seed_infraestructura(client) -> None:
+    """
+    Puntos F8 TransMilenio + F13 Camaras via RPC upsert (WKT), y conteos
+    F13/F14 por UPZ en upz_infraestructura (tabla plana, sin geometria).
+    OJO: upz_geometrias.upz_cod esta zfill(3) (ver seed_geometrias) — hay
+    que normalizar igual aqui o el FK/JOIN de alumbrado_geojson no matchea.
+    """
+    import geopandas as gpd
+
+    f8_path  = ROOT / "datos" / "raw" / "f8_transmilenio.geojson"
+    f13_path = ROOT / "datos" / "raw" / "f13_camaras_sdm.geojson"
+    cam_csv  = ROOT / "datos" / "procesados" / "features_camaras_upz.csv"
+    led_csv  = ROOT / "datos" / "procesados" / "features_alumbrado_upz.csv"
+
+    if f8_path.exists():
+        gdf = gpd.read_file(f8_path).to_crs(4326)
+        print(f"Cargando {len(gdf)} estaciones TransMilenio via RPC...")
+        for i, row in gdf.iterrows():
+            client.rpc("upsert_transmilenio_geom", {
+                "p_estacion_id": str(row.get("objectid", i)),
+                "p_nombre":      str(row.get("nombre_estacion", "")),
+                "p_wkt":         row.geometry.wkt,
+            }).execute()
+        print(f"transmilenio_geom: {len(gdf)} estaciones actualizadas")
+    else:
+        print(f"Advertencia: {f8_path} no existe — saltando transmilenio_geom")
+
+    if f13_path.exists():
+        gdf = gpd.read_file(f13_path).to_crs(4326)
+        print(f"Cargando {len(gdf)} camaras salvavidas via RPC...")
+        for i, row in gdf.iterrows():
+            client.rpc("upsert_camara_geom", {
+                "p_camara_id":  str(row.get("OBJECTID_1", i)),
+                "p_nombre":     str(row.get("NOMBRE_DEL", "")),
+                "p_direccion":  str(row.get("DIRECCIÓN", "")),
+                "p_localidad":  str(row.get("LOCALIDAD", "")),
+                "p_wkt":        row.geometry.wkt,
+            }).execute()
+        print(f"camaras_geom: {len(gdf)} camaras actualizadas")
+    else:
+        print(f"Advertencia: {f13_path} no existe — saltando camaras_geom")
+
+    if cam_csv.exists() and led_csv.exists():
+        cam = pl.read_csv(cam_csv).with_columns(pl.col("upz_cod").cast(pl.Utf8).str.zfill(3))
+        led = pl.read_csv(led_csv).with_columns(pl.col("upz_cod").cast(pl.Utf8).str.zfill(3))
+        merged = cam.join(led, on="upz_cod", how="full", coalesce=True).fill_null(0)
+        rows = merged.to_dicts()
+        print(f"Cargando {len(rows)} filas de upz_infraestructura...")
+        client.table("upz_infraestructura").upsert(rows, on_conflict="upz_cod").execute()
+        print(f"upz_infraestructura: {len(rows)} UPZs actualizadas")
+    else:
+        print("Advertencia: faltan features_camaras_upz.csv / features_alumbrado_upz.csv — "
+              "saltando upz_infraestructura (corre src/transform.py --step f13 f14 primero)")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--solo", choices=["silver", "geo", "synth"], default=None)
+    ap.add_argument("--solo", choices=["silver", "geo", "synth", "infra"], default=None)
     args = ap.parse_args()
     client = get_client()
     if args.solo in (None, "silver"):
@@ -184,6 +240,8 @@ def main() -> None:
         seed_geometrias(client)
     if args.solo in (None, "synth"):
         seed_sinteticos(client)
+    if args.solo in (None, "infra"):
+        seed_infraestructura(client)
     print("Seed completo.")
 
 

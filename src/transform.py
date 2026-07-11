@@ -749,6 +749,158 @@ def transform_f8_transmilenio(
         return TransformResult(step, "error", 0, str(out_path), str(exc))
 
 
+# ─── Paso 5b — F13 Camaras Salvavidas + F2 UPZ → features_camaras_upz.csv ────
+
+def transform_f13_camaras(
+    state: TransformState,
+    force: bool = False,
+    dry_run: bool = False,
+    verbose: bool = False,
+) -> TransformResult:
+    """
+    Spatial join camaras salvavidas (puntos) x UPZ para contar camaras por zona.
+
+    Entrada:  datos/raw/f13_camaras_sdm.geojson
+              datos/raw/f2_upz.geojson
+    Salida:   datos/procesados/features_camaras_upz.csv
+
+    Columnas producidas:
+        upz_cod, n_camaras_upz
+    """
+    step     = "f13"
+    in_f13   = RAW_DIR / "f13_camaras_sdm.geojson"
+    in_f2    = RAW_DIR / "f2_upz.geojson"
+    out_path = PROC_DIR / "features_camaras_upz.csv"
+    saved    = state.get(step)
+
+    for p, label in [(in_f13, "F13 Camaras"), (in_f2, "F2 UPZ")]:
+        if not p.exists():
+            return TransformResult(step, "error", 0, str(out_path),
+                                   f"Bronze no disponible: {label}")
+
+    if not force and out_path.exists() and not _source_changed(in_f13, saved):
+        return TransformResult(step, "skipped", saved.get("rows_out", 0), str(out_path),
+                               "Camaras salvavidas sin cambios")
+
+    if dry_run:
+        return TransformResult(step, "updated", -1, str(out_path),
+                               "[DRY-RUN] spatial join camaras salvavidas x UPZ")
+
+    try:
+        import geopandas as gpd
+        import pandas as pd
+
+        if verbose:
+            print("    Cargando camaras salvavidas y UPZs...")
+        gdf_cam = gpd.read_file(in_f13)
+        gdf_upz = gpd.read_file(in_f2)
+
+        if gdf_cam.crs != gdf_upz.crs:
+            gdf_cam = gdf_cam.to_crs(gdf_upz.crs)
+
+        upz_id_col = _find_col(list(gdf_upz.columns), UPZ_COL_CANDIDATES)
+        if not upz_id_col:
+            return TransformResult(step, "error", 0, str(out_path),
+                                   f"No se encontro columna UPZ en F2. Cols: {list(gdf_upz.columns)}")
+
+        joined = gpd.sjoin(
+            gdf_cam[["geometry"]],
+            gdf_upz[[upz_id_col, "geometry"]].rename(columns={upz_id_col: "upz_cod"}),
+            how="left",
+            predicate="within",
+        )
+        n_camaras = joined.groupby("upz_cod").size().reset_index(name="n_camaras_upz")
+        n_camaras["upz_cod"] = n_camaras["upz_cod"].astype(str).str.strip()
+
+        # Completar con 0 las UPZs sin ninguna camara (no aparecen en el join)
+        todas_upz = gdf_upz[[upz_id_col]].rename(columns={upz_id_col: "upz_cod"})
+        todas_upz["upz_cod"] = todas_upz["upz_cod"].astype(str).str.strip()
+        result = todas_upz.merge(n_camaras, on="upz_cod", how="left")
+        result["n_camaras_upz"] = result["n_camaras_upz"].fillna(0).astype(int)
+
+        result.to_csv(out_path, index=False, encoding="utf-8")
+        rows = len(result)
+        if verbose:
+            print(f"    {rows} UPZs | {result['n_camaras_upz'].sum()} camaras totales")
+        state.update(step, src_mtime=str(in_f13.stat().st_mtime), rows_out=rows,
+                     file_path=str(out_path))
+        return TransformResult(step, "updated", rows, str(out_path),
+                               f"{rows} UPZs | {int(result['n_camaras_upz'].sum())} camaras totales")
+
+    except Exception as exc:
+        return TransformResult(step, "error", 0, str(out_path), str(exc))
+
+
+# ─── Paso 5c — F14 Alumbrado (ya agregado por UPZ) → features_alumbrado_upz.csv
+
+def transform_f14_alumbrado(
+    state: TransformState,
+    force: bool = False,
+    dry_run: bool = False,
+    verbose: bool = False,
+) -> TransformResult:
+    """
+    Extrae luminarias LED por UPZ. F14 ya viene agregado por CODIGO_UPZ
+    (poligono por UPZ con columnas LED/MH/NA/TOTAL) — sin spatial join.
+
+    Entrada:  datos/raw/f14_alumbrado_upz.geojson
+    Salida:   datos/procesados/features_alumbrado_upz.csv
+
+    Columnas producidas:
+        upz_cod, luminarias_led_upz
+    """
+    step     = "f14"
+    in_f14   = RAW_DIR / "f14_alumbrado_upz.geojson"
+    out_path = PROC_DIR / "features_alumbrado_upz.csv"
+    saved    = state.get(step)
+
+    if not in_f14.exists():
+        return TransformResult(step, "error", 0, str(out_path),
+                               "Bronze no disponible: F14 Alumbrado")
+
+    if not force and out_path.exists() and not _source_changed(in_f14, saved):
+        return TransformResult(step, "skipped", saved.get("rows_out", 0), str(out_path),
+                               "Alumbrado sin cambios")
+
+    if dry_run:
+        return TransformResult(step, "updated", -1, str(out_path),
+                               "[DRY-RUN] extraer LED por UPZ desde F14")
+
+    try:
+        import geopandas as gpd
+
+        if verbose:
+            print("    Cargando alumbrado publico por UPZ...")
+        gdf = gpd.read_file(in_f14)
+
+        col_upz = _find_col(list(gdf.columns), UPZ_COL_CANDIDATES)
+        if not col_upz:
+            return TransformResult(step, "error", 0, str(out_path),
+                                   f"No se encontro columna UPZ en F14. Cols: {list(gdf.columns)}")
+        if "LED" not in gdf.columns:
+            return TransformResult(step, "error", 0, str(out_path),
+                                   f"No se encontro columna LED en F14. Cols: {list(gdf.columns)}")
+
+        result = gdf[[col_upz, "LED"]].rename(
+            columns={col_upz: "upz_cod", "LED": "luminarias_led_upz"}
+        )
+        result["upz_cod"] = result["upz_cod"].astype(str).str.strip()
+        result["luminarias_led_upz"] = result["luminarias_led_upz"].fillna(0).astype(int)
+        result = result.drop_duplicates(subset="upz_cod")
+
+        result.to_csv(out_path, index=False, encoding="utf-8")
+        rows = len(result)
+        if verbose:
+            print(f"    {rows} UPZs | {result['luminarias_led_upz'].sum()} luminarias LED totales")
+        state.update(step, src_mtime=str(in_f14.stat().st_mtime), rows_out=rows,
+                     file_path=str(out_path))
+        return TransformResult(step, "updated", rows, str(out_path),
+                               f"{rows} UPZs | {int(result['luminarias_led_upz'].sum())} luminarias LED")
+
+    except Exception as exc:
+        return TransformResult(step, "error", 0, str(out_path), str(exc))
+
+
 # ─── Paso 6 — F5 NUSE → nuse_upz_mes.parquet + delitos_upz_mes.parquet ───────
 #
 # F5 (NUSE 123) contiene TODOS los incidentes reportados al 123 (2025-2026).
@@ -1094,60 +1246,6 @@ def build_silver_table(
         return TransformResult(step, "error", 0, str(out_path), str(exc))
 
 
-def transform_f9_boletines() -> int:
-    """
-    F9 — Extrae texto de los PDFs de boletines SCJ y genera corpus JSON para Claude API.
-
-    Salida:
-      datos/procesados/boletines_corpus.json  — lista de {filename, texto, n_paginas, n_chars}
-      datos/procesados/boletines_stats.parquet — estadisticas parseadas (si hay tablas)
-
-    El corpus JSON es el insumo para los prompts de Claude API en Modulos 3 y 4.
-    """
-    import json
-
-    try:
-        import pdfplumber
-    except ImportError:
-        print("  [F9] pdfplumber no instalado. Ejecuta: pip install pdfplumber")
-        return 0
-
-    boletines_dir = RAW_DIR / "boletines_scj"
-    if not boletines_dir.exists():
-        print(f"  [F9] Directorio {boletines_dir} no existe. Ejecuta primero extract_f9_scj_boletines()")
-        return 0
-
-    pdfs = sorted(boletines_dir.glob("*.pdf"))
-    if not pdfs:
-        print(f"  [F9] No hay PDFs en {boletines_dir}")
-        return 0
-
-    corpus = []
-    for pdf_path in pdfs:
-        try:
-            with pdfplumber.open(pdf_path) as pdf:
-                texto = "\n".join(p.extract_text() or "" for p in pdf.pages)
-                n_pags = len(pdf.pages)
-            corpus.append({
-                "filename": pdf_path.name,
-                "texto": texto.strip(),
-                "n_paginas": n_pags,
-                "n_chars": len(texto),
-            })
-            print(f"    {pdf_path.name}: {n_pags} pags, {len(texto):,} chars")
-        except Exception as e:
-            print(f"    Error procesando {pdf_path.name}: {e}")
-
-    out_path = PROC_DIR / "boletines_corpus.json"
-    out_path.write_text(
-        json.dumps(corpus, ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
-    total_chars = sum(d["n_chars"] for d in corpus)
-    print(f"  [F9] Corpus: {len(corpus)} boletines | {total_chars:,} chars totales → {out_path.name}")
-    return len(corpus)
-
-
 # ─── Mapa de pasos ────────────────────────────────────────────────────────────
 
 STEPS = {
@@ -1157,6 +1255,8 @@ STEPS = {
     "f5": transform_f5_nuse,
     "f7": transform_f7_estrato,
     "f8": transform_f8_transmilenio,
+    "f13": transform_f13_camaras,
+    "f14": transform_f14_alumbrado,
     "silver": build_silver_table,
 }
 
@@ -1167,11 +1267,13 @@ STEP_LABELS = {
     "f5":    "F5 NUSE -> UPZ x mes x tipo_crimen",
     "f7":    "F7 Estrato -> promedio UPZ  [pesado]",
     "f8":    "F8 TransMilenio -> features UPZ",
+    "f13":   "F13 Camaras Salvavidas -> features UPZ",
+    "f14":   "F14 Alumbrado -> LED por UPZ",
     "silver":"Tabla Silver final (join de todo)",
 }
 
 # Orden de ejecucion: silver debe ir al final
-STEP_ORDER = ["f1", "f3", "f4", "f5", "f7", "f8", "silver"]
+STEP_ORDER = ["f1", "f3", "f4", "f5", "f7", "f8", "f13", "f14", "silver"]
 
 
 # ─── Orquestador ──────────────────────────────────────────────────────────────
@@ -1198,8 +1300,8 @@ def run_transform(
     """
     state   = TransformState()
     to_run  = steps if steps else STEP_ORDER
-    to_run  = [s[:2] if s.startswith("silver") else s[:2] for s in to_run]
-    # normalizar: "f1_delitos" -> "f1", "silver_table" -> "si" -> buscar "silver"
+    # normalizar solo si no es ya una clave exacta (ej. alias corto "si" -> "silver").
+    # OJO: NO truncar a 2 caracteres — "f13"/"f14" son claves validas de 3 caracteres.
     to_run  = [s if s in STEPS else next((k for k in STEPS if k.startswith(s)), s)
                for s in to_run]
     to_run  = [s for s in to_run if s in STEPS]
@@ -1249,7 +1351,7 @@ def main() -> None:
     )
     parser.add_argument("--step", "-s", nargs="+",
                         choices=list(STEPS.keys()), metavar="STEP",
-                        help="pasos a ejecutar (f1 f3 f4 f5 f7 f8 silver). Sin flag -> todos")
+                        help="pasos a ejecutar (f1 f3 f4 f5 f7 f8 f13 f14 silver). Sin flag -> todos")
     parser.add_argument("--force", "-f", action="store_true",
                         help="recalcular aunque Bronze no haya cambiado")
     parser.add_argument("--dry-run", "-n", action="store_true",

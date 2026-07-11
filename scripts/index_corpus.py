@@ -2,10 +2,9 @@
 """Indexación OFFLINE del corpus GraphRAG → Supabase documents_corpus.
 
 Fuentes:
-  F9  — PDFs de boletines SCJ en datos/raw/boletines_scj/   (pdfplumber)
   F10 — feeds RSS de noticias de seguridad                   (feedparser)
   --seed-demo — corpus de demostración integrado (12 fragmentos, source='SEED_DEV')
-                para que /graphrag sea demostrable mientras F9/F10 maduran.
+                para que /graphrag sea demostrable mientras F10 madura.
 
 Embeddings: all-MiniLM-L6-v2 (384 dims) — el MISMO modelo que usa el backend en
 query-time. NUNCA cambiar de modelo sin reindexar todo el corpus.
@@ -14,7 +13,7 @@ Corre en la máquina local, NUNCA en Railway.
 
 Uso:
     python scripts/index_corpus.py --seed-demo               # demo → DB (SUPABASE_DB_URL)
-    python scripts/index_corpus.py                           # F9+F10 reales → DB
+    python scripts/index_corpus.py                           # F10 real → DB
     python scripts/index_corpus.py --seed-demo --emit-sql    # sin credenciales: genera .sql
     python scripts/index_corpus.py --dry-run                 # reporta chunks sin insertar
 """
@@ -35,7 +34,6 @@ ROOT = Path(__file__).resolve().parents[1]
 load_dotenv(ROOT / ".env")
 load_dotenv(ROOT / "backend" / ".env")
 
-BOLETINES_DIR = ROOT / "datos" / "raw" / "boletines_scj"
 OUT_SQL = ROOT / "datos" / "grafo" / "corpus_seed.sql"
 
 RSS_FEEDS = {
@@ -138,25 +136,6 @@ def chunk_texto(texto: str) -> list[str]:
     return [c for c in chunks if len(c) > 80]
 
 
-def extraer_f9() -> list[tuple]:
-    if not BOLETINES_DIR.exists():
-        return []
-    import pdfplumber
-
-    docs = []
-    for pdf_path in sorted(BOLETINES_DIR.glob("*.pdf")):
-        try:
-            with pdfplumber.open(pdf_path) as pdf:
-                texto = "\n\n".join(page.extract_text() or "" for page in pdf.pages)
-        except Exception as exc:
-            print(f"  [F9] {pdf_path.name}: error {exc}")
-            continue
-        for chunk in chunk_texto(texto):
-            docs.append(("SCJ_BOLETIN", pdf_path.stem, None, None, detectar_upz(chunk), chunk))
-    print(f"F9: {len(docs)} chunks de {BOLETINES_DIR}")
-    return docs
-
-
 def extraer_f10() -> list[tuple]:
     import feedparser
 
@@ -212,7 +191,6 @@ def main() -> None:
     docs: list[tuple] = []
     if args.seed_demo:
         docs += [(s, t, f, u, upz, c) for s, t, f, u, upz, c in DEMO_CORPUS]
-    docs += extraer_f9()
     docs += extraer_f10()
 
     # Dedup por hash de contenido

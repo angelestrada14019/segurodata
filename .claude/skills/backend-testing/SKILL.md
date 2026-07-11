@@ -110,15 +110,15 @@ python scripts/seed_supabase.py --solo geo
 
 **Verificar:** `scripts/seed_supabase.py` reporta `pg_database_size` al final. Debe quedar < 500MB (free tier limit).
 
-### 4b. Corpus GraphRAG (F9 boletines SCJ + F10 RSS)
+### 4b. Corpus GraphRAG (F10 RSS)
 
 Requiere que el pipeline ETL haya descargado los archivos primero:
 
 ```bash
-# Primero descargar corpus (si no están en datos/raw/)
-python src/pipeline.py --source f9 f10
+# Primero descargar corpus (si no está en datos/raw/)
+python src/pipeline.py --source f10
 
-# Indexar: pdfplumber + feedparser → chunks → MiniLM embeddings → pgvector
+# Indexar: feedparser → chunks → MiniLM embeddings → pgvector
 python scripts/index_corpus.py
 ```
 

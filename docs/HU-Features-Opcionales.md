@@ -1,6 +1,6 @@
 # Historias de Usuario — Features Opcionales Post-Concurso
 
-> **Estado:** POST-CONCURSO — estas features tienen diseño completo pero quedan fuera del alcance del concurso (agosto 2026) por dependencias y complejidad operacional.  
+> **Estado:** POST-CONCURSO — estas features tienen diseño completo pero quedan fuera del alcance de esta entrega (13 julio 2026) por dependencias y complejidad operacional.  
 > **Prerequisito común:** Ideas 1+2 (Supabase Auth + RLS) deben estar implementadas antes que cualquier HU de este documento.  
 > **Referencia técnica:** `docs/ideas_plataforma_ciudadana.md` contiene análisis de viabilidad, veredictos técnicos y evaluación crítica detallada de cada idea.
 

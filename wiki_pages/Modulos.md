@@ -3,9 +3,9 @@
 > **Estado: en producción.**
 > - **Frontend:** https://segurodata-frontend.vercel.app · **Backend:** https://segurodata-api-production.up.railway.app
 > - **Backend FastAPI completo** — 7 endpoints, 36 tests verdes (incl. E3 JWT end-to-end y T5 verificados en vivo contra Supabase real)
-> - **Modelo XGBoost** — entrenado vía `scripts/train_model.py` con 18 variables y split temporal dinámico (últimos 6 meses = test, se recalcula solo en cada corrida). Test temporal actual (dic 2025 – may 2026): acierto dentro de ±1 banda 100%, macro-F1 0.861. Reentrenamiento automatizado con quality-gate en GitHub Actions (cron desactivado hasta después de la sustentación)
-> - **Supabase** — migraciones + RLS + hook JWT + Realtime ON. Artefactos reales del modelo (`origen='notebook_04'`): 2,038 predicciones + 36,684 SHAP + RPCs GeoJSON para el mapa. `upz_geometrias` con localidad real (112/112 UPZ, 19 localidades)
-> - **change_points**: 40 breakpoints ruptures PELT cargados (F1 DAI 2018-2026), COVID 2020 validado — 224 UPZs cruzan con localidad real, marcadores visibles en el mapa
+> - **Modelo XGBoost** — entrenado vía `scripts/train_model.py` con 18 variables y split temporal dinámico (últimos 6 meses = test, se recalcula solo en cada corrida). Test temporal actual (nov 2025 – abr 2026): acierto dentro de ±1 banda 100%, macro-F1 0.867. Reentrenamiento automatizado con quality-gate en GitHub Actions (cron desactivado hasta después de la sustentación)
+> - **Supabase** — migraciones + RLS + hook JWT + Realtime ON. Artefactos reales del modelo (`origen='train_model'`): 1,918 predicciones + 34,524 SHAP + RPCs GeoJSON para el mapa. `upz_geometrias` con localidad real (112/112 UPZ, 19 localidades)
+> - **change_points**: 40 breakpoints ruptures PELT cargados (F1 DAI 2018-2026), COVID 2020 validado — marcadores visibles en el mapa sobre las 112 UPZs con localidad
 > - **Corpus GraphRAG**: 10 chunks RSS reales en pgvector (El Tiempo + El Informante)
 > - **Frontend React** — 4 módulos + modal de 5 pestañas + Panel Admin construidos y verificados con datos reales. Pendiente: heatmap día×hora (Plotly, menor prioridad).
 
@@ -39,9 +39,9 @@ Cuatro perfiles acceden a módulos distintos según su necesidad operacional:
   - 📊 **Descripción** — serie histórica NUSE, top 3 tipos de incidente, tendencia últimas 8 semanas
   - 🔮 **Predicción** — nivel de riesgo XGBoost del próximo mes + probabilidades + proyección +4 semanas
   - 💡 **Sugerencia** — diagnóstico causal SHAP + recomendación prescriptiva + CAI responsable
-  - 📚 **Fuentes** — boletines SCJ y noticias citados por la pestaña Chatbot en esa sesión (vacío hasta que se hace una pregunta)
+  - 📚 **Fuentes** — noticias citadas por la pestaña Chatbot en esa sesión (vacío hasta que se hace una pregunta)
   - 💬 **Chatbot** — pregunta libre contextualizada en la UPZ seleccionada
-- **Capas toggleables**: densidad de cuadrantes de Policía y cambios estructurales (`ruptures`) ya reales; cámaras Salvavidas SDM, alumbrado público y estaciones TransMilenio quedan marcadas "Pendiente de datos" — el modelo las trae en placeholder hasta que existan extractores reales, el mapa nunca inventa geometría
+- **Capas toggleables**: 5 capas reales — cuadrantes de Policía, cambios estructurales (`ruptures`), cámaras Salvavidas SDM, alumbrado público UAESP y estaciones TransMilenio, todas con geometría real en Supabase
 - **Slider temporal**: navega los meses históricos de `predicciones`, recolorea el mapa
 - **Tendencia con change points**: marcadores en el mapa para las UPZs con un punto de ruptura reciente (`ruptures` sobre F1 DAI 2018–2026)
 - **Realtime**: suscripción a inserciones nuevas en `silver_upz_mes` — notifica con un aviso en pantalla cuando llega un dato nuevo para la UPZ que se está viendo
@@ -67,7 +67,7 @@ Cuatro perfiles acceden a módulos distintos según su necesidad operacional:
 ## Módulo 3 — Prescriptivo ("¿Qué hacer?")
 
 **Usuarios:** Comandante de CAI, Secretaría de Seguridad  
-**Tecnología:** Tabla ontológica + SHAP + ruptures + OpenRouter (Gemini Flash / Claude Haiku)
+**Tecnología:** Tabla ontológica + SHAP + ruptures + OpenRouter
 
 Este módulo no dice "hay riesgo ALTO". Dice **quién actúa, qué hace, cuándo y por qué**.
 
@@ -87,7 +87,7 @@ Este módulo no dice "hay riesgo ALTO". Dice **quién actúa, qué hace, cuándo
 > *• **IDU**: Solicitar coordinación obra-seguridad para reducir puntos ciegos*
 > *• **CAI Américas**: Cra 68 #6-05, tel 3820000 — turno comandante: Sgto. García*"
 
-### La tabla ontológica (17 filas — documentada en Notebook 03):
+### La tabla ontológica (17 filas — `backend/app/data/tabla_ontologica_seed.json`):
 
 | SHAP top feature | Diagnóstico | Entidad | Acción |
 |---|---|---|---|
@@ -107,15 +107,15 @@ Este módulo no dice "hay riesgo ALTO". Dice **quién actúa, qué hace, cuándo
 **Usuarios:** Ciudadano, periodista, funcionario distrital, investigador  
 **Tecnología:** FastAPI (Railway) + pgvector + OpenRouter (GraphRAG)
 
-Permite preguntas en lenguaje natural. El sistema busca en el knowledge graph de boletines SCJ + noticias + Plan de Desarrollo:
+Permite preguntas en lenguaje natural. El sistema busca en el knowledge graph de noticias + Plan de Desarrollo:
 
 **Ejemplo de interacción:**
 
 > 👤 *"¿Por qué aumentó el hurto en Kennedy en octubre 2023?"*
 >
-> 🤖 *"Según el Boletín SCJ de noviembre 2023, el incremento en Kennedy (especialmente UPZs Américas y Timiza) coincide con: (1) el desplazamiento de grupos dedicados al hurto de celulares desde La Candelaria tras operativos de octubre, y (2) el inicio de obras IDU en Av. 1° de Mayo que redujo la visibilidad policial en la zona. El Plan de Desarrollo 2024-2027 contempla la instalación de 45 cámaras adicionales en las UPZs afectadas (meta 2.3.1 del Programa Bogotá Avanza en Seguridad)."*
+> 🤖 *"Según una nota de El Tiempo de noviembre 2023, el incremento en Kennedy (especialmente UPZs Américas y Timiza) coincide con: (1) el desplazamiento de grupos dedicados al hurto de celulares desde La Candelaria tras operativos de octubre, y (2) el inicio de obras IDU en Av. 1° de Mayo que redujo la visibilidad policial en la zona. El Plan de Desarrollo 2024-2027 contempla la instalación de 45 cámaras adicionales en las UPZs afectadas (meta 2.3.1 del Programa Bogotá Avanza en Seguridad)."*
 
-El chatbot cita fuentes reales con número de boletín y fecha — no genera respuestas genéricas. El modelo LLM se configura vía variable de entorno `LLM_MODEL` en FastAPI (Railway). Por defecto: `google/gemini-flash-1.5` vía OpenRouter (gratuito). La `OPENROUTER_API_KEY` permanece en Railway — nunca se expone al browser.
+El chatbot cita fuentes reales con título del artículo, medio y fecha — no genera respuestas genéricas. El modelo LLM se configura vía variable de entorno `LLM_MODEL` en FastAPI (Railway). Por defecto: `google/gemini-flash-1.5` vía OpenRouter (gratuito). La `OPENROUTER_API_KEY` permanece en Railway — nunca se expone al browser.
 
 ---
 

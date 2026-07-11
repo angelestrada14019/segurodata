@@ -83,7 +83,7 @@ Las migraciones viven en `supabase/migrations/*.sql` (aplicadas vía MCP Supabas
 ```bash
 # .env en raíz: SUPABASE_URL, SUPABASE_SERVICE_KEY, SUPABASE_DB_URL (para COPY bulk)
 python scripts/seed_supabase.py         # silver + geometrías F2/F4 + predicciones/shap sintéticos (origen='seed_dev')
-python scripts/index_corpus.py          # embeddings F9/F10 → documents_corpus (pgvector)
+python scripts/index_corpus.py          # embeddings F10 → documents_corpus (pgvector)
 python scripts/load_model_artifacts.py  # SWITCH: borra seed_dev y carga artefactos reales de Notebooks 03/04
 ```
 

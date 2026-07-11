@@ -19,7 +19,7 @@ Ver detalles de implementación en [[Arquitectura#autenticación-y-control-de-ac
 
 ---
 
-## Features comprometidas — MVP concurso agosto 2026
+## Features comprometidas — MVP concurso 13 julio 2026
 
 Estas features están en el alcance de Fase 3 (21 junio – 10 julio 2026).
 
@@ -118,21 +118,15 @@ Decisión de arquitectura ya tomada. No es una feature a implementar.
 
 ---
 
-## Riesgos abiertos — resumen pre-mortem
+## Riesgos identificados y mitigados
 
-| ID | Riesgo | Severidad | Acción | Dónde |
-|----|--------|-----------|--------|-------|
-| T3 | Demo Waze vacío en presentación | HIGH | Pre-cargar datos de simulación | CRONOGRAMA Fase 4 |
-| T4 | Cluster anónimo = abuso policial | HIGH | Requerir cuenta mínima para reportar | HU-Features-Opcionales |
-| T5 | RLS silenciosa → mapa vacío sin error | HIGH | Endpoint `/whoami` + mensaje UI | CRONOGRAMA Fase 3 |
-| T6 | "73%" de proyección no es probabilidad XGBoost | MEDIUM | Pipeline extrapolación→XGBoost | Idea 5 implementación |
-| T7 | F4 Cuadrantes no en PostGIS | MEDIUM | Tarea explícita Fase 2 | CRONOGRAMA Fase 2 |
-| E1 | 5 features en 3 semanas sin orden de corte | HIGH | Orden: Idea 6 > 1+2 > 5 > modal base | Este documento |
-| E2 | Sin demo script | HIGH | Guión 10 min antes del concurso | CRONOGRAMA Fase 4 |
-| E3 | JWT Supabase↔FastAPI sin test | MEDIUM | Test integración antes de Auth | CRONOGRAMA Fase 3 |
+Análisis de riesgo hecho durante el diseño de la plataforma ciudadana, con su resolución:
 
-**Orden de corte si el tiempo aprieta en Fase 3** (de menor a mayor impacto en el concurso):
-1. ~~Idea 6 (botón pánico)~~ — mostrable en diagrama
-2. ~~Ideas 1+2 (Auth/Roles)~~ — demo sin auth es viable
-3. ~~Proyección temporal~~ — segunda prioridad
-4. **Modal 5-tabs + zoom layers** — es el plan base, no se puede cortar sin afectar el demo
+| Riesgo | Mitigación aplicada | Estado |
+|--------|---------------------|--------|
+| RLS silenciosa devolvía mapa vacío sin mensaje de error | Endpoint `/whoami` + mensaje explícito en la UI | ✅ Resuelto |
+| Cuadrantes de Policía (F4) sin geometría en PostGIS | Tabla `cuadrantes_geom` con índice GIST | ✅ Resuelto |
+| Autenticación JWT Supabase↔FastAPI sin test de integración | `tests/test_jwt_e2e.py`, verificado contra Supabase real | ✅ Resuelto |
+| Reportes comunitarios anónimos podrían fabricar alertas falsas | Requerir cuenta mínima para publicar (no para confirmar) — feature diferida, ver `docs/HU-Features-Opcionales.md` | Diferido (fuera de esta entrega) |
+| Datos de demostración vacíos durante la presentación | Precargar reportes de prueba verosímiles antes de la sustentación | ⏳ Pendiente Fase 4 |
+| Sustentación sin guion preparado | Demo script de 10 minutos | ⏳ Pendiente Fase 4 |

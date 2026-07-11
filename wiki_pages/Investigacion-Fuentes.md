@@ -21,13 +21,13 @@ Confundir estas plataformas genera errores 404:
 
 ## Fuentes activas — resumen (ver Provenance para detalles)
 
-Las 14 fuentes activas del proyecto, organizadas por grupo:
+Las 12 fuentes activas del proyecto, organizadas por grupo:
 
 **Grupo 1 — Estructuradas → XGBoost + mapa:**
 F1 (DAI), F2 (UPZ), F3 (Clima), F4 (Cuadrantes), F5 (NUSE 123 ★), F6 (Hurto PN — benchmarking), F7 (Estratificación), F8 (TransMilenio), F11 (IDU Obras), F13 (Cámaras SDM), F14 (Alumbrado UAESP)
 
 **Grupo 2 — Texto → GraphRAG + pgvector:**
-F9 (Boletines SCJ), F10 (RSS × 3 feeds: El Tiempo, Espectador, El Informante Soy Yo)
+F10 (RSS × 3 feeds: El Tiempo, Espectador, El Informante Soy Yo)
 
 **Planificada (Fase 3):**
 F12 — Plan de Desarrollo Bogotá 2024-2027 (Acuerdo 927/2024) — corpus GraphRAG adicional
@@ -62,6 +62,7 @@ Durante la investigación (mayo 2026) se evaluaron 20+ fuentes. Las siguientes n
 | Google Street View | API de pago para 150K+ imágenes — viola restricción de costos |
 | Redes sociales scraping | Viola términos de uso y reglas del concurso |
 | Siniestros Viales CKAN Bogotá | STALE — última actualización oct 2021 |
+| **F9 — Boletines SCJ** (`scj.gov.co`) | Activada en junio 2026 como corpus GraphRAG (PDFs mensuales vía scraping). **DESCARTADA en julio 2026**: el sitio migró al Observatorio OSCJ (`oaiee.scj.gov.co`), 100% JavaScript (ArcGIS Experience Builder) — no scrapeable sin Playwright. Código removido de `src/pipeline.py`, `src/transform.py` y `scripts/index_corpus.py`. El corpus GraphRAG queda solo con F10 (RSS noticias) |
 
 ### Investigadas pero de baja prioridad para la entrega
 

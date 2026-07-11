@@ -39,9 +39,9 @@ LAT_MEDELLIN, LON_MEDELLIN = 6.244, -75.574  # Medellín
 
 - La arquitectura Medallion completa (Bronze → Silver → Gold → Model)
 - El modelo XGBoost y su estructura de 18 variables
-- El pipeline de GraphRAG (FastAPI + pgvector + OpenRouter — apuntar F9/F10 a fuentes locales)
+- El pipeline de GraphRAG (FastAPI + pgvector + OpenRouter — apuntar F10 a fuentes locales)
 - La aplicación React + deck.gl y los 4 módulos
-- Los notebooks CRISP-ML (SeguroData_01 a _06)
+- La metodología CRISP-ML documentada en `wiki_pages/` y ejecutada en `scripts/train_model.py`
 - El backend FastAPI (solo cambiar el modelo pkl y los parámetros de Supabase)
 
 ## Ciudades con datos abiertos en Colombia
@@ -57,4 +57,4 @@ LAT_MEDELLIN, LON_MEDELLIN = 6.244, -75.574  # Medellín
 
 - La granularidad UPZ es única de Bogotá. En otras ciudades, usar la división administrativa equivalente (comunas en Medellín, corregimientos en Cali)
 - La calidad del modelo depende de que exista un dataset de incidentes/llamadas de emergencia con granularidad subnivel ciudad
-- El corpus SCJ (F9) es específico de Bogotá — para otras ciudades, usar los boletines de la Secretaría de Seguridad local
+- El corpus de noticias (F10) usa medios de Bogotá — para otras ciudades, sustituir por los feeds RSS de medios locales equivalentes

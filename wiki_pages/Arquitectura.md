@@ -16,7 +16,7 @@
 ├───────────────────────────┬─────────────────────────────────────────┤
 │  CAPA 3 — BASE DE DATOS   │  CAPA 3B — VECTOR STORE                 │
 │  Supabase PostgreSQL       │  Supabase pgvector (384 dims)           │
-│  + PostGIS (geometrías UPZ)│  Embeddings F9/F10 corpus               │
+│  + PostGIS (geometrías UPZ)│  Embeddings F10 corpus                  │
 │  predictions (1,918 filas) │  sentence-transformers all-MiniLM-L6-v2│
 │  shap_values pre-computados│  (indexado una sola vez, offline)       │
 │  change_points (ruptures)  │                                         │
@@ -26,7 +26,7 @@
 │  datos/features/ tabla_maestra_upz.parquet (18 variables)           │
 ├─────────────────────────────────────────────────────────────────────┤
 │  CAPA 1 — BRONZE / SILVER                                            │
-│  Bronze: datos/raw/    ← src/pipeline.py   (12 fuentes F1-F14)      │
+│  Bronze: datos/raw/    ← src/pipeline.py   (12 fuentes activas)     │
 │  Silver: datos/procesados/ ← src/transform.py  (111,606 × 20 cols)  │
 └─────────────────────────────────────────────────────────────────────┘
 ```
@@ -34,10 +34,10 @@
 ## Medallion Architecture (datos)
 
 ```
-Bronze  datos/raw/          src/pipeline.py   ← 12 fuentes, descarga incremental
-Silver  datos/procesados/   src/transform.py  ← silver_upz_mes.parquet (111,606 × 20)
-Gold    datos/features/     Notebook 03       ← 18 variables + tabla prescriptiva
-Model   datos/modelos/      Notebook 04       ← XGBoost + SHAP pre-computado
+Bronze  datos/raw/          src/pipeline.py       ← 12 fuentes, descarga incremental
+Silver  datos/procesados/   src/transform.py      ← silver_upz_mes.parquet (111,606 × 20)
+Gold    datos/features/     scripts/train_model.py ← 18 variables + tabla prescriptiva
+Model   datos/modelos/      scripts/train_model.py ← XGBoost + SHAP pre-computado
 ```
 
 ## La tabla Silver (actualizada)
@@ -84,9 +84,9 @@ backend/
 │   ├── services/          ← lógica de negocio + filtro por rol (D8)
 │   ├── repositories/      ← acceso a tablas/RPC Supabase
 │   ├── clients/           ← supabase_client, openrouter_client, embeddings (MiniLM)
-│   ├── core/              ← security.py (JWT HS256), cache.py (TTLCache 24h)
+│   ├── core/              ← security.py (JWT ES256/JWKS), cache.py (TTLCache 24h)
 │   └── data/              ← tabla_ontologica_seed.json (17 filas)
-├── tests/                 ← 31 tests, conftest con fakes y token_factory
+├── tests/                 ← 36 tests unitarios (verdes) + 1 de integración JWT (requiere credenciales reales, excluido por defecto), conftest con fakes y token_factory
 ├── Dockerfile             ← multi-stage, torch CPU-only, MiniLM horneado
 └── railway.toml           ← healthcheckPath="/health", timeout 300
 ```
@@ -130,13 +130,10 @@ match_documents(query_embedding, match_threshold, match_count, filter_upz)
 
 ## GraphRAG — sentence-transformers + Supabase pgvector + OpenRouter
 
-Los corpus de texto (F9 boletines SCJ + F10 noticias RSS) se indexan como embeddings en Supabase pgvector:
+El corpus de texto (F10 noticias RSS) se indexa como embeddings en Supabase pgvector:
 
 ```
 INDEXACIÓN (offline, una sola vez — scripts/index_corpus.py):
-F9 PDF  → pdfplumber → texto → all-MiniLM-L6-v2 → pgvector
-         [AVISO jun-2026: SCJ migraron al Observatorio OSCJ (ArcGIS JS)
-          — requiere Playwright o descarga manual. Demo usa SEED_DEV.]
 F10 RSS → feedparser → texto → all-MiniLM-L6-v2 → pgvector
 
 CONSULTA EN TIEMPO REAL (FastAPI — Python en Railway):
@@ -155,7 +152,7 @@ El corpus crece con re-ejecuciones de `index_corpus.py` sin generar duplicados:
 
 1. **Chunking**: el texto se parte en ventanas de ~1,800 caracteres (~500 tokens) con overlap de 200 caracteres, para que ningún concepto quede cortado entre chunks.
 2. **Dedup por hash**: cada chunk calcula `content_hash = SHA-256(texto)`. La tabla `documents_corpus` tiene UNIQUE sobre esa columna y el upsert usa `ON CONFLICT (content_hash) DO NOTHING` — re-ejecutar el script solo inserta contenido nuevo.
-3. **Cadencia**: F10 RSS puede correrse a diario (las noticias del día se agregan, las ya indexadas se ignoran). F9 es mensual cuando la SCJ publica boletín nuevo.
+3. **Cadencia**: F10 RSS puede correrse a diario (las noticias del día se agregan, las ya indexadas se ignoran).
 
 ```bash
 # Re-ejecutable cuantas veces se quiera — solo entra lo nuevo:
@@ -187,10 +184,10 @@ Los resultados alimentan el Módulo 3 (Prescriptivo): si hay un cambio estructur
 ### Flujo Bronze → Silver → Gold
 
 ```
-src/pipeline.py   →  Bronze  (datos/raw/)          ← extracción incremental 12 fuentes
-src/transform.py  →  Silver  (datos/procesados/)   ← spatial joins + limpieza
-Notebook 03       →  Gold    (datos/features/)      ← 18 variables + tabla prescriptiva
-Notebook 04       →  Model   (datos/modelos/)       ← XGBoost + SHAP pre-computado
+src/pipeline.py         →  Bronze  (datos/raw/)          ← extracción incremental 12 fuentes
+src/transform.py        →  Silver  (datos/procesados/)   ← spatial joins + limpieza
+scripts/train_model.py  →  Gold    (datos/features/)      ← 18 variables + tabla prescriptiva
+scripts/train_model.py  →  Model   (datos/modelos/)       ← XGBoost + SHAP pre-computado
 ```
 
 ### Frecuencias de actualización por fuente
@@ -200,7 +197,6 @@ Notebook 04       →  Model   (datos/modelos/)       ← XGBoost + SHAP pre-com
 | F3 — Clima Open-Meteo | Horaria | Append desde `max(time)` en parquet | ✅ Sí — API gratuita sin clave |
 | F5 — NUSE 123 | Mensual | Append desde `max_date_in_data` | ❌ Batch mensual |
 | F6 — Hurto PN | Mensual | Append desde `max(fecha_hecho)` | ❌ Batch mensual |
-| F9 — Boletines SCJ | Irregular | Append: solo PDFs nuevos no descargados | — |
 | F10 — RSS noticias | Diaria | Append: solo artículos con link nuevo | — |
 | F1 / F4 / F7 | Semestral | Full-refresh si `Last-Modified` del servidor cambió | ❌ Semestral |
 | F2 / F8 | Estático | Solo descarga inicial (rara vez cambia) | — |
@@ -286,7 +282,7 @@ CREATE POLICY "comandante_solo_su_cuadrante"
 
 ```python
 # FastAPI extrae y verifica el token de Supabase en cada request
-# Usa la clave pública JWT de Supabase (variable SUPABASE_JWT_SECRET)
+# Verifica la firma ES256 contra el JWKS público de Supabase (SUPABASE_JWKS_URL)
 # Extrae claims: rol, cuadrante_asignado → decide si responde o retorna 403
 ```
 

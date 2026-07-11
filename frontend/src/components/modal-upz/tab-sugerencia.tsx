@@ -2,18 +2,17 @@ import { Loader2, Lock, RefreshCw, Sparkles } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { usePrescribe } from "@/hooks/use-prescribe";
 import { ApiError } from "@/lib/api-client";
+import { tieneAccesoOperacional } from "@/lib/roles-operacionales";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { PanelCai } from "@/components/prescriptivo/panel-cai";
 import { TablaOntologica } from "@/components/prescriptivo/tabla-ontologica";
-import type { RolBackend, ShapFeatureValor } from "@/types/api";
+import type { ShapFeatureValor } from "@/types/api";
 
 interface TabSugerenciaProps {
   upzCod: string;
   shapTop: ShapFeatureValor[] | undefined;
 }
-
-const ROLES_CON_ACCESO: RolBackend[] = ["COMANDANTE_CAI", "ANALISTA_SDSCJ", "ADMIN"];
 
 /**
  * Pestaña Sugerencia — POST /prescribe. Usa el `shap_top3` YA resuelto en
@@ -28,7 +27,7 @@ export function TabSugerencia({ upzCod, shapTop }: TabSugerenciaProps) {
   const { rol } = useAuth();
   const prescribeMutation = usePrescribe();
 
-  if (!rol || !ROLES_CON_ACCESO.includes(rol)) {
+  if (!tieneAccesoOperacional(rol)) {
     return (
       <Alert>
         <Lock className="h-4 w-4" aria-hidden="true" />

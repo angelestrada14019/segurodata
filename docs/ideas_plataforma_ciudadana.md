@@ -1,6 +1,6 @@
 # Ideas de Plataforma — Exploración v2
 
-> **Estado:** EXPLORACIÓN — estas ideas no están en scope del concurso (entrega agosto 2026).  
+> **Estado:** EXPLORACIÓN — estas ideas no están en scope de esta entrega (13 julio 2026).  
 > **Objetivo:** capturar con rigor técnico, no descartar. Viabilidad a evaluar en fase post-concurso.  
 > **Stack actual de referencia:** React + deck.gl + FastAPI (Railway) + Supabase + OpenRouter
 
@@ -125,7 +125,7 @@ Al hacer clic en cualquier localidad o UPZ
 | 📊 **Descripción** | Qué está pasando: serie histórica NUSE, top 3 tipos de incidente, tendencia últimas 8 semanas | F5 NUSE → Silver → Supabase |
 | 🔮 **Predicción** | Nivel de riesgo XGBoost (ALTO/MEDIO/BAJO) + probabilidades de cada clase | FastAPI `/predict` → XGBoost |
 | 💡 **Sugerencia** | Texto prescriptivo: causa dominante + entidad responsable + acción operacional | Tabla ontológica + OpenRouter |
-| 📚 **Fuentes** | Qué datasets informan esta zona: estructurados (F5, F7, F11, F13, F14) y no estructurados (F9 boletines, F10 noticias) | Metadata Supabase |
+| 📚 **Fuentes** | Qué datasets informan esta zona: estructurados (F5, F7, F11, F13, F14) y no estructurados (F10 noticias) | Metadata Supabase |
 | 💬 **Chatbot** | Pregunta libre contextualizada en la UPZ seleccionada — el GraphRAG filtra por zona | FastAPI `/graphrag` con upz_ctx |
 
 ### Aclaración: ¿predicción = XGBoost O IA generativa?
@@ -467,7 +467,7 @@ Dado que la app necesita estar abierta de todas formas para que funcione el hard
 
 ### Recomendación por fases
 
-**Concurso — agosto 2026: PWA**
+**Esta entrega (13 julio 2026): PWA**
 ```
 ✅ Ya está en el stack → deploy inmediato a Vercel
 ✅ Ideas 1, 2, 3 y 5 funcionan perfectamente en PWA

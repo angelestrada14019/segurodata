@@ -7,9 +7,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from "@/hooks/use-auth";
 import { useDiagnosticoUpz } from "@/hooks/use-diagnostico-upz";
 import { useUpzGeometrias } from "@/hooks/use-upz-geometrias";
 import { useGraphrag } from "@/hooks/use-graphrag";
+import { tieneAccesoOperacional } from "@/lib/roles-operacionales";
 import { TabDescripcion } from "@/components/modal-upz/tab-descripcion";
 import { TabPrediccion } from "@/components/modal-upz/tab-prediccion";
 import { TabSugerencia } from "@/components/modal-upz/tab-sugerencia";
@@ -89,12 +91,24 @@ export function ModalUpz({
     graphragMutationRef.current.reset();
   }, [upzCod, tabInicial]);
 
+  // Predicción/Sugerencia requieren rol operativo (COMANDANTE_CAI/
+  // ANALISTA_SDSCJ/ADMIN) — ver matriz de acceso en wiki_pages/Modulos.md.
+  // Sin este gate, /predict y /explain se disparaban para CUALQUIER
+  // visitante (incluido anónimo) apenas se abría el modal, y la pestaña
+  // Predicción dependía de interpretar el error resultante para mostrar un
+  // mensaje razonable — funcionaba cuando el backend alcanzaba a responder
+  // 401, pero un fallo de red/CORS antes de eso llegaba como "Failed to
+  // fetch" sin status, y se veía como un error genérico real en vez de "inicia
+  // sesión". Con el gate, la llamada ni se intenta para estos roles.
+  const { rol } = useAuth();
+  const puedeVerPrediccion = tieneAccesoOperacional(rol);
+
   const {
     prediccion,
     explicacion,
     isLoading: prediccionCargando,
     error: prediccionError,
-  } = useDiagnosticoUpz(upzCod, open);
+  } = useDiagnosticoUpz(upzCod, open && puedeVerPrediccion);
 
   const upzGeometriasQuery = useUpzGeometrias();
   const upzFeature = upzGeometriasQuery.data?.features.find(

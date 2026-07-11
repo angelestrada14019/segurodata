@@ -97,12 +97,12 @@ python scripts/load_model_artifacts.py  # sube a Supabase (origen='notebook_04')
 
 ---
 
-## 3. Corpus GraphRAG — indexar F9 + F10
+## 3. Corpus GraphRAG — indexar F10
 
 Los embeddings del corpus se generan con `fastembed` (`all-MiniLM-L6-v2`, 384 dims, local, sin costo de API) y se cargan en Supabase pgvector.
 
 ```bash
-# Paso 1: descargar corpus F10 RSS (F9 requiere Playwright — ver nota abajo)
+# Paso 1: descargar corpus F10 RSS
 python src/pipeline.py --source f10
 
 # Paso 2: indexar → chunks 500 tokens → MiniLM → pgvector
@@ -114,8 +114,6 @@ python scripts/index_corpus.py --seed-demo --emit-sql  # genera datos/grafo/corp
 ```
 
 > **Estado actual (30-jun-2026):** 10 chunks RSS reales en Supabase (El Tiempo + El Informante; SEED_DEV eliminados). `/graphrag` responde con fuentes reales.
-
-> **F9 — boletines SCJ:** El Observatorio OSCJ migró a ArcGIS Experience Builder (`https://oaiee.scj.gov.co/ObservatorioSCJ.html`), que es 100% JavaScript. `pipeline.py --source f9` no puede scrapearlo sin Playwright. Para añadir boletines reales: descargar manualmente los PDFs desde el Observatorio (sección Boletines > Estudios), guardarlos en `datos/raw/boletines_scj/`, y re-ejecutar `index_corpus.py`.
 
 ---
 

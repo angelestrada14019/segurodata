@@ -10,8 +10,8 @@
 ```
 Bronze  datos/raw/          ← ya construido (src/pipeline.py)
 Silver  datos/procesados/   ← este documento — src/transform.py
-Gold    datos/features/     ← siguiente etapa (Notebook 03)
-Model   datos/modelos/      ← siguiente etapa (Notebook 04)
+Gold    datos/features/     ← siguiente etapa (`scripts/train_model.py`)
+Model   datos/modelos/      ← siguiente etapa (`scripts/train_model.py`)
 ```
 
 La capa Silver **no toma decisiones de modelo**. Su única responsabilidad es:
@@ -20,7 +20,7 @@ La capa Silver **no toma decisiones de modelo**. Su única responsabilidad es:
 - Hacer los spatial joins necesarios
 - Unir todo en una tabla lista para analizar
 
-**La selección de variables y el análisis de correlación ocurren en Gold (Notebook 03)**, no aquí. Silver produce todas las variables candidatas sin filtrar ninguna.
+**La selección de variables y el análisis de correlación ocurren en Gold (`scripts/train_model.py`)**, no aquí. Silver produce todas las variables candidatas sin filtrar ninguna.
 
 ---
 
@@ -37,11 +37,10 @@ Archivos en `datos/raw/` generados por `src/pipeline.py`:
 | `f5_nuse_123.parquet` | F5 | **128,314** | **Fuente principal** — incidentes NUSE 123 por UPZ × mes × tipo (86 tipos, 2025–2026). Genera las filas de Silver |
 | `f7_estratificacion.parquet` | F7 | ~44,260 | Manzanas con estrato + geometría WKT |
 | `f8_transmilenio.geojson` | F8 | 153 | Puntos de estaciones TransMilenio |
-| `datos/raw/boletines_scj/` | F9 | N/A | PDFs boletines mensuales SCJ (corpus texto para GraphRAG) |
 | `datos/raw/noticias_rss.jsonl` | F10 | N/A | Artículos RSS 3 feeds (corpus texto para GraphRAG) |
 
 > **F6** (Hurto Personas — Policía Nacional, 638,569 filas a nivel municipio) no entra al Silver — sin desglose UPZ. Solo benchmarking nacional.  
-> **F9/F10** no entran en XGBoost — son corpus de texto para los Módulos 3 y 4 (GraphRAG — OpenRouter).
+> **F10** no entra en XGBoost — es corpus de texto para los Módulos 3 y 4 (GraphRAG — OpenRouter).
 
 ---
 
@@ -91,8 +90,8 @@ La tabla `silver_upz_mes.parquet` tiene **una fila por UPZ × mes × tipo de inc
 | `n_estaciones_tm` | F8 | int | Estaciones TransMilenio dentro de la UPZ |
 | `dist_tm_metros` | F8 | float | Distancia del centroide de la UPZ al TM más cercano |
 
-> **20 columnas** (las 3 features F11/F13/F14 se añaden en la capa Gold). Estas son **todas las variables candidatas** para el modelo. En Gold (Notebook 03) se analizará correlación, VIF y SHAP para seleccionar las 18 que entran al XGBoost.  
-> F9/F10 (boletines + noticias) no aparecen en la silver — son corpus de texto para GraphRAG (Módulos 3 y 4 — OpenRouter).
+> **20 columnas** (las 3 features F11/F13/F14 se añaden en la capa Gold). Estas son **todas las variables candidatas** para el modelo. En Gold (`scripts/train_model.py`) se analizará correlación, VIF y SHAP para seleccionar las 18 que entran al XGBoost.  
+> F10 (noticias) no aparece en la silver — es corpus de texto para GraphRAG (Módulos 3 y 4 — OpenRouter).
 
 ---
 
@@ -103,11 +102,10 @@ La tabla `silver_upz_mes.parquet` tiene **una fila por UPZ × mes × tipo de inc
 Los archivos Bronze deben existir. Si no están:
 
 ```bash
-python src/pipeline.py        # descarga todas las fuentes (F1-F10)
+python src/pipeline.py        # descarga todas las fuentes activas
 # o por fuente estructurada:
 python src/pipeline.py --source f1 f2 f3 f4 f5 f7 f8
-# fuentes no estructuradas (corpus LLM — F9/F10):
-python src/pipeline.py --source f9   # PDFs boletines SCJ
+# fuente no estructurada (corpus LLM — F10):
 python src/pipeline.py --source f10  # RSS noticias
 ```
 
@@ -145,7 +143,7 @@ python src/transform.py --verbose
 ------------------------------------------------------------
 [OK] f1_delitos               updated  rows=   2,079  2,079 filas | 21 localidades | 2018-2026 (EDA ref)
 [OK] f3_clima                 updated  rows=   2,338  2,338 dias | 2020-01-01 a 2026-04-30
-[OK] f4_cuadrantes            updated  rows=     111  111 UPZs | 4,821 cuadrantes | con nombre CAI
+[OK] f4_cuadrantes            updated  rows=     111  111 UPZs | 599 cuadrantes | con nombre CAI
 [OK] f5_nuse                  updated  rows= 111,606  111,606 filas | 120 UPZs | 86 tipos | 19 localidades
 [OK] f7_estrato               updated  rows=      43  43 UPZs cubiertas | estrato 1.2-5.8
 [OK] f8_transmilenio          updated  rows=     112  112 UPZs | dist media al TM: 1,240m
@@ -205,12 +203,12 @@ Con ejecutarlo una sola vez es suficiente para todo el proyecto.
 
 | Tarea | Dónde se hace |
 |-------|---------------|
-| Selección de variables (cuáles entran al modelo) | Gold — Notebook 03 |
-| Análisis de correlación entre variables | Gold — Notebook 03 |
-| Normalización / escalado para XGBoost | Gold — Notebook 03 |
-| Definición de `nivel_riesgo` (CRÍTICO/ALTO/MEDIO/BAJO) | Gold — Notebook 03 |
-| Balanceo de clases (SMOTE u otras técnicas) | Gold — Notebook 03 |
-| Entrenamiento del modelo | Model — Notebook 04 |
+| Selección de variables (cuáles entran al modelo) | Gold — `scripts/train_model.py` |
+| Análisis de correlación entre variables | Gold — `scripts/train_model.py` |
+| Normalización / escalado para XGBoost | Gold — `scripts/train_model.py` |
+| Definición de `nivel_riesgo` (CRÍTICO/ALTO/MEDIO/BAJO) | Gold — `scripts/train_model.py` |
+| Balanceo de clases (SMOTE u otras técnicas) | Gold — `scripts/train_model.py` |
+| Entrenamiento del modelo | Model — `scripts/train_model.py` |
 
 ---
 
@@ -230,8 +228,7 @@ f14 ──┘
 f2 (UPZ shapefile) se usa internamente en f4, f7 y f8 pero no produce
 un archivo Silver propio — es la base de todos los spatial joins.
 
-f9  ──► datos/procesados/boletines_corpus.json    (corpus texto → pgvector / GraphRAG)
-f10 ──► (datos/raw/noticias_rss.jsonl ya filtrado)
+f10 ──► (datos/raw/noticias_rss.jsonl ya filtrado)    (corpus texto → pgvector / GraphRAG)
 ```
 
 El orquestador `run_transform()` respeta este orden automáticamente.

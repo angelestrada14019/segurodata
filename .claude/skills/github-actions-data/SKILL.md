@@ -5,7 +5,7 @@ description: GitHub Actions para el pipeline ETL semanal de SeguroData — activ
 
 # GitHub Actions Data — SeguroData Bogotá
 
-El workflow `.github/workflows/etl-semanal.yml` automatiza la descarga incremental de las 14 fuentes de datos.
+El workflow `.github/workflows/etl-semanal.yml` automatiza la descarga incremental de las 12 fuentes de datos.
 
 ## Estado actual
 

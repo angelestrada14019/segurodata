@@ -106,7 +106,7 @@ print(f"RAM disponible: {psutil.virtual_memory().available / 1e9:.1f} GB")
 ## Pipeline de datos — comandos
 
 ```bash
-python src/pipeline.py --status          # estado de las 14 fuentes
+python src/pipeline.py --status          # estado de las 12 fuentes
 python src/pipeline.py                   # descargar todo (solo lo nuevo)
 python src/transform.py --dry-run        # ver qué haría sin ejecutar
 python src/transform.py                  # Bronze → Silver (111,606 × 20 cols)

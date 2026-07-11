@@ -47,8 +47,7 @@ export function ModuloChatbotPage() {
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Contexto causal de la criminalidad en Bogotá, con fuentes citadas
-          — boletines de la Secretaría Distrital de Seguridad y prensa
-          verificada.
+          — prensa verificada de Bogotá.
         </p>
       </div>
 

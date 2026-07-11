@@ -59,7 +59,6 @@ El sistema responde tres preguntas concretas:
 | F6 | Hurto Personas — Policía Nacional | Socrata `4rxi-8m8d` | Benchmarking nacional — contexto oral |
 | F7 | Estratificación por manzana — SDP | CKAN — URL directa | Feature socioeconómica + análisis sesgo |
 | F8 | Estaciones TransMilenio — TM S.A. | ArcGIS REST | Features movilidad/afluencia |
-| F9 | Boletines SCJ — Sec. Distrital Seguridad | scj.gov.co (PDFs) | Corpus GraphRAG → pgvector (Supabase) |
 | F10 | Noticias RSS — El Tiempo / Espectador / El Informante Soy Yo | RSS público (3 feeds verificados) | Corpus GraphRAG → pgvector (Supabase) |
 | **F11** | **Malla Vial + Obras IDU activas** | **IDECA / datosabiertos.bogota.gov.co** | **Feature km_via_intervenida_upz → XGBoost** |
 | **F13** | **Cámaras Salvavidas SDM** | **ArcGIS Hub SDM** | **Feature n_camaras_upz + capa visual deck.gl** |
@@ -103,10 +102,10 @@ ESPACIALES:
 SUBREGISTRO:
   ratio_nuse_criminal_upz ← fracción de llamadas NUSE que son crimen / total por UPZ·mes
 
-INFRAESTRUCTURA (F11, F13, F14 — placeholder=0 hasta que existan los extractores):
-  km_via_intervenida_upz  ← kilómetros de vía con obra IDU activa en la UPZ
-  n_camaras_upz           ← número de cámaras Salvavidas SDM en la UPZ
-  luminarias_led_upz      ← número de luminarias LED (iluminación pública UAESP)
+INFRAESTRUCTURA:
+  km_via_intervenida_upz  ← kilómetros de vía con obra IDU activa en la UPZ (F11 — placeholder=0, extractor no implementado)
+  n_camaras_upz           ← número de cámaras Salvavidas SDM en la UPZ (F13 — real, extractor activo)
+  luminarias_led_upz      ← número de luminarias LED, iluminación pública UAESP (F14 — real, extractor activo; 3ra feature más importante del modelo)
 
 TIPO DE DELITO:
   tipo_crimen_cod         ← tipo de delito dominante en la UPZ (codificado a entero)
@@ -115,10 +114,10 @@ VARIABLE OBJETIVO (Y):
   nivel_riesgo: CRÍTICO / ALTO / MEDIO / BAJO
   → percentiles de n_delitos por upz_cod × anio × mes (solo es_crimen=True):
     ≥q95 = CRÍTICO · ≥q75 = ALTO · ≥q40 = MEDIO · resto = BAJO
-  → distribución: BAJO=811, MEDIO=735, ALTO=392, CRÍTICO=100 (2,038 filas)
+  → distribución: BAJO=765, MEDIO=675, ALTO=384, CRÍTICO=94 (1,918 filas)
 
-MÉTRICAS (test temporal dic 2025 – may 2026, 719 filas — ver datos/modelos/metricas.json):
-  banda exacta 0.871 · dentro de ±1 banda 100% · macro-F1 0.861 · recall CRÍTICO 0.92
+MÉTRICAS (test temporal nov 2025 – abr 2026, 719 filas — ver datos/modelos/metricas.json):
+  banda exacta 0.871 · dentro de ±1 banda 100% · macro-F1 0.867 · recall CRÍTICO 0.92
   → nivel_riesgo es ORDINAL: la métrica defendible es el acierto dentro de ±1 banda
     (cero saltos de clase). El error de banda exacta restante es ruido de frontera
     entre percentiles, irreducible. NO perseguir 95% exact-match (ver memoria del proyecto).
@@ -136,15 +135,14 @@ MÉTRICAS (test temporal dic 2025 – may 2026, 719 filas — ver datos/modelos/
 proyecto/
 ├── datos/
 │   ├── raw/              ← Bronze: archivos como se descargan (generados por pipeline.py)
-│   │   └── boletines_scj/← F9: PDFs descargados de SCJ
 │   ├── procesados/       ← Silver: datos limpios y unificados (generados por transform.py)
 │   ├── features/         ← Gold: tabla maestra UPZ con las 18 variables (scripts/train_model.py)
 │   ├── grafo/            ← GraphRAG: embeddings pgvector exportados para Supabase
-│   └── modelos/          ← Model: XGBoost + SHAP pre-computado (Notebook 04)
-├── graficas/             ← Outputs visuales del EDA (7 gráficas V1-V7)
+│   └── modelos/          ← Model: XGBoost + SHAP pre-computado (scripts/train_model.py)
+├── graficas/             ← Gráficas del análisis exploratorio (ver wiki_pages/Analisis-Exploratorio.md)
 ├── src/
 │   ├── etl.py            ← 4 conectores de bajo nivel: CKAN, Socrata, ArcGIS, Open-Meteo
-│   ├── pipeline.py       ← Extracción incremental Bronze (12 fuentes F1-F14)
+│   ├── pipeline.py       ← Extracción incremental Bronze (12 fuentes activas)
 │   ├── transform.py      ← Transformación Silver (limpieza + spatial joins)
 │   └── validar_fuentes.py← genera fuentes_validadas.xlsx con fuentes activas
 ├── backend/              ← FastAPI (Python) — inferencia ML: /predict /explain /query
@@ -163,7 +161,7 @@ proyecto/
 │   ├── Home.md / Fuentes-de-Datos.md / Arquitectura.md / Modulos.md
 │   ├── Metodologia.md / Replicacion.md / Instalacion.md
 │   ├── Transformacion.md / Estado-del-Arte.md / Provenance.md
-│   ├── Investigacion-Fuentes.md / Reglas-Concurso.md
+│   ├── Investigacion-Fuentes.md / Reglas-Concurso.md / Analisis-Exploratorio.md
 │   └── PUSH_WIKI.bat     ← helper: git push al wiki (wiki ya inicializado en GitHub)
 ├── .github/
 │   └── workflows/
@@ -172,18 +170,12 @@ proyecto/
 ├── CLAUDE.md             ← este archivo (contexto IA)
 ├── CRONOGRAMA.md         ← checklists de tareas por fase ✅/⏳
 ├── requirements.txt
-├── README.md
-├── SeguroData_01_Plan_y_Fuentes.ipynb  ← Notebook 01 ✅
-└── SeguroData_02_EDA.ipynb             ← Notebook 02 ✅
+└── README.md
 ```
 
-Los notebooks del proyecto siguen el esquema `SeguroData_0X_Nombre.ipynb`:
-- `SeguroData_01_Plan_y_Fuentes.ipynb` — Plan + catálogo ✅
-- `SeguroData_02_EDA.ipynb` — Diagnóstico descriptivo + change points F1 DAI ✅
-- `SeguroData_03_Features.ipynb` — Construcción de las 18 variables (F11+F13+F14) + tabla prescriptiva
-- `SeguroData_04_Modelo.ipynb` — XGBoost + backtesting + SHAP pre-computado + sesgo
-- `SeguroData_05_Dashboard.ipynb` — Arquitectura React+FastAPI+Supabase + screenshots
-- `SeguroData_06_Deployment.ipynb` — Deploy Railway+Vercel + registro datos.gov.co
+La metodología CRISP-ML (plan, catálogo de fuentes, análisis exploratorio, arquitectura) vive en
+`wiki_pages/` — no en notebooks. Features + modelo + SHAP + sesgo se ejecutan y versionan en
+`scripts/train_model.py` (probado en CI, ver `datos/modelos/metricas.json`).
 
 ---
 
@@ -203,17 +195,17 @@ El Módulo 3 usa SHAP para identificar la causa dominante del riesgo y conecta d
 
 **Cuando el usuario traiga código:** revisar con énfasis en correctitud, reproducibilidad en Colab, y eficiencia con datasets grandes. Los dos datasets más pesados: F6 Hurto PN (638K filas, solo benchmarking) y F7 Estratificación (44K polígonos de manzanas — el spatial join agota RAM en Colab gratuito).
 
-**Cuando pida análisis:** usar el contexto de Bogotá — 112 UPZs, localidades, las 12 fuentes activas (F1-F14). No generalizar.
+**Cuando pida análisis:** usar el contexto de Bogotá — 112 UPZs, localidades, las 12 fuentes activas. No generalizar.
 
-**Cuando pida texto para el chatbot o recomendaciones:** el Módulo 3 y 4 usan OpenRouter (modelo configurable via `LLM_MODEL` — por defecto `google/gemini-flash-1.5`). Los mensajes son operacionales (lenguaje del comandante de CAI, no jerga de ML). Distinguir del registro técnico de los notebooks.
+**Cuando pida texto para el chatbot o recomendaciones:** el Módulo 3 y 4 usan OpenRouter (modelo configurable via `LLM_MODEL` — por defecto `google/gemini-flash-1.5`). Los mensajes son operacionales (lenguaje del comandante de CAI, no jerga de ML). Distinguir del registro técnico de la wiki.
 
 **Red flags que corregir:**
 - Usar Claude API como modelo predictivo (viola el espíritu del concurso — XGBoost es el modelo)
 - Usar validación aleatoria (train/test split random) en lugar de temporal — TRAIN = ene–oct 2025, TEST = nov 2025–abr 2026 (F5 NUSE solo disponible 2025–2026)
 - Modelar por localidad en lugar de UPZ (demasiado grueso — 20 localidades vs 112 UPZs)
-- Saltarse el análisis de sesgo por estrato en el Notebook 04 (el jurado siempre pregunta esto)
+- Saltarse el análisis de sesgo por estrato en `scripts/train_model.py` (el jurado siempre pregunta esto)
 - Usar Streamlit como frontend principal del dashboard — el frontend es React + deck.gl
-- Calcular SHAP on-demand en la app — los SHAP values se pre-computan en Notebook 04 y se sirven desde Supabase
+- Calcular SHAP on-demand en la app — los SHAP values se pre-computan en `scripts/train_model.py` y se sirven desde Supabase
 - Proponer nano-graphrag o Microsoft GraphRAG — el stack es FastAPI + Supabase pgvector + OpenRouter
 - Agregar una fuente nueva sin pasar por la regla de investigación quirúrgica (ver sección abajo)
 - Cargar el GeoJSON de Estratificación (F7, 100K+ manzanas) sin pre-calcular el promedio por UPZ — agota la RAM de Colab gratuito
@@ -224,21 +216,21 @@ El Módulo 3 usa SHAP para identificar la causa dominante del riesgo y conecta d
 
 | Fecha | Hito |
 |-------|------|
-| ✅ 23 mayo | Notebook 01 completado — plan + catálogo de 12 fuentes (F1-F10 activas + F11-F12 planificadas) |
-| ✅ 26 mayo – 6 junio | **Fase 1:** EDA de las 10 fuentes → Notebook 02 ✅ |
+| ✅ 23 mayo | Plan + catálogo de 12 fuentes completado (F1-F10 activas + F11-F12 planificadas) |
+| ✅ 26 mayo – 6 junio | **Fase 1:** EDA completo, documentado en `wiki_pages/Analisis-Exploratorio.md` |
 | ✅ 10 junio | Arquitectura pivotada a React+Supabase+FastAPI · F13/F14 activadas · Wiki publicado (13 páginas + Plataforma-Ciudadana) · GitHub Project poblado (issues #11-18) · Plataforma ciudadana: ideas 1+2+3+5 comprometidas para MVP, ideas 4+6 opcionales con HUs en `docs/HU-Features-Opcionales.md`, idea 7 descartada · Pre-mortem documentado |
-| ✅ 7 – 20 junio | **Fase 2:** XGBoost + SHAP → Notebooks 03+04 (vía script `train_model.py`) |
-| ✅ 21 junio – 10 julio | **Fase 3:** React+deck.gl + FastAPI + GraphRAG Supabase — 4 módulos + modal de 5 pestañas + Panel Admin + deploy Railway/Vercel, todo en producción → Notebook 05 (⏳ wrapper visual opcional) |
-| ⏳ 11 julio – 1 agosto | **Fase 4:** Docs + video + registro datos.gov.co → Notebook 06 (deploy ya completado en Fase 3) |
-| **⚠️ Verificar** | Fecha exacta entrega/registro en datos.gov.co — posiblemente agosto (GovCamps 2026) |
-| Primera semana agosto | **Final GovCamps 2026** (sustentación oral — confirmado MinTIC) |
+| ✅ 7 – 20 junio | **Fase 2:** XGBoost + SHAP vía `scripts/train_model.py` |
+| ✅ 21 junio – 10 julio | **Fase 3:** React+deck.gl + FastAPI + GraphRAG Supabase — 4 módulos + modal de 5 pestañas + Panel Admin + deploy Railway/Vercel, todo en producción |
+| ⏳ 11 – 13 julio | **Fase 4:** Docs finales + video + registro datos.gov.co (deploy ya completado en Fase 3) |
+| **13 julio 2026, antes de medianoche** | **Entrega confirmada** — código en GitHub público + registro en datos.gov.co |
+| Primera semana agosto | **GovCamps 2026** — evento presencial posterior para los equipos finalistas seleccionados (confirmado MinTIC), no es la fecha de entrega |
 
 ---
 
 ## Preguntas difíciles del jurado — respuestas preparadas
 
 **"¿Su modelo discrimina por estrato?"**
-→ Sí lo analizamos. El Notebook 04 incluye análisis de sesgo por estrato socioeconómico. El modelo usa estrato como variable pero los SHAP values permiten identificar si produce predicciones sistemáticamente sesgadas. PredPol en EE.UU. fue discontinuado por esto — nosotros lo prevenimos por diseño.
+→ Sí lo analizamos. `scripts/train_model.py` incluye análisis de sesgo por estrato socioeconómico. El modelo usa estrato como variable pero los SHAP values permiten identificar si produce predicciones sistemáticamente sesgadas. PredPol en EE.UU. fue discontinuado por esto — nosotros lo prevenimos por diseño.
 
 **"¿Qué pasa si el SIEDCO tiene subregistro?"**
 → Lo mitigamos de dos formas: (1) usamos el crimen reportado como proxy, explicitando la limitación, y (2) el ratio NUSE_123/delitos_formales_por_UPZ es un feature del modelo que captura el nivel de subregistro por zona. Barrera et al. (Uniandes 2023) es la referencia metodológica.
@@ -264,7 +256,7 @@ El Módulo 3 usa SHAP para identificar la causa dominante del riesgo y conecta d
 | Solo Bogotá | Calidad de datos superior + volumen garantizado + no penalización por enfoque único |
 | Granularidad UPZ (no localidad, no barrio) | Balance entre resolución y estabilidad estadística |
 | Stack Python + scikit-learn + XGBoost | Reproducible, bien documentado, compatible con CRISP-ML |
-| ~~Hawkes Process~~ → **ruptures + GraphRAG** | Hawkes descartado. ruptures (PELT) detecta cambios estructurales históricos. GraphRAG (FastAPI + pgvector + OpenRouter) explica el *por qué* con boletines SCJ + noticias |
+| ~~Hawkes Process~~ → **ruptures + GraphRAG** | Hawkes descartado. ruptures (PELT) detecta cambios estructurales históricos. GraphRAG (FastAPI + pgvector + OpenRouter) explica el *por qué* con noticias RSS (F10) |
 | SHAP pre-computado (no on-demand) | Supabase sirve SHAP values pre-calculados → sin crash de RAM en producción |
 | **React + deck.gl** para frontend | Mapa WebGL interactivo estilo C4 / Palantir Gotham, capas toggleables, zoom Localidades→UPZs (zoom 12), modal 5 pestañas por UPZ (Descripción · Predicción · Sugerencia · Fuentes · Chatbot) |
 | **Reentrenamiento con quality-gate, sin cron activo** | `scripts/load_model_artifacts.py` nunca sobreescribe con un modelo peor sin `--force` explícito. El workflow de GitHub Actions corre la cadena completa bajo demanda (`workflow_dispatch`); el `schedule` semanal queda comentado a propósito hasta después de la sustentación oral — evita que un reentrenamiento automático caiga en medio del demo |
