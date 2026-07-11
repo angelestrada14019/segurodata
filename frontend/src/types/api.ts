@@ -61,7 +61,11 @@ export interface GraphragRequest {
 }
 
 export interface FuenteGraphrag {
-  tipo: "BOLETIN" | "NOTICIA";
+  /** Valor real del backend: `source` de `documents_corpus` — hoy siempre
+   * `RSS_ELTIEMPO`/`RSS_ESPECTADOR`/`RSS_INFORMANTE` (F10, único corpus
+   * activo desde la purga de F9). `string` suelto en vez de un union
+   * cerrado porque el backend no lo restringe (`app/schemas/graphrag.py`). */
+  tipo: string;
   titulo: string;
   fecha: string;
   url: string | null;

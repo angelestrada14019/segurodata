@@ -51,8 +51,10 @@ interface ModalUpzProps {
  * - `useUpzGeometrias()` — mismo query key que ya usa el mapa (Sprint 1),
  *   así que si el modal se abrió desde un click en el mapa esta data ya
  *   está en cache, sin round-trip nuevo. Alimenta a Descripción.
- * - `useGraphrag()` — ÚNICA instancia, compartida entre Fuentes (lectura)
- *   y Chatbot (dispara `.mutate`).
+ * - `useGraphrag()` — ÚNICA instancia, compartida entre Fuentes y Chatbot;
+ *   ambas pestañas pueden disparar `.mutate` (Fuentes con una pregunta fija
+ *   genérica, Chatbot con lo que escriba el usuario) y ambas leen el mismo
+ *   `mutation.data` resultante.
  * - `historialChat` — transcripción acumulada del chatbot.
  *
  * Se pasa todo a los 5 hijos por props: son 5 hermanos directos, un Context
@@ -181,8 +183,10 @@ export function ModalUpz({
 
             <TabsContent value="fuentes" className="mt-0">
               <TabFuentes
+                upzCod={upzCod}
                 mutation={graphragMutation}
                 onIrAChatbot={() => setTabActiva("chatbot")}
+                onNuevaRespuesta={handleNuevaRespuesta}
               />
             </TabsContent>
 
