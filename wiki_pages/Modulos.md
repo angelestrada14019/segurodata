@@ -17,7 +17,7 @@ Cuatro perfiles acceden a módulos distintos según su necesidad operacional:
 
 | Perfil | Rol técnico | Módulos que usa | Pregunta clave |
 |---|---|---|---|
-| **Comandante de Cuadrante / CAI** | `COMANDANTE_CAI` | 1, 2, 3 (solo su cuadrante) | ¿A dónde mando el patrullaje esta semana? |
+| **Comandante de Cuadrante / CAI** | `COMANDANTE_CAI` | 1 (ciudad completa), 2 y 3 (solo su cuadrante) | ¿A dónde mando el patrullaje esta semana? |
 | **Secretaría Distrital de Seguridad** | `ANALISTA_SDSCJ` | 1, 2, 3, 4 (todas las UPZs) | ¿Qué zonas requieren intervención estructural? |
 | **Ciudadano / Habitante de Bogotá** | `CIUDADANO` | 1 (lectura), 4 (chatbot básico), reportes y pánico (opcional) | ¿Es seguro mi barrio hoy? |
 | **Periodista / Investigador** | `CIUDADANO` | 1, 4 | ¿Por qué aumentó el crimen en X zona? |
