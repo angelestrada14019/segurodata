@@ -253,13 +253,15 @@ cubiertos por el alcance original de Fase 3. Ambos cerrados:
 > Entrega confirmada: 13 julio 2026, antes de medianoche. GovCamps (primera semana de agosto) es el evento presencial posterior para finalistas, no la fecha de entrega.
 
 - [x] ✅ (10-jul) `README.md`: descripción, URL Railway (backend) + Vercel (frontend), instrucciones instalación completas
-- [ ] Documentar schema de Supabase y decisiones de diseño en `wiki_pages/Instalacion.md`/`Arquitectura.md`
-- [ ] Video pitch de 3 minutos: problema → solución → demo (mapa + prescriptivo + chatbot)
+- [x] ✅ (11-jul) Documentar schema de Supabase y decisiones de diseño → `wiki_pages/Supabase-Schema.md` (verificado contra la base de datos real, no de memoria)
+- [x] ✅ (11-jul) Guion de video → `docs/sustentacion/guion-video-pitch.md`. Evolucionó de "pitch de 3 minutos" a narración completa de las 16 slides + demo (a pedido explícito, para poder defender cada slide a fondo) — dura más de 3 minutos. Falta grabarlo (acción del usuario).
+- [x] ✅ (11-jul) Presentación de 16 slides (`docs/sustentacion/SeguroData-Sustentacion.pptx`) — metodología, matriz de confusión real, 18 variables con SHAP real, 12 fuentes, pipeline de ingesta. Validada y con QA visual completo.
 - [x] ✅ (10-jul) Auditoría de git history para API keys — sin hallazgos
 - [x] ✅ Repositorio GitHub en modo público (confirmado)
-- [ ] Registrar en datos.gov.co → sección "Usos" con enlace al repo — **OBLIGATORIO**
-- [ ] **[Pre-mortem E2]** Escribir demo script de 10 minutos: clicks exactos, UPZs de ejemplo (Kennedy, Chapinero), datos que deben preexistir en Supabase, orden de módulos, respuestas preparadas a interrupciones del jurado, fallback a video si algo falla en vivo
-- [ ] **[Pre-mortem T3]** Pre-cargar en Supabase reportes de prueba verosímiles para el demo Waze (Ideas 4/6): usar timestamps del día anterior para que se vean como datos reales del sistema, no de prueba. Documentar en demo script que estos son datos de simulación.
+- [ ] Registrar en datos.gov.co → sección "Usos" con enlace al repo — **OBLIGATORIO**. Texto ya redactado en `docs/registro_datosgovco.md`, solo falta que el usuario lo pegue en el formulario real y envíe.
+- [x] ✅ (11-jul) **[Pre-mortem E2]** Demo script de 10 minutos → `docs/sustentacion/demo-script.md`: clicks exactos, UPZs verificadas (Patio Bonito 082 CRÍTICO, Chicó Lago 097 ALTO), respuestas preparadas a preguntas del jurado, Plan B si algo falla en vivo
+- [x] ✅ (11-jul) Batería de 10 preguntas al chatbot (3 perfiles) → `docs/chatbot_test_battery.md`. Encontró y corrigió un bug real: el modelo LLM primario estaba muerto en OpenRouter (404) tanto en local como en Railway producción — corregido y verificado
+- ~~**[Pre-mortem T3]** Pre-cargar reportes de prueba verosímiles para el demo Waze~~ — no aplica: Ideas 4/6 (plataforma ciudadana, reportes tipo Waze) quedaron fuera del alcance del MVP del concurso (ver `wiki_pages/Plataforma-Ciudadana.md`)
 
 ---
 
