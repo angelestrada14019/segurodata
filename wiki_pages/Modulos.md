@@ -41,7 +41,7 @@ Cuatro perfiles acceden a módulos distintos según su necesidad operacional:
   - 💡 **Sugerencia** — diagnóstico causal SHAP + recomendación prescriptiva + CAI responsable
   - 📚 **Fuentes** — noticias citadas por la pestaña Chatbot en esa sesión (vacío hasta que se hace una pregunta)
   - 💬 **Chatbot** — pregunta libre contextualizada en la UPZ seleccionada
-- **Capas toggleables**: 5 capas reales — cuadrantes de Policía, cambios estructurales (`ruptures`), cámaras Salvavidas SDM, alumbrado público UAESP y estaciones TransMilenio, todas con geometría real en Supabase
+- **Capas toggleables**: 5 capas reales — cuadrantes de Policía, cambios estructurales (`ruptures`), cámaras Salvavidas SDM, alumbrado público UAESP y estaciones TransMilenio, todas con geometría real en Supabase. Acceso público en 4 de las 5; solo cuadrantes de Policía requiere sesión (expone nombre de CAI y teléfono) — ver [Matriz de acceso por rol](#matriz-de-acceso-por-rol)
 - **Slider temporal**: navega los meses históricos de `predicciones`, recolorea el mapa
 - **Tendencia con change points**: marcadores en el mapa para las UPZs con un punto de ruptura reciente (`ruptures` sobre F1 DAI 2018–2026)
 - **Realtime**: suscripción a inserciones nuevas en `silver_upz_mes` — notifica con un aviso en pantalla cuando llega un dato nuevo para la UPZ que se está viendo
@@ -126,6 +126,8 @@ La plataforma tiene 4 roles con acceso diferenciado via Supabase Auth + RLS:
 | Módulo / Feature | Sin login | CIUDADANO | COMANDANTE_CAI | ANALISTA_SDSCJ | ADMIN |
 |---|---|---|---|---|---|
 | Mapa heatmap (Módulo 1) | ✅ lectura | ✅ | ✅ | ✅ | ✅ |
+| Capas mapa: TransMilenio, Cámaras, Alumbrado | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Capa mapa: Cuadrantes de Policía | ❌ | ✅ | ✅ | ✅ | ✅ |
 | Modal 5 pestañas por UPZ | ✅ parcial | ✅ | ✅ | ✅ | ✅ |
 | Predicción por UPZ (Módulo 2) | ❌ | ❌ | ✅ solo su cuadrante | ✅ todas | ✅ |
 | Proyección +4 semanas | ❌ | ❌ | ✅ su zona | ✅ | ✅ |

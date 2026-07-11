@@ -28,6 +28,7 @@ copy wiki_pages\Provenance.md            wiki_temp_push\Provenance.md
 copy wiki_pages\Investigacion-Fuentes.md wiki_temp_push\Investigacion-Fuentes.md
 copy wiki_pages\Reglas-Concurso.md       wiki_temp_push\Reglas-Concurso.md
 copy wiki_pages\Plataforma-Ciudadana.md  wiki_temp_push\Plataforma-Ciudadana.md
+copy wiki_pages\Analisis-Exploratorio.md wiki_temp_push\Analisis-Exploratorio.md
 
 REM --- Assets ---
 copy wiki_pages\diagrama_arquitectura.svg wiki_temp_push\diagrama_arquitectura.svg
@@ -35,7 +36,7 @@ copy wiki_pages\pipeline_fti.svg          wiki_temp_push\pipeline_fti.svg
 
 cd wiki_temp_push
 git add .
-git commit -m "wiki: 13 paginas + SVG arquitectura + SVG pipeline FTI (actualizacion jun-2026)"
+git commit -m "wiki: 14 paginas + SVG arquitectura + SVG pipeline FTI (actualizacion jul-2026)"
 git push
 
 cd ..
