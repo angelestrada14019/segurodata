@@ -39,7 +39,7 @@ Cuatro perfiles acceden a módulos distintos según su necesidad operacional:
   - 📊 **Descripción** — serie histórica NUSE, top 3 tipos de incidente, tendencia últimas 8 semanas
   - 🔮 **Predicción** — nivel de riesgo XGBoost del próximo mes + probabilidades + proyección +4 semanas
   - 💡 **Sugerencia** — diagnóstico causal SHAP + recomendación prescriptiva + CAI responsable
-  - 📚 **Fuentes** — noticias citadas por la pestaña Chatbot en esa sesión (vacío hasta que se hace una pregunta)
+  - 📚 **Fuentes** — noticias citadas sobre esta UPZ; botón propio "Generar fuentes de esta UPZ" o se completa automáticamente al preguntar en la pestaña Chatbot
   - 💬 **Chatbot** — pregunta libre contextualizada en la UPZ seleccionada
 - **Capas toggleables**: 5 capas reales — cuadrantes de Policía, cambios estructurales (`ruptures`), cámaras Salvavidas SDM, alumbrado público UAESP y estaciones TransMilenio, todas con geometría real en Supabase. Acceso público en 4 de las 5; solo cuadrantes de Policía requiere sesión (expone nombre de CAI y teléfono) — ver [Matriz de acceso por rol](#matriz-de-acceso-por-rol)
 - **Slider temporal**: navega los meses históricos de `predicciones`, recolorea el mapa

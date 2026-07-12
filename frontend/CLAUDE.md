@@ -56,6 +56,18 @@ Lectura adicional (no vendorizada): [wilwaldon/Claude-Code-Frontend-Design-Toolk
 - **Módulo 3 — Prescriptivo**: FastAPI `/prescribe`.
 - **Módulo 4 — Chatbot**: FastAPI `/graphrag`.
 
+**Pestaña Fuentes (dentro del modal UPZ) no es un módulo aparte — comparte la misma instancia de
+`useGraphrag()` que Chatbot** (`modal-upz.tsx`, única mutación, ambas pestañas leen y disparan sobre
+el mismo `mutation.data`). Antes era puramente derivada del estado de Chatbot: si el usuario no había
+preguntado nada allá, solo mostraba un mensaje invitando a ir a esa pestaña. Ahora tiene su propio
+botón "Generar fuentes de esta UPZ" (`tab-fuentes.tsx`) — mismo patrón de botón manual, nunca
+automático al abrir la pestaña, que "Generar recomendación" en Sugerencia — que dispara `/graphrag`
+con una pregunta genérica fija (`PREGUNTA_AUTOGENERADA`) scoped a la UPZ actual, y registra el
+intercambio en el historial compartido vía `onNuevaRespuesta` para que también aparezca si el usuario
+entra después a Chatbot. Gate de sesión explícito (`!!session`, cualquier rol autenticado — no
+`tieneAccesoOperacional`, mismo criterio que `chat-panel.tsx`) en vez de mostrar vacío sin explicación
+a un visitante anónimo.
+
 **Texto generado por LLM (Módulos 3 y 4):** `recomendacion_llm` (`/prescribe`) y las respuestas del
 chatbot (`/graphrag`) se renderizan con `<TextoMarkdown>` (`components/shared/texto-markdown.tsx`,
 `react-markdown` + `remark-breaks`) — OpenRouter suele devolver `**negrita**`/listas aunque el prompt
