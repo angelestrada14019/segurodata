@@ -26,7 +26,8 @@ interface TabFuentesProps {
   onNuevaRespuesta: (pregunta: string, respuesta: GraphragResponse) => void;
 }
 
-const PREGUNTA_AUTOGENERADA = "¿Qué contexto causal reciente hay disponible para esta zona?";
+const PREGUNTA_AUTOGENERADA =
+  "¿Qué noticias recientes de hurtos, capturas o inseguridad hay relacionadas con esta zona de Bogotá?";
 
 const NOMBRE_MEDIO: Record<string, string> = {
   RSS_ELTIEMPO: "El Tiempo",
