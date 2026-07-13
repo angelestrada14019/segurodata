@@ -9,6 +9,14 @@ Fuentes:
 Embeddings: all-MiniLM-L6-v2 (384 dims) — el MISMO modelo que usa el backend en
 query-time. NUNCA cambiar de modelo sin reindexar todo el corpus.
 
+El backend de embeddings (fastembed/ONNX vs sentence-transformers/PyTorch) NO es
+intercambiable entre indexación y query-time pese a ser "el mismo modelo": producen
+vectores numéricamente distintos y la similitud coseno cae por debajo del threshold
+de retrieval. Este script debe correr con el MISMO backend que el backend en runtime
+(Railway usa EMBEDDINGS_BACKEND=sentence-transformers, ver backend/app/config.py) —
+por eso el default de --backend coincide con ese valor. Pasar --backend explícito
+solo para pruebas locales puntuales, nunca para poblar el corpus de producción.
+
 Corre en la máquina local, NUNCA en Railway.
 
 Uso:
@@ -184,7 +192,8 @@ def main() -> None:
     ap.add_argument("--seed-demo", action="store_true", help="incluir corpus demo SEED_DEV")
     ap.add_argument("--emit-sql", action="store_true", help="escribir SQL en vez de insertar")
     ap.add_argument("--dry-run", action="store_true")
-    ap.add_argument("--backend", default=os.environ.get("EMBEDDINGS_BACKEND", "fastembed"),
+    ap.add_argument("--backend",
+                    default=os.environ.get("EMBEDDINGS_BACKEND", "sentence-transformers"),
                     choices=["fastembed", "sentence-transformers"])
     args = ap.parse_args()
 

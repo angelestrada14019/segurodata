@@ -3,9 +3,15 @@
 NUNCA cambiar de modelo sin reindexar documents_corpus completo: el índice
 pgvector quedaría incompatible.
 
-Dos backends intercambiables vía env EMBEDDINGS_BACKEND (mismo modelo MiniLM):
+Dos backends vía env EMBEDDINGS_BACKEND (mismo modelo MiniLM nominal, pero NO
+intercambiables — ONNX cuantizado vs PyTorch nativo no producen vectores idénticos,
+lo que desplaza la similitud coseno en retrieval por debajo del threshold):
   - sentence-transformers (default prod, torch CPU horneado en Docker)
   - fastembed (ONNX, ~100MB RAM — dev local y plan B si Railway aprieta)
+
+El backend usado en scripts/index_corpus.py DEBE coincidir con el que corre aquí en
+runtime — si difieren, /graphrag deja de encontrar coincidencias para todo el corpus
+sin lanzar ningún error (los vectores son válidos, solo dejan de ser comparables).
 
 Carga perezosa en thread executor: el event loop nunca se bloquea.
 """
