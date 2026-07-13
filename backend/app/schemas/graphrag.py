@@ -6,6 +6,12 @@ from app.schemas.common import UpzCod
 class GraphRAGRequest(BaseModel):
     pregunta: str = Field(min_length=5, max_length=500)
     upz_contexto: UpzCod | None = None
+    # Nombre/localidad de la UPZ (el frontend ya los tiene en memoria desde
+    # useUpzGeometrias() — evita un lookup nuevo en el backend). Solo se usan
+    # para enriquecer el prompt del LLM; el filtro de retrieval sigue siendo
+    # upz_contexto (el código, columna real de documents_corpus).
+    upz_nombre: str | None = Field(default=None, max_length=100)
+    nom_localidad: str | None = Field(default=None, max_length=100)
 
 
 class Fuente(BaseModel):

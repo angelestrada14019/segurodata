@@ -5,6 +5,8 @@ import type { GraphragRequest, GraphragResponse } from "@/types/api";
 
 interface TabChatbotProps {
   upzCod: string;
+  upzNombre?: string;
+  nomLocalidad?: string;
   /** Misma instancia de useGraphrag() que lee tab-fuentes.tsx — vive en modal-upz.tsx. */
   mutation: UseMutationResult<GraphragResponse, Error, GraphragRequest>;
   /** Transcripción acumulada — vive en modal-upz.tsx porque Radix Tabs
@@ -25,6 +27,8 @@ interface TabChatbotProps {
  */
 export function TabChatbot({
   upzCod,
+  upzNombre,
+  nomLocalidad,
   mutation,
   historial,
   onNuevaRespuesta,
@@ -32,6 +36,8 @@ export function TabChatbot({
   return (
     <ChatPanel
       upzCod={upzCod}
+      upzNombre={upzNombre}
+      nomLocalidad={nomLocalidad}
       mutation={mutation}
       historial={historial}
       onNuevaRespuesta={onNuevaRespuesta}

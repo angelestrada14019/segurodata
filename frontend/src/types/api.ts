@@ -58,6 +58,12 @@ export interface ExplainResponse {
 export interface GraphragRequest {
   pregunta: string;
   upz_contexto?: string;
+  /** Enriquecen el prompt del LLM con el nombre real de la zona — el backend
+   * solo conoce el código de 3 dígitos vía upz_contexto (filtro de retrieval,
+   * columna real de documents_corpus). Sin esto el LLM no puede relacionar
+   * "UPZ 075" con "Fontibón San Pablo" al redactar la respuesta. */
+  upz_nombre?: string;
+  nom_localidad?: string;
 }
 
 export interface FuenteGraphrag {

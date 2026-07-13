@@ -17,6 +17,11 @@ import type { FuenteGraphrag, GraphragRequest, GraphragResponse } from "@/types/
 
 interface TabFuentesProps {
   upzCod: string;
+  /** Nombre/localidad reales — modal-upz.tsx ya los tiene de useUpzGeometrias().
+   * Viajan en el POST /graphrag para que el LLM sepa a qué zona se refiere
+   * "UPZ 075" al redactar, no solo el código. */
+  upzNombre?: string;
+  nomLocalidad?: string;
   /** Misma instancia de useGraphrag() que dispara tab-chatbot.tsx. */
   mutation: UseMutationResult<GraphragResponse, Error, GraphragRequest>;
   /** Cambia la pestaña activa a "chatbot" — modal-upz.tsx es dueño de ese estado. */
@@ -43,12 +48,24 @@ const NOMBRE_MEDIO: Record<string, string> = {
  * LLM, nunca automática al abrir la pestaña). Sigue sin existir un endpoint
  * de "fuentes por UPZ" — por debajo esto es la misma POST /graphrag.
  */
-export function TabFuentes({ upzCod, mutation, onIrAChatbot, onNuevaRespuesta }: TabFuentesProps) {
+export function TabFuentes({
+  upzCod,
+  upzNombre,
+  nomLocalidad,
+  mutation,
+  onIrAChatbot,
+  onNuevaRespuesta,
+}: TabFuentesProps) {
   const { session } = useAuth();
 
   function generar() {
     mutation.mutate(
-      { pregunta: PREGUNTA_AUTOGENERADA, upz_contexto: upzCod },
+      {
+        pregunta: PREGUNTA_AUTOGENERADA,
+        upz_contexto: upzCod,
+        upz_nombre: upzNombre,
+        nom_localidad: nomLocalidad,
+      },
       { onSuccess: (respuesta) => onNuevaRespuesta(PREGUNTA_AUTOGENERADA, respuesta) },
     );
   }

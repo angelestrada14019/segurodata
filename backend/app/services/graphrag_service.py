@@ -17,9 +17,14 @@ SYSTEM_PROMPT = (
     "Eres el analista causal de SeguroData Bogotá. Respondes en español, en lenguaje "
     "operacional claro (para un comandante de CAI, sin jerga de machine learning). "
     "Usa EXCLUSIVAMENTE los fragmentos del corpus que se te entregan, citando cada "
-    "afirmación con su número [n]. Si los fragmentos no contienen información "
-    "relevante para la pregunta, di explícitamente: 'No tengo información en el "
-    "corpus sobre esto'. Máximo 250 palabras."
+    "afirmación con su número [n]. El corpus es pequeño y en su mayoría noticias "
+    "generales de Bogotá, no siempre específicas de la zona consultada — si los "
+    "fragmentos hablan de la ciudad en general pero no mencionan la zona, dilo así "
+    "explícitamente ('no hay noticias específicas de esta zona, pero el contexto "
+    "general de Bogotá es: ...') en vez de decir que no tienes información y luego "
+    "citar igual. Solo di 'No tengo información en el corpus sobre esto' cuando "
+    "ningún fragmento tenga relación alguna con el tema de la pregunta. Máximo 250 "
+    "palabras."
 )
 
 
@@ -34,7 +39,13 @@ class GraphRAGService:
         self._documents = documents
         self._openrouter = openrouter
 
-    async def answer(self, pregunta: str, upz_contexto: str | None = None) -> dict:
+    async def answer(
+        self,
+        pregunta: str,
+        upz_contexto: str | None = None,
+        upz_nombre: str | None = None,
+        nom_localidad: str | None = None,
+    ) -> dict:
         vector = await self._embeddings.encode(pregunta)
 
         chunks = await self._documents.match(
@@ -73,7 +84,11 @@ class GraphRAGService:
         )
         user_msg = f"Fragmentos del corpus:\n{contexto}\n\nPregunta: {pregunta}"
         if upz_contexto:
-            user_msg += f"\n(Contexto: UPZ {upz_contexto} de Bogotá)"
+            zona = f"UPZ {upz_contexto}"
+            if upz_nombre:
+                zona += f" ({upz_nombre}"
+                zona += f", localidad {nom_localidad})" if nom_localidad else ")"
+            user_msg += f"\n(Contexto: {zona} de Bogotá)"
 
         try:
             respuesta, modelo, cacheado = await self._openrouter.chat(

@@ -184,6 +184,8 @@ export function ModalUpz({
             <TabsContent value="fuentes" className="mt-0">
               <TabFuentes
                 upzCod={upzCod}
+                upzNombre={upzFeature?.properties.upz_nombre}
+                nomLocalidad={upzFeature?.properties.nom_localidad}
                 mutation={graphragMutation}
                 onIrAChatbot={() => setTabActiva("chatbot")}
                 onNuevaRespuesta={handleNuevaRespuesta}
@@ -193,6 +195,8 @@ export function ModalUpz({
             <TabsContent value="chatbot" className="mt-0 h-full">
               <TabChatbot
                 upzCod={upzCod}
+                upzNombre={upzFeature?.properties.upz_nombre}
+                nomLocalidad={upzFeature?.properties.nom_localidad}
                 mutation={graphragMutation}
                 historial={historialChat}
                 onNuevaRespuesta={handleNuevaRespuesta}

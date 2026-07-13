@@ -21,6 +21,11 @@ interface ChatPanelProps {
    * ya acepta `undefined`).
    */
   upzCod?: string;
+  /** Nombre/localidad reales de la UPZ — igual que upzCod, ausentes en
+   * `/chatbot` standalone. Viajan en el POST /graphrag para que el LLM sepa
+   * a qué zona se refiere el código, no solo el número. */
+  upzNombre?: string;
+  nomLocalidad?: string;
   /** Instancia de `useGraphrag()` — compartida con la pestaña Fuentes dentro
    * del modal; propia y dedicada en `/chatbot` standalone. */
   mutation: UseMutationResult<GraphragResponse, Error, GraphragRequest>;
@@ -38,7 +43,14 @@ interface ChatPanelProps {
  * `pregunta` es estado local (no necesita sobrevivir el desmontaje: se
  * limpia en cada envío exitoso).
  */
-export function ChatPanel({ upzCod, mutation, historial, onNuevaRespuesta }: ChatPanelProps) {
+export function ChatPanel({
+  upzCod,
+  upzNombre,
+  nomLocalidad,
+  mutation,
+  historial,
+  onNuevaRespuesta,
+}: ChatPanelProps) {
   const { session } = useAuth();
   const [pregunta, setPregunta] = useState("");
   const finRef = useRef<HTMLDivElement>(null);
@@ -72,7 +84,7 @@ export function ChatPanel({ upzCod, mutation, historial, onNuevaRespuesta }: Cha
     if (!texto || mutation.isPending) return;
 
     mutation.mutate(
-      { pregunta: texto, upz_contexto: upzCod },
+      { pregunta: texto, upz_contexto: upzCod, upz_nombre: upzNombre, nom_localidad: nomLocalidad },
       {
         onSuccess: (respuesta) => {
           onNuevaRespuesta(texto, respuesta);

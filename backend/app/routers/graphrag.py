@@ -18,4 +18,6 @@ async def graphrag(
     user: CurrentUser,
     service: GraphRAGService = Depends(get_graphrag_service),
 ) -> dict:
-    return await service.answer(body.pregunta, body.upz_contexto)
+    return await service.answer(
+        body.pregunta, body.upz_contexto, body.upz_nombre, body.nom_localidad
+    )
