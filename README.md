@@ -235,7 +235,7 @@ Backend ML       Railway (FastAPI — siempre activo, sin cold start, ~$5/mes)
 
 ## Metodología CRISP-ML
 
-El proceso CRISP-ML completo queda documentado en el [Wiki](https://github.com/angelestrada14019/segurodata/wiki) y ejecutado en scripts versionados (no notebooks — el concurso no lo exige, y un script probado y corrido en CI es más reproducible que un notebook):
+El proceso CRISP-ML completo queda documentado en el [Wiki](https://github.com/angelestrada14019/segurodata/wiki) y ejecutado en scripts versionados:
 
 | Fase | Contenido | Dónde vive |
 |------|-----------|-----------|
