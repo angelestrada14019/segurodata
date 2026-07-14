@@ -179,7 +179,7 @@ Variables a configurar en Railway:
 | `OPENROUTER_API_KEY` | key de openrouter.ai |
 | `LLM_MODEL` | `google/gemini-2.5-flash-lite` |
 
-Railway (Plan Hobby ~$5/mes) mantiene el proceso siempre activo — sin cold start, sin warmup previo al demo.
+Railway (Plan Hobby ~$5/mes) mantiene el proceso siempre activo.
 
 ---
 
@@ -218,7 +218,7 @@ vercel --prod
 
 `.github/workflows/etl-semanal.yml` corre la cadena completa (descarga → Silver → reentrena →
 quality-gate → carga a Supabase) bajo demanda. El `schedule` semanal queda **desactivado a
-propósito** — no lo actives antes de la sustentación oral.
+propósito**.
 
 **1. Configurar secrets** (GitHub → repo → Settings → Secrets and variables → Actions → New
 repository secret):

@@ -3,10 +3,10 @@
 > **Estado: en producción.**
 > - **Frontend:** https://segurodata-frontend.vercel.app · **Backend:** https://segurodata-api-production.up.railway.app
 > - **Backend FastAPI completo** — 7 endpoints, 36 tests verdes (incl. E3 JWT end-to-end y T5 verificados en vivo contra Supabase real)
-> - **Modelo XGBoost** — entrenado vía `scripts/train_model.py` con 18 variables y split temporal dinámico (últimos 6 meses = test, se recalcula solo en cada corrida). Test temporal actual (nov 2025 – abr 2026): acierto dentro de ±1 banda 100%, macro-F1 0.867. Reentrenamiento automatizado con quality-gate en GitHub Actions (cron desactivado hasta después de la sustentación)
+> - **Modelo XGBoost** — entrenado vía `scripts/train_model.py` con 18 variables y split temporal dinámico (últimos 6 meses = test, se recalcula solo en cada corrida). Test temporal actual (nov 2025 – abr 2026): acierto dentro de ±1 banda 100%, macro-F1 0.867. Reentrenamiento automatizado con quality-gate en GitHub Actions (cron semanal desactivado por decisión de diseño, se dispara manualmente)
 > - **Supabase** — migraciones + RLS + hook JWT + Realtime ON. Artefactos reales del modelo (`origen='train_model'`): 1,918 predicciones + 34,524 SHAP + RPCs GeoJSON para el mapa. `upz_geometrias` con localidad real (112/112 UPZ, 19 localidades)
 > - **change_points**: 40 breakpoints ruptures PELT cargados (F1 DAI 2018-2026), COVID 2020 validado — marcadores visibles en el mapa sobre las 112 UPZs con localidad
-> - **Corpus GraphRAG**: 10 chunks RSS reales en pgvector (El Tiempo + El Informante)
+> - **Corpus GraphRAG**: 16 chunks RSS reales en pgvector (El Tiempo + El Informante)
 > - **Frontend React** — 4 módulos + modal de 5 pestañas + Panel Admin construidos y verificados con datos reales. Pendiente: heatmap día×hora (Plotly, menor prioridad).
 
 La aplicación responde 5 preguntas: 4 módulos analíticos (Diagnóstico · Predicción · Prescriptivo · Chatbot causal) más una capa de participación ciudadana (autenticación, mapa interactivo con modal, alertas comunitarias — ver [[Plataforma-Ciudadana]]).
@@ -34,7 +34,7 @@ Cuatro perfiles acceden a módulos distintos según su necesidad operacional:
 **Tecnología:** React + deck.gl + Supabase Realtime
 
 - **Mapa WebGL interactivo**: choropleth de Bogotá, 112 UPZs coloreadas por nivel de riesgo actual. Hover muestra estadísticas de la UPZ. Click activa el panel de detalle.
-- **Zoom adaptativo**: vista ciudad completa → 20 Localidades (zoom < 12) → 112 UPZs (zoom ≥ 12), transición automática según el nivel de zoom. El jurado ve primero la ciudad entera, luego el detalle de zona.
+- **Zoom adaptativo**: vista ciudad completa → 20 Localidades (zoom < 12) → 112 UPZs (zoom ≥ 12), transición automática según el nivel de zoom. El usuario ve primero la ciudad entera, luego el detalle de zona.
 - **Modal de análisis por zona (5 pestañas)**: clic en cualquier UPZ abre un panel lateral contextualizado en esa zona:
   - 📊 **Descripción** — serie histórica NUSE, top 3 tipos de incidente, tendencia últimas 8 semanas
   - 🔮 **Predicción** — nivel de riesgo XGBoost del próximo mes + probabilidades + proyección +4 semanas

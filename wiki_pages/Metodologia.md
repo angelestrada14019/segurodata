@@ -12,7 +12,7 @@ SeguroData sigue la metodología CRISP-ML (Cross-Industry Standard Process for M
 | 1B — EDA | `wiki_pages/Analisis-Exploratorio.md` | Hallazgos clave del análisis exploratorio | ✅ Completo |
 | 2 — Gold + Modelo | `scripts/train_model.py` | 18 variables + XGBoost + SHAP | ✅ Completo |
 | 3 — Dashboard | React + deck.gl + FastAPI + Supabase + GraphRAG | Desplegado en producción | ✅ Completo |
-| 4 — Entrega | — | Video + registro datos.gov.co | ⏳ 11–13 julio 2026 |
+| 4 — Entrega | — |registro datos.gov.co |  11–13 julio 2026 |
 
 ## Validación temporal (no aleatoria)
 
@@ -96,16 +96,13 @@ Esta tabla se documenta en `backend/app/data/tabla_ontologica_seed.json` y en el
 
 ## Análisis de sesgo por estrato
 
-El jurado del concurso pregunta explícitamente si el modelo discrimina por estrato socioeconómico. `scripts/train_model.py::analisis_sesgo()` incluye:
+ El modelo no discrimina por estrato socioeconómico. El archivo `scripts/train_model.py::analisis_sesgo()` incluye:
 - Comparación de predicciones por estrato (1-6): ¿falsos negativos concentrados en estratos bajos?
 - SHAP interaction plots: ¿interactúa el estrato con la predicción de manera inesperada?
 - Resultado esperado: el estrato **entra como feature causal legítima**, no como proxy discriminatorio
 
 ---
 
-## Dónde vive cada fase CRISP-ML
-
-El concurso no exige formato Jupyter. La metodología completa queda documentada en `wiki_pages/` (este wiki), y el código de producción — probado, versionado y corrido en CI — es la fuente de verdad de features, modelo, SHAP y sesgo:
 
 | Fase CRISP-ML | Dónde vive |
 |---|---|

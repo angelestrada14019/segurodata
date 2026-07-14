@@ -50,7 +50,7 @@
 
   <text x="50" y="266" font-size="11" fill="#9aa4b2">Split temporal DINÁMICO: TEST = últimos 6 meses con datos, se recalcula en cada corrida — no es una fecha fija.</text>
   <text x="50" y="284" font-size="11" fill="#9aa4b2">Probado de punta a punta en CI real (.github/workflows/etl-semanal.yml). El "schedule" semanal queda desactivado</text>
-  <text x="50" y="302" font-size="11" fill="#9aa4b2">a propósito hasta después de la sustentación oral — se dispara manualmente (workflow_dispatch), nunca "congelado".</text>
+  <text x="50" y="302" font-size="11" fill="#9aa4b2">a propósito por decisión de diseño — se dispara manualmente (workflow_dispatch), nunca "congelado".</text>
 
   <!-- ===== ONLINE: Inference ===== -->
   <rect x="30" y="358" width="1040" height="330" rx="8" fill="none" stroke="#5ec8ff" stroke-width="1.5" stroke-dasharray="5,4"/>

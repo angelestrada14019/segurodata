@@ -211,7 +211,7 @@ segurodata/
 `.github/workflows/etl-semanal.yml` corre la cadena completa bajo demanda — descarga incremental →
 Silver → reentrena XGBoost (split temporal dinámico) → quality-gate de métricas → carga a Supabase
 (solo si el modelo nuevo no es peor que el anterior). Probado de punta a punta en CI real. El
-`schedule` semanal queda **desactivado a propósito** hasta después de la sustentación oral — se
+`schedule` semanal queda **desactivado a propósito** por decisión de diseño — se
 dispara manualmente desde **GitHub → Actions → `etl-semanal.yml` → Run workflow**. Detalles y
 secrets requeridos en el [Wiki — Instalación](https://github.com/angelestrada14019/segurodata/wiki/Instalacion#6-github-actions--pipeline-de-reentrenamiento-opcional-ya-probado-en-ci-real).
 
@@ -250,7 +250,7 @@ El proceso CRISP-ML completo queda documentado en el [Wiki](https://github.com/a
 
 📖 **[Documentación completa en el Wiki](https://github.com/angelestrada14019/segurodata/wiki)**
 
-El wiki incluye: catálogo de 20 fuentes · estado del arte internacional · guía capa Silver · provenance de datos · reglas del concurso y preguntas del jurado.
+El wiki incluye: catálogo de 20 fuentes investigadas · estado del arte internacional · guía capa Silver · provenance de datos · criterios y checklist del concurso.
 
 | Código | Ubicación | Para qué |
 |--------|----------|---------|

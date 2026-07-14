@@ -70,7 +70,7 @@ supabase-js: acceso directo a PostgreSQL + Realtime desde React
 > **Estado:** ✅ **Implementado, verificado y desplegado** — 36 tests verdes, ruff limpio.
 > **https://segurodata-api-production.up.railway.app** — `GET /health` responde `{"status":"ok"}`.
 
-Todo el backend es Python. Un solo servicio, un solo lenguaje, un solo deploy. Railway mantiene el servidor siempre activo — sin cold start, sin warmup antes del demo.
+Todo el backend es Python. Un solo servicio, un solo lenguaje, un solo deploy. Railway mantiene el servidor siempre activo.
 
 #### Estructura del backend (`backend/`)
 
@@ -203,7 +203,7 @@ scripts/train_model.py  →  Model   (datos/modelos/)       ← XGBoost + SHAP p
 
 ### Cómo activar actualizaciones
 
-**1. Manual local** (desarrollo y pre-demo):
+**1. Manual local** (desarrollo y pruebas puntuales):
 ```bash
 python src/pipeline.py --source f3 f5 f6   # solo las incrementales rápidas
 python src/pipeline.py                      # todas las fuentes
@@ -228,9 +228,6 @@ El `schedule` semanal sigue **desactivado a propósito**:
 schedule:
   - cron: '0 6 * * 1'   # cada lunes 6 AM UTC = 1 AM Bogotá
 ```
-Recomendación del equipo: no activarlo antes de la sustentación oral — un reentrenamiento
-automático cayendo en medio de la ventana de demo es justo el riesgo que motivó el quality-gate.
-Se puede disparar manualmente en cualquier momento desde GitHub Actions → "Run workflow".
 
 **Requisitos para correr el workflow** (GitHub → Settings → Secrets and variables → Actions):
 `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` (mismos valores que `backend/.env`), `SOCRATA_APP_TOKEN`
@@ -238,8 +235,6 @@ Se puede disparar manualmente en cualquier momento desde GitHub Actions → "Run
 Workflow permissions debe estar en **"Read and write permissions"** para que el paso final pueda
 commitear `metricas.json` de vuelta al repo.
 
-**3. Pre-demo** (día de la presentación):
-Railway está siempre activo — no requiere calentamiento. Verificar 5 minutos antes que `/health` responde y que Supabase tiene datos recientes de F3 (clima).
 
 ### El "tiempo real" del frontend
 
@@ -258,7 +253,6 @@ El frontend **no hace polling**. Usa **Supabase Realtime** (WebSocket): cuando `
 ```
 Métodos de autenticación:
   Magic link (email) → para onboarding de oficiales por invitación
-  OAuth Google         → para ciudadanos y analistas
 
 Autoaprovisionamiento por dominio institucional (Auth Hook de Supabase):
   @policia.gov.co   → COMANDANTE_CAI  (pendiente asignación de cuadrante por ADMIN)

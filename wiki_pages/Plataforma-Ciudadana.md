@@ -128,5 +128,3 @@ Análisis de riesgo hecho durante el diseño de la plataforma ciudadana, con su 
 | Cuadrantes de Policía (F4) sin geometría en PostGIS | Tabla `cuadrantes_geom` con índice GIST | ✅ Resuelto |
 | Autenticación JWT Supabase↔FastAPI sin test de integración | `tests/test_jwt_e2e.py`, verificado contra Supabase real | ✅ Resuelto |
 | Reportes comunitarios anónimos podrían fabricar alertas falsas | Requerir cuenta mínima para publicar (no para confirmar) — feature diferida, ver `docs/HU-Features-Opcionales.md` | Diferido (fuera de esta entrega) |
-| Datos de demostración vacíos durante la presentación | Precargar reportes de prueba verosímiles antes de la sustentación | ⏳ Pendiente Fase 4 |
-| Sustentación sin guion preparado | Demo script de 10 minutos | ⏳ Pendiente Fase 4 |

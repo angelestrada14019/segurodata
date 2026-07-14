@@ -48,4 +48,4 @@ El **Módulo 3 (Prescriptivo)** combina SHAP values + detección de cambios estr
 - [[Estado-del-Arte]] — 20+ sistemas internacionales, 18 papers, diferenciación
 - [[Provenance]] — URLs verificadas, licencias, tabla causal, cumplimiento concurso
 - [[Investigacion-Fuentes]] — Catálogo 20 fuentes, IDs descartados, snippets ETL
-- [[Reglas-Concurso]] — Checklist obligatorios, preguntas del jurado, decisiones de diseño
+- [[Reglas-Concurso]] — Criterios de evaluación, checklist de entrega, decisiones de diseño
